@@ -45,7 +45,7 @@ Features coming shortly:
 
 ## Installation
 
-Package installation coming soon...
+Package is currently under construction, conda installation coming soon...
 
 ## Basic usage
 
