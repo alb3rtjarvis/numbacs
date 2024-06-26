@@ -4,6 +4,7 @@ import numba
 from utils import composite_simpsons_38_irregular, unravel_index, dist_2d, ravel_index
 from interpolation.splines import UCGrid, eval_spline, prefilter
 from math import copysign, floor
+from scipy.ndimage import label, generate_binary_structure
 
 parallel_flag=True
 
@@ -739,3 +740,150 @@ def ftle_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
                         ridge_bool[k] = True
                         
     return r_pts[ridge_bool,:]
+
+
+@njit(parallel=parallel_flag)
+def _ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
+    """
+    Compute FTLE ridge points by finding points (with subpixel accuracy) at which:
+        ftle > 0 (or percentile of ftle),
+        directional derivaitve of ftle (in eigvec_max direction) is 0,
+        second directional derivative of ftle (in eigvec_max direction) is less than sdd_thresh.
+
+    Parameters
+    ----------
+    f : np.ndarray, shape = (nx,ny)
+        ftle array.
+    eigvec_max : np.ndarray, shape = (nx,ny,2)
+        maximum eigenvector of Cauchy Green tensor.
+    x : np.ndarray, shape = (nx,)
+        array containing x-values.
+    y : np.ndarray, shape = (ny,)
+        array containing y-values.
+    sdd_thresh : float, optional
+        threshold for second directional derivative, should be at least 0.
+        The default is 0.
+    percentile : int, optional
+        percentile of ftle used for min allowed value. The default is 0.
+
+    Returns
+    -------
+    r_pts : np.ndarray, shape = (ridge_bool.sum(),2)
+        ridge points.
+    ridge_bool : np.ndarray, shape = (nx,ny)
+        truth values determining if ridge point is near a grid point.
+    nx : int
+        number of grid points in x-direction.
+    ny : int
+        number of grid points in y-direction.
+
+    """
+    nx,ny = eigvec_max.shape[:-1]
+    ridge_bool = np.zeros((nx,ny),numba.bool_)
+    r_pts = np.zeros((nx*ny,2),numba.float64)
+    
+    dx = x[1]-x[0]
+    dy = y[1]-y[0]
+    shape_arr = np.array([nx,ny],numba.int32)
+    if percentile == 0:
+        f_min = 0.
+    else:
+        f_min = np.percentile(f, percentile)
+    for i in prange(2,nx-2):
+        for j in range(2,ny-2):
+            pt = np.array([x[i],y[j]])
+            f0 = f[i,j]
+            if f0 > f_min:
+                fx = (f[i+1,j] - f[i-1,j])/(2*dx)
+                fy = (f[i,j+1] - f[i,j-1])/(2*dy)
+                fxx = (f[i+1,j] - 2*f[i,j] + f[i-1,j])/(dx**2)
+                fyy = (f[i,j+1] - 2*f[i,j] + f[i,j-1])/(dy**2)
+                fxy = (f[i+1,j+1] - f[i+1,j-1] -
+                       f[i-1,j+1] + f[i-1,j-1])/(4*dx*dy)
+                
+                eigvec_max0 = eigvec_max[i,j,:]
+                ex,ey = eigvec_max0
+                
+                c2 = ex*(fxx*ex + fxy*ey) + ey*(fxy*ex + fyy*ey)
+                if c2 < -sdd_thresh:
+                    t = -(fx*ex + fy*ey)/c2
+                    if abs(t*ex) <= dx/2 and abs(t*ey) <= dy/2:
+                        k = ravel_index(np.array([i,j],numba.int32),shape_arr)
+                        r_pts[k,:] = pt + np.array([t*ex,t*ey])
+                        ridge_bool[i,j] = True
+                        
+    return r_pts, ridge_bool, nx, ny
+
+
+@njit
+def _get_ridges(ridge_pts,inds,nx,ny,min_ridge_len):
+    """
+    JIT-function to speed up finding connected ridges.
+
+    Parameters
+    ----------
+    ridge_pts : np.ndarray, shape = (nrpts,2)
+        array containg position of ridge points.
+    inds : np.ndarray, shape = (len(inds),)
+        array containing indices corresponding to current ridge points.
+    nx : int
+        number of grid points in x-direction.
+    ny : int
+        number of grid points in y-direction.
+    min_ridge_len : int
+        minimum points allowed in ridge.
+
+    Returns
+    -------
+    np.ndarray, shape = (len(inds),2)
+        array containing ridge points for current ridge.
+
+    """
+    
+    if  len(inds) >= min_ridge_len:
+        return ridge_pts[inds,:]
+
+            
+def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
+    """
+    From ridge points from _ftle_ridges, extract connected ridges where
+    a connected ridge is defined by having continuous neighbors that
+    are ridge points.
+
+    Parameters
+    ----------
+    f : np.ndarray, shape = (nx,ny)
+        ftle array.
+    eigvec_max : np.ndarray, shape = (nx,ny,2)
+        maximum eigenvector of Cauchy Green tensor.
+    x : np.ndarray, shape = (nx,)
+        array containing x-values.
+    y : np.ndarray, shape = (ny,)
+        array containing y-values.
+    sdd_thresh : float, optional
+        threshold for second directional derivative, should be at least 0.
+        The default is 0.
+    percentile : int, optional
+        percentile of ftle used for min allowed value. The default is 0.
+    min_ridge_len : int
+        minimum points allowed in ridge. The default is 3.
+
+    Returns
+    -------
+    list
+        list containing each connected ridge.
+
+    """
+    
+    r_pts_, ridge_bool_, nx, ny = _ftle_ridges(f,eigvec_max,x,y,
+                                                sdd_thresh=sdd_thresh,
+                                                percentile=percentile)
+    nx,ny = f.shape
+    s = generate_binary_structure(2,2)
+    labels,nlabels = label(ridge_bool_,structure=s)
+    ind_arr = np.arange(0,nx*ny).reshape(nx,ny)
+    ridges = []
+    for i in range(nlabels):
+        inds = ind_arr[labels==i]
+        ridges.append(_get_ridges(i,r_pts_,inds,labels,nlabels,nx,ny,min_ridge_len))
+    return [r for r in ridges if r is not None]
