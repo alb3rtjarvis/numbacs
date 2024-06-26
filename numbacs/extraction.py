@@ -217,7 +217,6 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
             if i > 1:
                 r0 = y[i,:] - y[i-1,:]
                 r1 = y[i+1,:] - y[i,:]
-                # if np.dot(r0,r1) >= -h/0.5:
                 if np.dot(r0,r1) >= 0:
                     # set updated init_vector and init_direction
                     init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
@@ -376,14 +375,8 @@ def hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
         
         # iterate through intersection points of hl
         for k in range(len(v_intersect[:ii,0])):
-            t_ind = int(v_intersect[k,0])   # tensorline index corresponding to intersection
-            
-            # continue if we are already keeping t_ind
-            # if t_ind > 0 and t_ind in keep_inds:
-            #     continue                
+            t_ind = int(v_intersect[k,0])   # tensorline index corresponding to intersection             
             ot_inds = v_intersect[:,0] != t_ind     # find all other tensorlines intersecting hl
-            # print(t_ind)
-            # print(ot_inds)
             # find which of ot_inds are within dist_tol of t_ind
             nearby_inds = _pts_in_dist_ind(v_intersect[k,1:],v_intersect[ot_inds,:],
                                        dist_tol,attach_ind=t_ind)
@@ -428,13 +421,7 @@ def hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
         # iterate through intersection points of hl
         for k in range(len(h_intersect[:ii,0])):
             t_ind = int(h_intersect[k,0])   # tensorline index corresponding to intersection
-            
-            # continue if we are already keeping t_ind
-            # if t_ind > 0 and t_ind in keep_inds:
-            #     continue                
             ot_inds = h_intersect[:,0] != t_ind     # find all other tensorlines intersecting hl
-            # print(t_ind)
-            # print(ot_inds)
             
             # find which of ot_inds are within dist_tol of t_ind
             nearby_inds = _pts_in_dist_ind(h_intersect[k,1:],h_intersect[ot_inds,:],

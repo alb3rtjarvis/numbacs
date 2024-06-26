@@ -209,7 +209,7 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
                 _,evecs_tmp = np.linalg.eigh(C_aux)
                 evals_tmp = np.linalg.eigvalsh(C_main)
                 eigvals[i,j,:] = evals_tmp
-                eigvals[i,j,:] = evecs_tmp
+                eigvecs[i,j,:,:] = evecs_tmp
                 
     else:
         for i in prange(1,nx-1):
@@ -225,7 +225,7 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
                 
                 evals_tmp,evecs_tmp = np.linalg.eigh(C)
                 eigvals[i,j,:] = evals_tmp
-                eigvals[i,j,:] = evecs_tmp   
+                eigvecs[i,j,:,:] = evecs_tmp  
             
     return eigvals,eigvecs
 
@@ -270,7 +270,7 @@ def C_eig_2D(flowmap,dx,dy):
             
             evals_tmp,evecs_tmp = np.linalg.eigh(C)
             eigvals[i,j,:] = evals_tmp          # largest eigenvalue first
-            eigvals[i,j,:] = evecs_tmp   
+            eigvecs[i,j,:,:] = evecs_tmp   
             
     return eigvals,eigvecs
 
@@ -497,7 +497,7 @@ def S_eig_2D_interp(v1,v2,x,y,h=1e-3):
             S = 0.5*(grad_vel + grad_vel.T)
             evals_tmp,evecs_tmp = np.linalg.eigh(S)
             eigvals[i,j,:] = evals_tmp
-            eigvals[i,j,:] = evecs_tmp 
+            eigvecs[i,j,:,:] = evecs_tmp 
              
             
     return eigvals,eigvecs
@@ -541,8 +541,6 @@ def S_2D_interp(v1,v2,x,y,h=1e-3):
             dudy = (v1(pt + dy_vec) - v1(pt - dy_vec))/(2*h)
             dvdx = (v2(pt + dx_vec) - v2(pt - dx_vec))/(2*h)
             dvdy = (v2(pt + dy_vec) - v2(pt - dy_vec))/(2*h)
-            # grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
-            # S_tmp = 0.5*(grad_vel + grad_vel.T)
             S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
              
             
@@ -626,7 +624,7 @@ def S_eig_2D_data(u,v,dx,dy):
             S = 0.5*(grad_vel + grad_vel.T)
             evals_tmp,evecs_tmp = np.linalg.eigh(S)
             eigvals[i,j,:] = evals_tmp
-            eigvals[i,j,:] = evecs_tmp 
+            eigvecs[i,j,:,:] = evecs_tmp 
  
             
     return eigvals,eigvecs
