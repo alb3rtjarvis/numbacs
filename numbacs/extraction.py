@@ -228,7 +228,6 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
                     a1 = _alpha(y[i+1,:],eigval_max)
                     
                     # check if point is in U0 region meeting necessary LCS criteria
-                    # if _dist_tol(y[i+1],U0,ctol):
                     if _in_region(y[i+1,:],xvals,yvals,U0):
                         L = 0.
                         remove_inds = 0
@@ -318,6 +317,7 @@ def _pts_in_dist_ind(pt,arr,tol,attach_ind=-1):
             inds[k,:] = np.array([int(arr[k,0]),1],numba.int32)
     if attach_ind != -1:
         inds[k+1,:] = np.array([attach_ind,1],numba.int32)
+        
     return np.unique(inds[inds[:,1]==1,0])   
 
 
@@ -673,6 +673,7 @@ def compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dtol,nlines):
     for ind in lcs_keep_inds:
         lcs_ilen = int(lcs_arr_[-1,2*ind])
         lcs.append(lcs_arr_[:lcs_ilen,2*ind:2*ind+2])
+        
     return lcs
 
 
@@ -706,6 +707,7 @@ def ftle_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
         ridge points.
 
     """
+    
     nx,ny = eigvec_max.shape[:-1]
     ridge_bool = np.zeros(nx*ny,numba.bool_)
     r_pts = np.zeros((nx*ny,2),numba.float64)
@@ -779,6 +781,7 @@ def _ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
         number of grid points in y-direction.
 
     """
+    
     nx,ny = eigvec_max.shape[:-1]
     ridge_bool = np.zeros((nx,ny),numba.bool_)
     r_pts = np.zeros((nx*ny,2),numba.float64)
@@ -887,6 +890,7 @@ def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
     for i in range(nlabels):
         inds = ind_arr[labels==i]
         ridges.append(_get_ridges(i,r_pts_,inds,labels,nlabels,nx,ny,min_ridge_len))
+        
     return [r for r in ridges if r is not None]
 
 
@@ -929,6 +933,7 @@ def _ftle_ridge_pts_connect(eigval_max,eigvec_max,x,y,sdd_thresh=0.,percentile=0
         minimum grid spacing.
 
     """
+    
     nx,ny = eigval_max.shape
     r_pts = -1*np.ones((nx*ny,3),numba.float64)
     r_vec = np.zeros((nx*ny,2),numba.float64)
@@ -1024,10 +1029,6 @@ def _link_points_stepper(pt0,nvec0,ind0,
         index corresponding to linked point if found, else None is returned.
 
     """
-    
-    
-    # start with point with largest second directional derivative
-
     
     # convert angle into index corresponding to search direction
     angle_ind = floor((atan2(nvec0[0],-nvec0[1])%(2*pi))*4/pi + 0.5)%8
@@ -1268,8 +1269,9 @@ def endpoint_distances(pt,arr,dist_tol):
         array containing tangent vectors.
     tol_bool : np.ndarray, shape = (npts,)
         truth values which deterimines if kth point is within dist_tol of pt.
-
+        
     """
+    
     len_arr = arr.shape[0]
     dist = np.zeros(len_arr,numba.float64)
     tan_vec = np.zeros_like(arr,numba.float64)
@@ -1519,7 +1521,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 for i,ri in enumerate(connect_inds[1:]):
                     if ri + 0.01 < 0:
                         ridge_arr[j:j+rlens[i+1],:] = np.flipud(ridge_pts[rinds[i+1]-rlens[i+1]:
-                                                                                        rinds[i+1],:])
+                                                                          rinds[i+1],:])
                             
                     else:
                         ridge_arr[j:j+rlens[i+1],:] = ridge_pts[rinds[i+1]-rlens[i+1]:rinds[i+1],:]
@@ -1577,7 +1579,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 for i,ri in enumerate(connect_inds[1:]):
                     if ri + 0.01 < 0:
                         ridge_arr[j:j+rlens[i+1],:] = np.flipud(ridge_pts[rinds[i+1]-rlens[i+1]:
-                                                                                        rinds[i+1],:])
+                                                                          rinds[i+1],:])
                             
                     else:
                         ridge_arr[j:j+rlens[i+1],:] = ridge_pts[rinds[i+1]-rlens[i+1]:rinds[i+1],:]
@@ -1591,7 +1593,8 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 if rlen < min_ridge_len:
                     continue
                 ridges.append(ridge_pts[rind-rlen:rind,:])
-                
+        
+        # if only the starting endpoint
         elif ep_in_tol == 1:
             ii = 0
             ep_ind = 0
@@ -1634,7 +1637,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 for i,ri in enumerate(connect_inds[1:]):
                     if ri + 0.01 < 0:
                         ridge_arr[j:j+rlens[i+1],:] = np.flipud(ridge_pts[rinds[i+1]-rlens[i+1]:
-                                                                                        rinds[i+1],:])
+                                                                          rinds[i+1],:])
                             
                     else:
                         ridge_arr[j:j+rlens[i+1],:] = ridge_pts[rinds[i+1]-rlens[i+1]:rinds[i+1],:]

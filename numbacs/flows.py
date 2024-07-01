@@ -1,6 +1,5 @@
 from math import sin, cos, pi, cosh, tanh, sqrt
 import numpy as np
-import numba
 from numba import njit, cfunc
 from numbalsoda import lsoda_sig
 from interpolation.splines import UCGrid, prefilter, eval_spline
@@ -63,8 +62,6 @@ def get_flow_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=
         2 if spherical and lon = [0,360),
         units expected are degrees and both lon and lat must be ascending,
         lat is expected to = [-90,90]. The default is 0.
-    return_spline : boolean, optional
-        flag to determine if spline is returned. The default is False.
     extrap_mode : str, optional
         type of extrapolation mode used for interpolant. The default is 'constant'.
     r : float, optional
@@ -233,19 +230,19 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
             dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
                                       extrap_mode=extrap_mode))*180/(pi*r)
     elif spherical == 2:
-            @cfunc(lsoda_sig)
-            def flow_rhs(t,y,dy,p):
-                """
-                p[0] = int_direction
-                """
-                tt = p[0]*t
-                xx = y[0]%360
-                yy = y[1]
-                point = np.array([tt,xx,yy])
-                dy[0] = (p[0]*eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                                          extrap_mode=extrap_mode))*180/(pi*r*cos(yy*pi/180))
-                dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                                          extrap_mode=extrap_mode))*180/(pi*r)
+        @cfunc(lsoda_sig)
+        def flow_rhs(t,y,dy,p):
+            """
+            p[0] = int_direction
+            """
+            tt = p[0]*t
+            xx = y[0]%360
+            yy = y[1]
+            point = np.array([tt,xx,yy])
+            dy[0] = (p[0]*eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
+                                      extrap_mode=extrap_mode))*180/(pi*r*cos(yy*pi/180))
+            dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
+                                      extrap_mode=extrap_mode))*180/(pi*r)
     else:
         @cfunc(lsoda_sig)
         def flow_rhs(t,y,dy,p):
