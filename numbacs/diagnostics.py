@@ -2,7 +2,7 @@ import numpy as np
 from math import log
 import numba
 from numba import njit, prange
-from utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_diff_ND
+from .utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_diff_ND
 
 parallel_flag = True
 

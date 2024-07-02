@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit, prange
 import numba                                 
-from utils import composite_simpsons_38_irregular, unravel_index, dist_2d, ravel_index
+from .utils import composite_simpsons_38_irregular, unravel_index, dist_2d, ravel_index
 from interpolation.splines import UCGrid, eval_spline, prefilter
 from math import copysign, floor, acos, atan2, pi
 from scipy.ndimage import label, generate_binary_structure
@@ -144,6 +144,7 @@ def _in_region(pt,xvals,yvals,arr):
             break
      
     return near
+
     
 @njit
 def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
@@ -178,12 +179,12 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
 
     """
 
-    domain = np.array([[xvals[0],yvals[0]],[xvals[-1],yvals[-1]]])    # for _in_domain
-    for direction in np.array([1,-1],numba.int32):
+    domain = np.array([[xvals[0],xvals[-1]],[yvals[0],yvals[-1]]])    # for _in_domain
+    for direction in np.array([1,-1],np.int32):
         init_direction = direction                  # initialize integration direction
         L=0                                         # initialize failure length
-        y = np.zeros((steps+1,2),numba.float64)
-        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],numba.float64) # set initial condition
+        y = np.zeros((steps+1,2),np.float64)
+        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],np.float64) # set initial condition
         init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
         a1 = _alpha(y[0,:],eigval_max)              # initial alpha
         i = 0
@@ -261,7 +262,8 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
             d1lcs = np.flipud(y[:i+1,:])    # direction 1 candidite lcs
         else:
             d2lcs = y[1:i+1,:]              # direction -1 candidate lcs
-        tensorline = np.concatenate((d1lcs,d2lcs),axis=0) # concatenate both canditate lcs   
+            
+    tensorline = np.concatenate((d1lcs,d2lcs),axis=0) # concatenate both canditate lcs   
     return tensorline   
 
 
@@ -378,7 +380,7 @@ def hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
         # iterate through intersection points of hl
         for k in range(len(v_intersect[:ii,0])):
             t_ind = int(v_intersect[k,0])   # tensorline index corresponding to intersection             
-            ot_inds = v_intersect[:,0] != t_ind     # find all other tensorlines intersecting hl
+            ot_inds = v_intersect[:,0] != t_ind     # find all other tensorlines intersecting vl
             # find which of ot_inds are within dist_tol of t_ind
             nearby_inds = _pts_in_dist_ind(v_intersect[k,1:],v_intersect[ot_inds,:],
                                        dist_tol,attach_ind=t_ind)
@@ -607,7 +609,7 @@ def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax):
         return eval_spline(grid,C_eval,point,out=None,k=3,diff="None",extrap_mode="linear")
     
     U0 = lcs_region(eigval_max,eigvecs[:,:,:,1],dx,dy)
-    lcs_arr = np.zeros((2*steps+1,2*len(max_inds)),np.float64)
+    lcs_arr = np.zeros((2*steps+2,2*len(max_inds)),np.float64)
     lambda_avg = np.zeros(len(max_inds),np.float64)
     arclength = np.zeros(len(max_inds),np.float64)
     k = 0
@@ -659,7 +661,9 @@ def compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dtol,nlines):
     dtol : float
         distance tolerance used when comparing candidate LCS.
     nlines : int
-        number of lines in each direction used when comparing candidate LCS.
+        number of lines in dimension with largest length used when comparing
+        candidate LCS, number of lines in other dimension will be scaled by
+        the ratio of the dimensions lengths.
 
     Returns
     -------
@@ -668,8 +672,19 @@ def compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dtol,nlines):
 
     """
     lcs = []
+    xlen = x[-1] - x[0]
+    ylen = y[-1] - y[0]
+    if xlen - ylen >= 0:
+        nlinesx = nlines
+        nlinesy = int(nlines*ylen/xlen)
+    else:
+        nlinesx = int(nlines*xlen/ylen)
+        nlinesy = nlines
+    
+    vlines = np.linspace(x[1],x[-2],nlinesx)
+    hlines = np.linspace(y[1],y[-2],nlinesy)
     lcs_arr_, lambda_avg_, arclength_ = _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax)
-    lcs_keep_inds = hyp_lcs(lcs_arr_,lambda_avg_,y[0,1:-2:nlines],x[1:-2:nlines,0],dtol)
+    lcs_keep_inds = hyp_lcs(lcs_arr_,lambda_avg_,vlines,hlines,dtol)
     for ind in lcs_keep_inds:
         lcs_ilen = int(lcs_arr_[-1,2*ind])
         lcs.append(lcs_arr_[:lcs_ilen,2*ind:2*ind+2])
@@ -889,13 +904,13 @@ def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
     ridges = []
     for i in range(nlabels):
         inds = ind_arr[labels==i]
-        ridges.append(_get_ridges(i,r_pts_,inds,labels,nlabels,nx,ny,min_ridge_len))
+        ridges.append(_get_ridges(r_pts_,inds,nx,ny,min_ridge_len))
         
     return [r for r in ridges if r is not None]
 
 
 @njit(parallel=True)
-def _ftle_ridge_pts_connect(eigval_max,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
+def _ftle_ridge_pts_connect(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
     """
     Compute FTLE ridge points by finding points (with subpixel accuracy) at which:
         ftle > 0 (or percentile of ftle),
@@ -934,7 +949,7 @@ def _ftle_ridge_pts_connect(eigval_max,eigvec_max,x,y,sdd_thresh=0.,percentile=0
 
     """
     
-    nx,ny = eigval_max.shape
+    nx,ny = f.shape
     r_pts = -1*np.ones((nx*ny,3),numba.float64)
     r_vec = np.zeros((nx*ny,2),numba.float64)
     sdd = np.zeros((nx*ny,),numba.float64)
@@ -942,24 +957,24 @@ def _ftle_ridge_pts_connect(eigval_max,eigvec_max,x,y,sdd_thresh=0.,percentile=0
     dx = x[1]-x[0]
     dy = y[1]-y[0]
     h = min(dx,dy)
-    # set min value allowed for eigval_max
+    # set min value allowed for f
     if percentile == 0:
-        eigval_min_val = 1
+        f_min = 0
     else:
-        eigval_min_val = np.percentile(eigval_max, percentile)
+        f_min = np.percentile(f, percentile)
         
     for i in prange(2,nx-2):
         for j in range(2,ny-2):
             pt = np.array([x[i],y[j]])
-            eigval_max0 = eigval_max[i,j]
+            f0 = f[i,j]
             # compute derivatives if eigval large enough
-            if eigval_max0 > eigval_min_val:
-                fx = (eigval_max[i+1,j] - eigval_max[i-1,j])/(2*dx)
-                fy = (eigval_max[i,j+1] - eigval_max[i,j-1])/(2*dy)
-                fxx = (eigval_max[i+1,j] - 2*eigval_max[i,j] + eigval_max[i-1,j])/(dx**2)
-                fyy = (eigval_max[i,j+1] - 2*eigval_max[i,j] + eigval_max[i,j-1])/(dy**2)
-                fxy = (eigval_max[i+1,j+1] - eigval_max[i+1,j-1] -
-                       eigval_max[i-1,j+1] + eigval_max[i-1,j-1])/(4*dx*dy)
+            if f0 > f_min:
+                fx = (f[i+1,j] - f[i-1,j])/(2*dx)
+                fy = (f[i,j+1] - f[i,j-1])/(2*dy)
+                fxx = (f[i+1,j] - 2*f[i,j] + f[i-1,j])/(dx**2)
+                fyy = (f[i,j+1] - 2*f[i,j] + f[i,j-1])/(dy**2)
+                fxy = (f[i+1,j+1] - f[i+1,j-1] -
+                       f[i-1,j+1] + f[i-1,j-1])/(4*dx*dy)
                 
                 eigvec_max0 = eigvec_max[i,j,:]
                 ex,ey = eigvec_max0
@@ -968,7 +983,7 @@ def _ftle_ridge_pts_connect(eigval_max,eigvec_max,x,y,sdd_thresh=0.,percentile=0
                 c2 = ex*(fxx*ex + fxy*ey) + ey*(fxy*ex + fyy*ey)
                 
                 # if second directional derivative is negative and large enough,
-                # use taylor expansion of eigval_max to find subpixel ridge point
+                # use taylor expansion of f to find subpixel ridge point
                 if c2 < -sdd_thresh:
                     t = -(fx*ex + fy*ey)/c2
                     # if point lies within current grid, keep point and data
@@ -1286,7 +1301,7 @@ def endpoint_distances(pt,arr,dist_tol):
 
 
 
-@njit
+# @njit
 def _connect_endpoints(endpoint,current_tan_vec,rem_endpoints,rem_endpoints_tan,ep_tan_ang,dist_tol):
     """
     Finds closest point from rem_endpoints to endpoint such that the angle between
@@ -1355,7 +1370,7 @@ def _connect_endpoints(endpoint,current_tan_vec,rem_endpoints,rem_endpoints_tan,
             else:
                 dist_ep[ep_ind] = 10*dist_tol
             
-    return rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint
+    return rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec
 
 
 def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
@@ -1408,7 +1423,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
     ridges = []
     
     # while endpoints remain, search for nearby endpoints
-    for k in range(nridges):
+    while rem_endpoints.size > 0:
         # set current endpoints and tan vectors
         current_endpoints = rem_endpoints[:2,:]
         current_tan_vecs = rem_endpoints_tan[:2,:]
@@ -1416,17 +1431,19 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
         
         # remove current from remaining
         mask[:2] = False
+
+        # print(rem_endpoints)
         rem_endpoints = rem_endpoints[mask,:]
+        # print(rem_endpoints)
         rem_endpoints_tan = rem_endpoints_tan[mask,:]
         
         # compute endpoint distances for current endpoints (both sides)
         dist_ep = np.zeros((2,rem_endpoints.shape[0]),np.float64)
-        tan_ep = np.zeros((2,rem_endpoints.shape[0],2),np.float64)
         dist_mask = np.zeros((2,rem_endpoints.shape[0]),np.bool_)
         
         # maybe remove tan_ep
         for i in range(2):
-            dist_ep[i,:], tan_ep[i,:,:], dist_mask[i,:] = endpoint_distances(current_endpoints[i,:-1],
+            dist_ep[i,:], _, dist_mask[i,:] = endpoint_distances(current_endpoints[i,:-1],
                                                                    rem_endpoints[:,:-1],dist_tol)
         
         # tells if other endpoints within dist for both current endpoints
@@ -1449,11 +1466,11 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint = _connect_endpoints(
+                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
                                                                                 new_endpoint,
+                                                                                current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                current_tan_vec,
                                                                                 ep_tan_tol,
                                                                                 dist_tol)
                 # break if no more endpoints
@@ -1481,11 +1498,11 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint = _connect_endpoints(
+                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
                                                                                 new_endpoint,
+                                                                                current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                current_tan_vec,
                                                                                 ep_tan_tol,
                                                                                 dist_tol)
                 # break if no more endpoints
@@ -1504,7 +1521,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 connect_inds = connect_inds0[:ii]
             else:
                 connect_inds = connect_inds1[:jj]  
-            inds = (np.abs(connect_inds)).astype(np.int32)
+            inds = np.round(np.abs(connect_inds)).astype(np.int32)
             
             if ii+jj > 2:
                 rinds = ridge_lens[inds,0]
@@ -1548,11 +1565,11 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint = _connect_endpoints(
+                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
                                                                                 new_endpoint,
+                                                                                current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                current_tan_vec,
                                                                                 ep_tan_tol,
                                                                                 dist_tol)
                 # break if no more endpoints
@@ -1563,7 +1580,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 connect_inds[ii] = connect_ind
                 ii+=1
             connect_inds = connect_inds[:ii]
-            inds = (np.abs(connect_inds)).astype(np.int32)
+            inds = np.round(np.abs(connect_inds)).astype(np.int32)
             if ii > 1:
                 rinds = ridge_lens[inds,0]
                 rlens = ridge_lens[inds,1]
@@ -1606,11 +1623,11 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint = _connect_endpoints(
+                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
                                                                                 new_endpoint,
+                                                                                current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                current_tan_vec,
                                                                                 ep_tan_tol,
                                                                                 dist_tol)
                 # break if no more endpoints
@@ -1621,7 +1638,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 connect_inds[ii] = connect_ind
                 ii+=1
             connect_inds = connect_inds[:ii]
-            inds = (np.abs(connect_inds)).astype(np.int32)
+            inds = np.round(np.abs(connect_inds)).astype(np.int32)
             if ii > 1:
                 rinds = ridge_lens[inds,0]
                 rlens = ridge_lens[inds,1]
@@ -1655,9 +1672,6 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             rlen = ridge_lens[inds,1]
             if rlen < min_ridge_len:
                 continue
-            ridges.append(ridge_pts[rind-rlen:rind,:])
-            
-        if rem_endpoints.size <= 4:
-            break
+            ridges.append(ridge_pts[rind-rlen:rind,:])  
         
     return ridges

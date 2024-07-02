@@ -367,7 +367,7 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 
             if return_default_params:
                 A = 0.1
-                eps = 0.1
+                eps = 0.25
                 alpha = 0.
                 omega = 0.2*pi
                 psi = 0.
