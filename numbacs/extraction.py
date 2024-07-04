@@ -932,7 +932,7 @@ def _ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
 
 
 @njit
-def _get_ridges(ridge_pts,inds,nx,ny,min_ridge_len):
+def _get_ridges(ridge_pts,inds,nx,ny,min_ridge_pts):
     """
     JIT-function to speed up finding connected ridges.
 
@@ -946,7 +946,7 @@ def _get_ridges(ridge_pts,inds,nx,ny,min_ridge_len):
         number of grid points in x-direction.
     ny : int
         number of grid points in y-direction.
-    min_ridge_len : int
+    min_ridge_pts : int
         minimum points allowed in ridge.
 
     Returns
@@ -956,11 +956,11 @@ def _get_ridges(ridge_pts,inds,nx,ny,min_ridge_len):
 
     """
     
-    if  len(inds) >= min_ridge_len:
+    if  len(inds) >= min_ridge_pts:
         return ridge_pts[inds,:]
 
             
-def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
+def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_pts=3):
     """
     From ridge points from _ftle_ridges, extract connected ridges where
     a connected ridge is defined by having continuous neighbors that
@@ -981,7 +981,7 @@ def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
         The default is 0.
     percentile : int, optional
         percentile of ftle used for min allowed value. The default is 0.
-    min_ridge_len : int
+    min_ridge_pts : int
         minimum points allowed in ridge. The default is 3.
 
     Returns
@@ -1001,7 +1001,7 @@ def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_len=3):
     ridges = []
     for i in range(nlabels):
         inds = ind_arr[labels==i]
-        ridges.append(_get_ridges(r_pts_,inds,nx,ny,min_ridge_len))
+        ridges.append(_get_ridges(r_pts_,inds,nx,ny,min_ridge_pts))
         
     return [r for r in ridges if r is not None]
 
@@ -1241,7 +1241,7 @@ def _linked_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,c=1.):
     a = 1/h
     # get indices corresponding to pts sorted by 2nd directional derivative value
     sorted_inds = np.argsort(sdd)
-    
+    sdd_max = -min(sdd[sorted_inds[0]])
     # create raveled version of grid offset inds
     nx,ny = f.shape
     grid_shape = np.array([nx,ny],np.int32)
@@ -1251,7 +1251,7 @@ def _linked_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,c=1.):
     for i,inds in enumerate(offset_inds_arr):
         offset_ravel_inds[i] = ravel_index(inds,grid_shape)
          
-    up_thresh = sdd_thresh + 5
+    up_thresh = sdd_thresh + 0.1*sdd_max
     ridge_num_counter = 0   # counts which ridge
     linked_ridges_arr = np.zeros((nx*ny,2),np.float64)
     ridge_len = np.zeros((nx*ny,2),np.int32)
@@ -1449,7 +1449,7 @@ def _connect_endpoints(endpoint,current_tan_vec,rem_endpoints,rem_endpoints_tan,
             tan_ep0 = tan_ep[ep_ind,:]
             new_tan_vec = rem_endpoints_tan[ep_ind,:]
 
-            if (acos(abs(tan_ep0[0]*current_tan_vec[0]+
+            if (acos(-ep_sign*(tan_ep0[0]*current_tan_vec[0]+
                          tan_ep0[1]*current_tan_vec[1])) < ep_tan_ang and
                 acos(new_ep_sign*(new_tan_vec[0]*tan_ep0[0]+
                                   new_tan_vec[1]*tan_ep0[1])) < ep_tan_ang):
@@ -1470,13 +1470,13 @@ def _connect_endpoints(endpoint,current_tan_vec,rem_endpoints,rem_endpoints_tan,
     return rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec
 
 
-def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
+def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=5,
                       sdd_thresh=0.,percentile=0,c=1.):
     """
     Computes ftle ridge points and links points into ridges, after
     this is done, searching for ridges that should be connected if their
     endpoints are within dist_tol and the angle between the tangent of
-    the ridge and vector connecting the endpoints is less than ep_tan_tol.
+    the ridge and vector connecting the endpoints is less than ep_tan_ang.
 
     Parameters
     ----------
@@ -1492,7 +1492,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
         tolerance used to consider new endpoint for connection.
     ep_tan_ang : float
         angle used to confirm endpoints are in line. The default is pi/4.
-    min_ridge_len : int, optional
+    min_ridge_pts : int, optional
         minimum points allowed in ridge after endpoints are connected. The default is 5.
     sdd_thresh : float, optional
         threshold for second directional derivative, should be at least 0.
@@ -1566,7 +1566,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                                                                                 current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                ep_tan_tol,
+                                                                                ep_tan_ang,
                                                                                 dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
@@ -1598,7 +1598,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                                                                                 current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                ep_tan_tol,
+                                                                                ep_tan_ang,
                                                                                 dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
@@ -1622,7 +1622,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 rinds = ridge_lens[inds,0]
                 rlens = ridge_lens[inds,1]
                 full_len = rlens.sum()
-                if full_len < min_ridge_len:
+                if full_len < min_ridge_pts:
                     continue
                 ridge_arr = np.zeros((full_len,2),np.float64)
                 if connect_inds[0] + 0.01 < 0:
@@ -1644,7 +1644,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             else:
                 rind = ridge_lens[inds,0][0]
                 rlen = ridge_lens[inds,1][0]
-                if rlen < min_ridge_len:
+                if rlen < min_ridge_pts:
                     continue
                 ridges.append(ridge_pts[rind-rlen:rind,:])
         
@@ -1665,7 +1665,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                                                                                 current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                ep_tan_tol,
+                                                                                ep_tan_ang,
                                                                                 dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
@@ -1680,7 +1680,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 rinds = ridge_lens[inds,0]
                 rlens = ridge_lens[inds,1]
                 full_len = rlens.sum()
-                if full_len < min_ridge_len:
+                if full_len < min_ridge_pts:
                     continue
                 ridge_arr = np.zeros((full_len,2),np.float64)
                 if connect_inds[0] + 0.01 < 0:
@@ -1702,7 +1702,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             else:
                 rind = ridge_lens[inds,0][0]
                 rlen = ridge_lens[inds,1][0]
-                if rlen < min_ridge_len:
+                if rlen < min_ridge_pts:
                     continue
                 ridges.append(ridge_pts[rind-rlen:rind,:])
         
@@ -1723,7 +1723,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                                                                                 current_tan_vec,
                                                                                 rem_endpoints,
                                                                                 rem_endpoints_tan,
-                                                                                ep_tan_tol,
+                                                                                ep_tan_ang,
                                                                                 dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
@@ -1738,7 +1738,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
                 rinds = ridge_lens[inds,0]
                 rlens = ridge_lens[inds,1]
                 full_len = rlens.sum()
-                if full_len < min_ridge_len:
+                if full_len < min_ridge_pts:
                     continue
                 ridge_arr = np.zeros((full_len,2),np.float64)
                 if connect_inds[0] + 0.01 < 0:
@@ -1765,7 +1765,7 @@ def ftle_ridge_curves(f,eigvec_max,x,y,dist_tol,ep_tan_tol=pi/4,min_ridge_len=5,
             inds = int(current_endpoints[0,-1])
             rind = ridge_lens[inds,0]
             rlen = ridge_lens[inds,1]
-            if rlen < min_ridge_len:
+            if rlen < min_ridge_pts:
                 continue
             ridges.append(ridge_pts[rind-rlen:rind,:])  
         
