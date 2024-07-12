@@ -119,7 +119,7 @@ def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
     Parameters
     ----------
     flowmap_aux : np.ndarray, shape = (nx,ny,n_aux,2)
-        DESCRIPTION.
+        array containing final positions of initial grid with aux grid spacing h from t0 to t0+T.
     dx : float
         grid spacing in x-direction.
     dy : float
@@ -408,21 +408,22 @@ def ftle_grid_ND(flowmap,IC,T,dX):
     
 
 @njit(parallel=parallel_flag)
-def ile_2D_interp(v1,v2,x,y,h=1e-3):
+def ile_2D_func(vel,x,y,t0=None,h=1e-3):
     """
-    Compute the iLE field from the flow defined by function v1 and v2 over an initial grid defined
-    by x,y, step size of h is used in finite differencing.
+    Compute the iLE field from the flow defined by vel which is a jit-callable function, step size
+    of h is used in finite differencing.
 
     Parameters
     ----------
-    v1 : jit-callable
-        function returing interpolated value of velocity in x-direction.
-    v2 : jit-callable
-        function returing interpolated value of velocity in y-direction.
+    vel : jit-callable
+        function returing interpolated of function value of velocity in x,y directions.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
-    x : np.ndarray, shape = (ny,)
+    y : np.ndarray, shape = (ny,)
         array containing y-values.
+    t0: float or None, optional
+        time value at which to evaluate if v1,v2 interpolants depend on time, if they do not
+        depend on time, set to None. The default is None.
     h : float, optional
         step size to be used in finite differencing. The default is 1e-3.
 
@@ -435,39 +436,54 @@ def ile_2D_interp(v1,v2,x,y,h=1e-3):
 
     nx,ny = len(x), len(y)
     ile = np.zeros((nx,ny),numba.float64)
-    dx_vec = np.array([h,0],numba.float64)
-    dy_vec = np.array([0,h],numba.float64)
-    for i in prange(1,nx-1):
-        for j in range(1,ny-1):
+    if t0 is None:
+        dx_vec = np.array([h,0.0],numba.float64)
+        dy_vec = np.array([0.0,h],numba.float64)
+        for i in prange(1,nx-1):
+            for j in range(1,ny-1):
+                    
+                pt = np.array([x[i],y[j]],numba.float64)
                 
-            pt = np.array([x[i],y[j]],numba.float64)
-            
-            dudx = (v1(pt + dx_vec) - v1(pt - dx_vec))/(2*h)
-            dudy = (v1(pt + dy_vec) - v1(pt - dy_vec))/(2*h)
-            dvdx = (v2(pt + dx_vec) - v2(pt - dx_vec))/(2*h)
-            dvdy = (v2(pt + dy_vec) - v2(pt - dy_vec))/(2*h)
-            grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
-            S = 0.5*(grad_vel + grad_vel.T)
-            ile[i,j] = np.linalg.eigvalsh(S)[-1]
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                
+                grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
+                S = 0.5*(grad_vel + grad_vel.T)
+                ile[i,j] = np.linalg.eigvalsh(S)[-1]
+    else:
+        dx_vec = np.array([0.0,h,0.0],numba.float64)
+        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        for i in prange(1,nx-1):
+            for j in range(1,ny-1):
+                    
+                pt = np.array([t0,x[i],y[j]],numba.float64)
+                
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                
+                grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
+                S = 0.5*(grad_vel + grad_vel.T)
+                ile[i,j] = np.linalg.eigvalsh(S)[-1]        
             
     return ile
 
 @njit(parallel=parallel_flag)
-def S_eig_2D_interp(v1,v2,x,y,h=1e-3):
+def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
     """
-    Compute eigenvalues and eigenvectors of Eulerian rate of strain tensor in 2D from v1,v2 which
-    are jit-callable functions, step size of h is used for finite differencing.
+    Compute eigenvalues and eigenvectors of Eulerian rate of strain tensor in 2D from vel which
+    is a jit-callable function, step size of h is used for finite differencing.
 
     Parameters
     ----------
-    v1 : jit-callable
-        function returing interpolated value of velocity in x-direction.
-    v2 : jit-callable
-        function returing interpolated value of velocity in y-direction.
+    vel : jit-callable
+        function returing interpolated of function value of velocity in x,y directions.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
-    x : np.ndarray, shape = (ny,)
+    y : np.ndarray, shape = (ny,)
         array containing y-values.
+    t0: float or None, optional
+        time value at which to evaluate if v1,v2 interpolants depend on time, if they do not
+        depend on time, set to None. The default is None.        
     h : float, optional
         step size to be used in finite differencing. The default is 1e-2.
 
@@ -483,30 +499,43 @@ def S_eig_2D_interp(v1,v2,x,y,h=1e-3):
     nx,ny = len(x), len(y)
     eigvals = np.zeros((nx,ny,2),numba.float64)
     eigvecs = np.zeros((nx,ny,2,2),numba.float64)
-    dx_vec = np.array([h,0],numba.float64)
-    dy_vec = np.array([0,h],numba.float64)
-    for i in prange(1,nx-1):
-        for j in range(1,ny-1):
-            pt = np.array([x[i],y[j]],numba.float64)
-            
-            dudx = (v1(pt + dx_vec) - v1(pt - dx_vec))/(2*h)
-            dudy = (v1(pt + dy_vec) - v1(pt - dy_vec))/(2*h)
-            dvdx = (v2(pt + dx_vec) - v2(pt - dx_vec))/(2*h)
-            dvdy = (v2(pt + dy_vec) - v2(pt - dy_vec))/(2*h)
-            grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
-            S = 0.5*(grad_vel + grad_vel.T)
-            evals_tmp,evecs_tmp = np.linalg.eigh(S)
-            eigvals[i,j,:] = evals_tmp
-            eigvecs[i,j,:,:] = evecs_tmp 
-             
+    if t0 is None:
+        dx_vec = np.array([h,0.0],numba.float64)
+        dy_vec = np.array([0.0,h],numba.float64)
+        for i in prange(1,nx-1):
+            for j in range(1,ny-1):
+                pt = np.array([x[i],y[j]],numba.float64)
+                
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
+                S = 0.5*(grad_vel + grad_vel.T)
+                evals_tmp,evecs_tmp = np.linalg.eigh(S)
+                eigvals[i,j,:] = evals_tmp
+                eigvecs[i,j,:,:] = evecs_tmp
+    else:
+        dx_vec = np.array([0.0,h,0.0],numba.float64)
+        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        for i in prange(1,nx-1):
+            for j in range(1,ny-1):
+                pt = np.array([t0,x[i],y[j]],numba.float64)
+                
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
+                S = 0.5*(grad_vel + grad_vel.T)
+                evals_tmp,evecs_tmp = np.linalg.eigh(S)
+                eigvals[i,j,:] = evals_tmp
+                eigvecs[i,j,:,:] = evecs_tmp    
+                 
             
     return eigvals,eigvecs
 
 
 @njit(parallel=parallel_flag)
-def S_2D_interp(v1,v2,x,y,h=1e-3):
+def S_2D_func(vel,x,y,t0=None,h=1e-3):
     """
-    Compute Eulerian rate of strain tensor in 2D from v1,v2 which are jit-callable functions,
+    Compute Eulerian rate of strain tensor in 2D from vel which is a jit-callable functions,
     step size of h is used for finite differencing.
 
     Parameters
@@ -517,8 +546,11 @@ def S_2D_interp(v1,v2,x,y,h=1e-3):
         function returing interpolated value of velocity in y-direction.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
-    x : np.ndarray, shape = (ny,)
+    y : np.ndarray, shape = (ny,)
         array containing y-values.
+    t0: float or None, optional
+        time value at which to evaluate if v1,v2 interpolants depend on time, if they do not
+        depend on time, set to None. The default is None.        
     h : float, optional
         step size to be used in finite differencing. The default is 1e-3.
 
@@ -531,17 +563,26 @@ def S_2D_interp(v1,v2,x,y,h=1e-3):
 
     nx,ny = len(x), len(y)
     S = np.zeros((nx,ny,3),numba.float64)
-    dx_vec = np.array([h,0.],numba.float64)
-    dy_vec = np.array([0.,h],numba.float64)
-    for i in prange(nx):
-        for j in range(ny):
-            pt = np.array([x[i],y[j]],numba.float64)
-            
-            dudx = (v1(pt + dx_vec) - v1(pt - dx_vec))/(2*h)
-            dudy = (v1(pt + dy_vec) - v1(pt - dy_vec))/(2*h)
-            dvdx = (v2(pt + dx_vec) - v2(pt - dx_vec))/(2*h)
-            dvdy = (v2(pt + dy_vec) - v2(pt - dy_vec))/(2*h)
-            S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
+    if t0 is None:
+        dx_vec = np.array([h,0.0],numba.float64)
+        dy_vec = np.array([0.0,h],numba.float64)
+        for i in prange(nx):
+            for j in range(ny):
+                pt = np.array([x[i],y[j]],numba.float64)
+                
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
+    else:
+        dx_vec = np.array([0.0,h,0.0],numba.float64)
+        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        for i in prange(nx):
+            for j in range(ny):
+                pt = np.array([t0,x[i],y[j]],numba.float64)
+                
+                dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
+                dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
+                S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])        
              
             
     return S
