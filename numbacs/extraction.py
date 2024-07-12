@@ -188,8 +188,6 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
         init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
         a1 = _alpha(y[0,:],eigval_max)              # initial alpha
         i = 0
-        steps_left = steps                    # used to make sure don't get stuck in infinite loop
-        error_flag = 0                        # used to end earlier if stuck in loop
         remove_inds = 0
         while L<lf and i<steps:
             # rk4 to integrate tensorlines from eigvec_min field
@@ -223,9 +221,7 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
                 if np.dot(r0,r1) >= 0:
                     # set updated init_vector and init_direction
                     init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                    init_direction = np.sign(np.dot(k4,init_vec))
-                    
-                    error_flag = 0
+                    init_direction = copysign(1,np.dot(k4,init_vec))
                     a1 = _alpha(y[i+1,:],eigval_max)
                     
                     # check if point is in U0 region meeting necessary LCS criteria
@@ -241,7 +237,7 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
             else:
                 # set updated init_vector and init_direction
                 init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                init_direction = np.sign(np.dot(k4,init_vec))
+                init_direction = copysign(1,np.dot(k4,init_vec))
                 
                 a1 = _alpha(y[i+1,:],eigval_max)
                 if _in_region(y[i+1,:],xvals,yvals,U0):
@@ -251,11 +247,6 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
                     L = L + dist_2d(y[i+1,:],y[i,:])
                     remove_inds += 1
                 i+=1
-            
-            # break if we're stuck in a loop going back and forth between points or on single point
-            steps_left-=1
-            if steps_left <= 0 or error_flag > 1:
-                break
         
         i -= remove_inds
         if direction == 1:            
@@ -264,7 +255,119 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
             d2lcs = y[1:i+1,:]              # direction -1 candidate lcs
             
     tensorline = np.concatenate((d1lcs,d2lcs),axis=0) # concatenate both canditate lcs   
-    return tensorline   
+    return tensorline
+
+
+
+@njit
+def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen,lf,minval):
+    """
+    Compute tensorlines in eigvec_min field originially defined on over xvals,yvals.
+
+    Parameters
+    ----------
+    eigval_max : jit-callable
+        interpolant function of maximum eigenvalue.
+    eigvec_min : np.ndarray, shape = (nx,ny,2)
+        array of maximum eigenvectors.
+    xvals : np.ndarray, shape = (nx,)
+        array containing x-values.
+    yvals : np.ndarray, shape = (ny,)
+        array containing y-values.
+    ic_ind : np.ndarray, shape = (2,)
+        array containing xind,yind corresponding to initial condition.
+    h : float
+        step size used in the rk4 solver.
+    steps : int
+        maximum number of steps allowed for rk4 solver.
+    maxlen : int
+         maximum length allowed for OECS curves
+
+    Returns
+    -------
+    tensorline : np.ndarray, shape = (len(d1lcs) + len(d2lcs),2)
+        array containing tensorline representing candidate OECS.
+
+    """
+
+    domain = np.array([[xvals[0],xvals[-1]],[yvals[0],yvals[-1]]])    # for _in_domain
+    for direction in np.array([1,-1],np.int32):
+        init_direction = direction                  # initialize integration direction
+        L=0                                         # initialize failure length
+        y = np.zeros((steps+1,2),np.float64)
+        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],np.float64) # set initial condition
+        init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
+        s0 = eigval_max(y[0,:])                             # initial eigval
+        i = 0
+        Lf = 0
+        remove_inds = 0
+        monotone_flag = False
+        domain_flag = False
+        while L<maxlen and i<steps:
+            # rk4 to integrate tensorlines from eigvec_min field
+            k1 = init_vec
+            if init_direction == -1:
+                k1 = -k1
+            yk2 = y[i,:]+0.5*h*k1
+            k2 = _reorient_eigvec(yk2,xvals,yvals,eigvec_min)   # reorient and scale eigenvector
+            if np.dot(k1,k2) < 0:                           # make sure direction is continuous
+                k2 = -k2
+            yk3 = y[i,:]+0.5*h*k2
+            k3 = _reorient_eigvec(yk3,xvals,yvals,eigvec_min)
+            if np.dot(k2,k3) < 0:
+                k3 = -k3
+            yk4 = y[i,:]+h*k3
+            k4 = _reorient_eigvec(yk4,xvals,yvals,eigvec_min)
+            if np.dot(k3,k4) < 0:
+                k4 = -k4
+            y[i+1,:] = y[i,:] + (h/6)*(k1 + 2*k2 + 2*k3 + k4)   # rk4 step
+            L+=h
+            s1 = eigval_max(y[i+1,:])
+            # check if point is in domain and not stuck on boundary or fixed point
+            if s1 < minval:
+                break
+            if _in_domain(y[i+1,:],domain) == False:
+                domain_flag = True
+                break
+            if s1 > s0:
+                Lf += 1
+                remove_inds += 1
+                if Lf - lf <=0:
+                    print(i)
+                    print(s0)
+                    print(s1)
+                    monotone_flag = True
+                    break
+            else:
+                Lf = 0
+            s0 = s1
+            if i > 1:
+                r0 = y[i,:] - y[i-1,:]
+                r1 = y[i+1,:] - y[i,:]
+                if np.dot(r0,r1) >= 0:
+                    # set updated init_vector and init_direction
+                    init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
+                    init_direction = np.sign(np.dot(k4,init_vec))
+                    i+=1
+                else:
+                    break
+            else:
+                # set updated init_vector and init_direction
+                init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
+                init_direction = np.sign(np.dot(k4,init_vec))
+                i+=1
+        
+        i -= remove_inds
+        if i < lf and monotone_flag:
+            return None
+        
+        if direction == 1:            
+            d1oecs = np.flipud(y[:i+1,:])    # direction 1 candidite oecs
+        else:
+            d2oecs = y[1:i+1,:]              # direction -1 candidate oecs
+            
+    tensorline = np.concatenate((d1oecs,d2oecs),axis=0) # concatenate both canditate oecs   
+    return tensorline
 
 
 
@@ -1241,7 +1344,7 @@ def _linked_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,c=1.):
     a = 1/h
     # get indices corresponding to pts sorted by 2nd directional derivative value
     sorted_inds = np.argsort(sdd)
-    sdd_max = -min(sdd[sorted_inds[0]])
+    
     # create raveled version of grid offset inds
     nx,ny = f.shape
     grid_shape = np.array([nx,ny],np.int32)
@@ -1250,8 +1353,10 @@ def _linked_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,c=1.):
     offset_ravel_inds = np.zeros(10,np.int32)
     for i,inds in enumerate(offset_inds_arr):
         offset_ravel_inds[i] = ravel_index(inds,grid_shape)
-         
-    up_thresh = sdd_thresh + 0.1*sdd_max
+    
+    #sdd_max = -sdd[sorted_inds[0]]     
+    #up_thresh = sdd_thresh + 0.01*sdd_max
+    up_thresh = sdd_thresh
     ridge_num_counter = 0   # counts which ridge
     linked_ridges_arr = np.zeros((nx*ny,2),np.float64)
     ridge_len = np.zeros((nx*ny,2),np.int32)
