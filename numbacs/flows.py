@@ -41,6 +41,43 @@ def get_interp_arrays_2D(tvals,xvals,yvals,U,V):
     
     return grid_vel, C_eval_u, C_eval_v
 
+
+def get_interp_arrays_2D_steady(xvals,yvals,U,V):
+    """
+    Compute coefficient arrays for cubic spline of velocity field defined by U,V over values
+    tvals,xvals,yvals and return the grid tuple and coefficient arrays which can be used
+    by 'eval_spline' function of the interpolation package.
+
+    Parameters
+    ----------
+    xvals : np.ndarray, shape = (nx,)
+        x values over which the ode is defined, must be ascending.
+    yvals : np.ndarray, shape = (ny,)
+        y values over which the ode is defined, must be ascending.
+    U : np.ndarray, shape = (nt,nx,ny)
+        x-compnent of the velocity.
+    V : np.ndarray, shape = (nt,nx,ny)
+        y-compnent of the velocity.
+
+    Returns
+    -------
+    grid_vel : tuple
+        grid endpoints and number of points in x and y directions
+    C_eval_u : np.ndarray, shape = (nt+2,nx+2,ny+2) 
+        array containing coefficients for u cubic spline.
+    C_eval_v : np.ndarray, shape = (nt+2,nx+2,ny+2)
+        array containing coefficients for v cubic spline.
+
+    """
+
+    nx,ny = U.shape
+    grid_vel = UCGrid((xvals[0],xvals[-1],nx),(yvals[0],yvals[-1],ny))
+    C_eval_u = prefilter(grid_vel,U,out=None,k=3)
+    C_eval_v = prefilter(grid_vel,V,out=None,k=3)
+    
+    return grid_vel, C_eval_u, C_eval_v
+
+
 def get_flow_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=6371.):
     """
     Create a C callback for the ode defined by the vector field (U,V) defined over
@@ -159,7 +196,7 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
                                       extrap_mode=extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
             vi = eval_spline(grid_vel,C_eval_v,point,out=None,k=3,diff="None",
                                       extrap_mode=extrap_mode)*180/(pi*r)
-            return ui,vi
+            return np.array([ui,vi],np.float64)
         
     else:
         @njit
@@ -169,7 +206,7 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
                              extrap_mode=extrap_mode)
             vi = eval_spline(grid_vel,C_eval_v,point,out=None,k=3,diff="None",
                              extrap_mode=extrap_mode)
-            return ui,vi
+            return np.array([ui,vi],np.float64)
         
     return vel_spline
         
@@ -303,7 +340,7 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
                                       extrap_mode=extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
             vi = eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
                                       extrap_mode=extrap_mode)*180/(pi*r)
-            return ui,vi
+            return np.array([ui,vi],np.float64)
         
     else:
         @njit
@@ -313,7 +350,7 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
                              extrap_mode=extrap_mode)
             vi = eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
                              extrap_mode=extrap_mode)
-            return ui,vi
+            return np.array([ui,vi],np.float64)
         
     return vel_spline
 
@@ -378,6 +415,48 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
             if return_domain:
                 domain = ((0.,2.),(0.,1.))
                 
+                
+        case 'bickley_jet':
+            @cfunc(lsoda_sig)
+            def _bickley_jet(t,y,dy,p):
+                """
+                p[0] = int_direction, p[1] = U0, p[2] = L, p[3] = A1, p[4] = A2,
+                p[5] = A3, p[6] = k1, p[7] = k2, p[8] = k3, p[9] = c1, p[10] = c2, p[11] = c3
+                """
+
+                tt = p[0]*t
+                Y = y[1]/p[2]
+                sech2 = 1/(cosh(Y)**2)
+                dy[0] = p[0]*(p[1]*sech2 + 2*p[1]*tanh(Y)*sech2 * 
+                               (p[3]*cos(p[6]*(y[0] - p[9]*tt)) + 
+                                p[4]*cos(p[7]*(y[0] - p[10]*tt)) + 
+                                p[5]*cos(p[8]*(y[0] - p[11]*tt))))
+                dy[1] = -p[0]*(p[1]*p[2]*sech2*(p[3]*p[6]*sin(p[6]*(y[0] - p[9]*tt)) + 
+                                                p[4]*p[7]*sin(p[7]*(y[0] - p[10]*tt)) + 
+                                                p[5]*p[8]*sin(p[8]*(y[0] - p[11]*tt))))                
+                    
+            funcptr = _bickley_jet.address
+            
+            if return_default_params:
+                int_direction = 1.0
+                r_e = 6371.0e-3
+                U0 = 86400*62.66e-6
+                L = 1770.0e-3
+                A1 = 0.0075
+                A2 = 0.15
+                A3 = 0.3
+                k1 = 2.0/r_e
+                k2 = 4.0/r_e
+                k3 = 6.0/r_e
+                c2 = 0.205*U0
+                c3 = 0.461*U0
+                c1 = c3 + (sqrt(5) - 1)*(c2-c3)
+
+                default_params = np.array([int_direction,U0,L,A1,A2,A3,k1,k2,k3,c1,c2,c3])
+                
+                if return_domain:
+                    domain = ((0.0,r_e*pi),(-3.0,3.0))                
+                
             
         case 'abc':
             @cfunc(lsoda_sig)
@@ -411,4 +490,135 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
         case [False,True]:
             return funcptr, domain
         case [True,True]:
-            return funcptr, default_params, domain                
+            return funcptr, default_params, domain
+
+
+def get_predefined_callable(flow_str,params=None,return_domain=True):
+    """
+    Create a C callback for one of the predefined flows.
+
+    Parameters
+    ----------
+    flow_str : str
+        string representing which flow to retrieve. Currently 'double_gyre'
+        and 'abc' are supported.
+    params : np.ndarray, shape = (nprms,), optional
+        parameters to be used to define the flow. The default is None, i.e. default params.
+    return_domain : boolean, optional
+        flag to determine if domain will be returned. The default is True.
+
+    Returns
+    -------
+    func : jit-callable
+        jit callable function for vector field.
+    domain : tuple, optional
+        array containing endpoints of domain for each dimension.
+    
+
+    """
+    
+    match flow_str:
+        case "double_gyre":
+            if params is None:
+                A = 0.1
+                eps = 0.25
+                alpha = 0.
+                omega = 0.2*pi
+                psi = 0.
+                eta = 0.
+                default_params = np.array([A,eps,alpha,omega,psi,eta])
+                p = default_params
+            else:
+                p = params
+            @njit
+            def _double_gyre(y):
+                """
+                p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi, p[5] = eta
+                """
+                
+                a = p[1]*sin(p[3]*y[0] + p[4])
+                b = 1 - 2*p[1]*sin(p[3]*y[0] + p[4])
+                f = a*y[1]**2 + b*y[1]
+                df = 2*a*y[1] + b
+                dx = -pi*p[0]*sin(pi*f)*cos(pi*y[2]) - p[2]*y[1] + p[5]
+                dy = pi*p[0]*cos(pi*f)*sin(pi*y[2])*df - p[2]*y[2] + p[5]
+                                  
+                return np.array([dx,dy],np.float64)
+            
+            func = _double_gyre
+                
+            if return_domain:
+                domain = ((0.,2.),(0.,1.))
+                
+                
+        case 'bickley_jet':
+            if params is None:
+                r_e = 6371.0e-3
+                U0 = 86400*62.66e-6
+                L = 1770.0e-3
+                A1 = 0.0075
+                A2 = 0.15
+                A3 = 0.3
+                k1 = 2.0/r_e
+                k2 = 4.0/r_e
+                k3 = 6.0/r_e
+                c2 = 0.205*U0
+                c3 = 0.461*U0
+                c1 = c3 + (sqrt(5) - 1)*(c2-c3)
+                default_params = np.array([U0,L,A1,A2,A3,k1,k2,k3,c1,c2,c3])
+                p = default_params
+            else:
+                p = params            
+            @njit
+            def _bickley_jet(y):
+                """
+                p[0] = U0, p[1] = L, p[2] = A1, p[3] = A2,
+                p[4] = A3, p[5] = k1, p[6] = k2, p[7] = k3, p[8] = c1, p[9] = c2, p[10] = c3
+                """
+
+                Y = y[2]/p[1]
+                sech2 = 1/(cosh(Y)**2)
+                dx = (p[0]*sech2 + 2*p[0]*tanh(Y)*sech2 * 
+                              (p[2]*cos(p[5]*(y[1] - p[8]*y[0])) + 
+                              p[3]*cos(p[6]*(y[1] - p[9]*y[0])) + 
+                              p[4]*cos(p[7]*(y[1] - p[10]*y[0]))))
+                dy = -p[0]*p[1]*sech2*(p[2]*p[5]*sin(p[5]*(y[1] - p[8]*y[0])) + 
+                                          p[3]*p[6]*sin(p[6]*(y[1] - p[9]*y[0])) + 
+                                          p[4]*p[7]*sin(p[7]*(y[1] - p[10]*y[0])))
+                    
+                return np.array([dx,dy],np.float64)
+            
+            func = _bickley_jet
+            
+            if return_domain:
+                domain = ((0.0,20.0),(-3.0,3.0))
+                
+            
+        case 'abc':
+            if params is None:
+                A = 3**0.5
+                B = 2**0.5
+                C = 1.
+                f = 0.5
+                default_params = np.array([A,B,C,f])
+                p = default_params
+            else:
+                p = params
+            @njit
+            def _abc(y):
+                """
+                p[0] = A-amplitude, p[1] = B-amplitude, p[2] = C-amplitude, p[3] = forcing amplitude
+                """
+                dx = (p[0]+p[3]*sin(pi*y[0]))*sin(y[3]) + p[2]*cos(y[2])
+                dy = p[1]*sin(y[1]) + (p[0] + p[3]*sin(pi*y[0]))*cos(y[2])
+                dz = p[2]*sin(y[2]) + p[1]*cos(y[2])
+                
+                return np.array([dx,dy,dz],np.float64)
+                
+            if return_domain:
+                domain = ((0.,2*pi),(0.,2*pi),(0.,2*pi))
+                
+    if return_domain:
+        return func, domain
+    else:
+        return func          
