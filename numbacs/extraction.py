@@ -302,7 +302,6 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
         Lf = 0
         remove_inds = 0
         monotone_flag = False
-        domain_flag = False
         while L<maxlen and i<steps:
             # rk4 to integrate tensorlines from eigvec_min field
             k1 = init_vec
@@ -327,15 +326,11 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
             if s1 < minval:
                 break
             if _in_domain(y[i+1,:],domain) == False:
-                domain_flag = True
                 break
             if s1 > s0:
                 Lf += 1
                 remove_inds += 1
                 if Lf - lf <=0:
-                    print(i)
-                    print(s0)
-                    print(s1)
                     monotone_flag = True
                     break
             else:
@@ -358,7 +353,7 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
                 i+=1
         
         i -= remove_inds
-        if i < lf and monotone_flag:
+        if i < 10 and monotone_flag:
             return None
         
         if direction == 1:            
@@ -890,6 +885,63 @@ def compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines,
         lcs.append(lcs_arr_[:lcs_ilen,2*ind:2*ind+2])
         
     return lcs
+
+
+@njit
+def _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,ic_inds,h,steps,maxlen,lf,minval):
+    
+    eigvec_min = eigvecs[:,:,:,0]
+    eigvec_max = eigvecs[:,:,:,1]
+    ni = ic_inds.shape[0]
+    oecs_fwd = np.zeros((ni,2*steps+1,2),np.float64)
+    oecs_bwd = np.zeros((ni,2*steps+1,2),np.float64)
+    keep_inds = np.zeros(ni,np.bool_)
+    for k in prange(ni):
+        ic = ic_inds[k,:]
+        oecs_fwd_tmp = rk4_tensorlines_oecs(eigval_max_interp,eigvec_min,x,y,ic,h,steps,
+                                            maxlen,lf,minval)
+        if oecs_fwd_tmp is not None:
+            tmplen = oecs_fwd_tmp.shape[0]
+            oecs_fwd[k,:tmplen,:] = oecs_fwd_tmp
+            oecs_fwd[k,-1,0] = tmplen
+            
+            oecs_bwd_tmp = rk4_tensorlines_oecs(eigval_max_interp,eigvec_max,x,y,ic,h,steps,
+                                                maxlen,lf,minval)
+            if oecs_bwd_tmp is not None:
+                keep_inds[k] = True
+                tmplen = oecs_bwd_tmp.shape[0]
+                oecs_bwd[k,:tmplen,:] = oecs_bwd_tmp
+                oecs_bwd[k,-1,0] = tmplen
+            
+    return oecs_fwd[keep_inds,:,:], oecs_bwd[keep_inds,:,:]
+    
+
+def hyperbolic_oecs(eigval_max,eigvecs,x,y,r,h,steps,maxlen,lf,minval,n=-1):
+    
+    oecs_saddles = []
+    
+    nx,ny = eigval_max.shape
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+    _, ic_inds = _max_in_radius(eigval_max.copy(),r,dx,dy,n=n)
+    
+    grid = UCGrid((x[0],x[-1],nx),(y[0],y[-1],ny))
+    @njit
+    def eigval_max_interp(point):
+        return eval_spline(grid,eigval_max,point,out=None,k=1,diff="None",extrap_mode="constant")
+    
+    oecs_fwd, oecs_bwd = _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,
+                                          ic_inds,h,steps,maxlen,lf,minval)
+    
+    for k in range(oecs_fwd.shape[0]):
+        oecs_len = int(oecs_fwd[k,-1,0])
+        oecs_fwd_tmp = oecs_fwd[k,:oecs_len,:]
+        oecs_len = int(oecs_bwd[k,-1,0])
+        oecs_bwd_tmp = oecs_bwd[k,:oecs_len,:]
+        oecs_saddles.append([oecs_fwd_tmp,oecs_bwd_tmp])
+        
+    return oecs_saddles
+
 
 
 @njit(parallel=parallel_flag)
