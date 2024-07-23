@@ -363,7 +363,7 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
     Parameters
     ----------
     flow_str : str
-        string representing which flow to retrieve. Currently 'double_gyre'
+        string representing which flow to retrieve. Currently 'double_gyre', 'bickley_jet',
         and 'abc' are supported.
     int_direction : float, optional
         direction of integration (either -1. or 1.). The default is 1.
@@ -428,9 +428,9 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 Y = y[1]/p[2]
                 sech2 = 1/(cosh(Y)**2)
                 dy[0] = p[0]*(p[1]*sech2 + 2*p[1]*tanh(Y)*sech2 * 
-                               (p[3]*cos(p[6]*(y[0] - p[9]*tt)) + 
-                                p[4]*cos(p[7]*(y[0] - p[10]*tt)) + 
-                                p[5]*cos(p[8]*(y[0] - p[11]*tt))))
+                              (p[3]*cos(p[6]*(y[0] - p[9]*tt)) + 
+                               p[4]*cos(p[7]*(y[0] - p[10]*tt)) + 
+                               p[5]*cos(p[8]*(y[0] - p[11]*tt))))
                 dy[1] = -p[0]*(p[1]*p[2]*sech2*(p[3]*p[6]*sin(p[6]*(y[0] - p[9]*tt)) + 
                                                 p[4]*p[7]*sin(p[7]*(y[0] - p[10]*tt)) + 
                                                 p[5]*p[8]*sin(p[8]*(y[0] - p[11]*tt))))                
@@ -500,7 +500,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
     Parameters
     ----------
     flow_str : str
-        string representing which flow to retrieve. Currently 'double_gyre'
+        string representing which flow to retrieve. Currently 'double_gyre', 'bickley_jet',
         and 'abc' are supported.
     params : np.ndarray, shape = (nprms,), optional
         parameters to be used to define the flow. The default is None, i.e. default params.
@@ -580,18 +580,18 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
                 sech2 = 1/(cosh(Y)**2)
                 dx = (p[0]*sech2 + 2*p[0]*tanh(Y)*sech2 * 
                               (p[2]*cos(p[5]*(y[1] - p[8]*y[0])) + 
-                              p[3]*cos(p[6]*(y[1] - p[9]*y[0])) + 
-                              p[4]*cos(p[7]*(y[1] - p[10]*y[0]))))
+                               p[3]*cos(p[6]*(y[1] - p[9]*y[0])) + 
+                               p[4]*cos(p[7]*(y[1] - p[10]*y[0]))))
                 dy = -p[0]*p[1]*sech2*(p[2]*p[5]*sin(p[5]*(y[1] - p[8]*y[0])) + 
-                                          p[3]*p[6]*sin(p[6]*(y[1] - p[9]*y[0])) + 
-                                          p[4]*p[7]*sin(p[7]*(y[1] - p[10]*y[0])))
+                                       p[3]*p[6]*sin(p[6]*(y[1] - p[9]*y[0])) + 
+                                       p[4]*p[7]*sin(p[7]*(y[1] - p[10]*y[0])))
                     
                 return np.array([dx,dy],np.float64)
             
             func = _bickley_jet
             
             if return_domain:
-                domain = ((0.0,20.0),(-3.0,3.0))
+                domain = ((0.0,r_e*pi),(-3.0,3.0))
                 
             
         case 'abc':
