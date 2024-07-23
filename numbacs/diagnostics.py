@@ -301,7 +301,7 @@ def ftle_from_eig(eigval_max,T):
 
 
 @njit(parallel=parallel_flag)
-def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav):
+def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0.0):
     """
     Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
     defined by xrav,yrav for an integration time T and trajectories are returned at times given by
@@ -324,6 +324,10 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav):
     yrav : np.ndarray, shape = (nx*ny,))
         array containing raveled or flattened meshgrid Y, can be obtained using Y.ravel()
         or Y.flatten().
+    period_x : float
+        value for period in x-direction, if not periodic, set equal to 0.0. The default is 0.0.
+    period_y : float
+        value for period in y-direction, if not periodic, set equal to 0.0. The default is 0.0.       
 
     Returns
     -------
@@ -336,19 +340,47 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav):
     npts = len(xrav)
     vort_avg = np.zeros(n,numba.float64)
     for k in prange(n):
-        gpts = np.vstack((xrav,yrav,tspan[k]*np.ones(npts))).T
+        gpts = np.column_stack((tspan[k]*np.ones(npts),xrav,yrav))
         vort_k = vort_interp(gpts)
         vort_avg[k] = np.mean(vort_k)
         
     lavd = np.zeros((nx,ny),numba.float64)
     dt = abs(tspan[1] - tspan[0])
-    tspan = np.expand_dims(tspan,axis=1)
-    for i in prange(nx):
-        for j in range(ny):
-            pts = np.concatenate((flowmap_n[i,j,:,:],tspan),1)
-            vort_traj = vort_interp(pts)
-            integrand = np.abs(vort_traj - vort_avg)
-            lavd[i,j] = composite_simpsons_38(integrand,dt)
+    if period_x + period_y == 0.0:
+        tspan = np.expand_dims(tspan,axis=1)
+        for i in prange(nx):
+            for j in range(ny):
+                pts = np.concatenate((tspan,flowmap_n[i,j,:,:]),1)
+                vort_traj = vort_interp(pts)
+                integrand = np.abs(vort_traj - vort_avg)
+                lavd[i,j] = composite_simpsons_38(integrand,dt)
+    elif period_x and period_y:
+        for i in prange(nx):
+            for j in range(ny):
+                pts = np.column_stack((tspan,
+                                       flowmap_n[i,j,:,0]%period_x,
+                                       flowmap_n[i,j,:,1]%period_y))
+                vort_traj = vort_interp(pts)
+                integrand = np.abs(vort_traj - vort_avg)
+                lavd[i,j] = composite_simpsons_38(integrand,dt)
+    elif period_x:
+        for i in prange(nx):
+            for j in range(ny):
+                pts = np.column_stack((tspan,
+                                       flowmap_n[i,j,:,0]%period_x,
+                                       flowmap_n[i,j,:,1]))
+                vort_traj = vort_interp(pts)
+                integrand = np.abs(vort_traj - vort_avg)
+                lavd[i,j] = composite_simpsons_38(integrand,dt)
+    elif period_y:
+        for i in prange(nx):
+            for j in range(ny):
+                pts = np.column_stack((tspan,
+                                       flowmap_n[i,j,:,0],
+                                       flowmap_n[i,j,:,1]%period_y))
+                vort_traj = vort_interp(pts)
+                integrand = np.abs(vort_traj - vort_avg)
+                lavd[i,j] = composite_simpsons_38(integrand,dt)
             
     return lavd
 
