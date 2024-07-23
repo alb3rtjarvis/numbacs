@@ -244,6 +244,87 @@ def curl(f,dx,dy):
             curlf[i,j] = dfydx - dfxdy
     
     return curlf
+    
+    
+@njit(parallel=True)
+def curl_func(fnc,x,y,h=1e-3):
+    """
+    Compute curl over x,y of vector field defined by fnc.
+
+    Parameters
+    ----------
+    fnc : jit-callable
+        callable containing returing x and y components of vector field.
+    x : np.ndarray, shape = (nx,)
+        array containing x-values.
+    y : np.ndarray, shape = (ny,)
+        array containing y-values.
+    h : float, optional
+        spacing used in finite differencing. The default is 1e-3.
+
+    Returns
+    -------
+    curlf : np.ndarray, shape = (nx,ny)
+        array containing values of curl of f.
+
+    """
+    
+    nx = len(x)
+    ny = len(y)
+    curlf = np.zeros((nx,ny),numba.float64)
+    dx_vec = np.array([h,0.0],numba.float64)
+    dy_vec = np.array([0.0,h],numba.float64)
+    for i in prange(nx):
+        for j in range(ny):
+            pt = np.array([x[i],y[j]])
+            
+            dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
+            dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
+            
+            curlf[i,j] = dfydx - dfxdy
+    
+    return curlf
+
+
+@njit(parallel=True)
+def curl_func_tspan(fnc,t,x,y,h=1e-3):
+    """
+    Compute curl over x,y of vector field defined by fnc.
+
+    Parameters
+    ----------
+    fnc : jit-callable
+        callable containing returing x and y components of vector field.
+    x : np.ndarray, shape = (nx,)
+        array containing x-values.
+    y : np.ndarray, shape = (ny,)
+        array containing y-values.
+    h : float, optional
+        spacing used in finite differencing. The default is 1e-3.
+
+    Returns
+    -------
+    curlf : np.ndarray, shape = (nx,ny)
+        array containing values of curl of f.
+
+    """
+    nt = len(t)
+    nx = len(x)
+    ny = len(y)
+    curlf = np.zeros((nt,nx,ny),numba.float64)
+    dx_vec = np.array([0.0,h,0.0],numba.float64)
+    dy_vec = np.array([0.0,0.0,h],numba.float64)
+    for k in prange(nt):
+        for i in range(nx):
+            for j in range(ny):
+                pt = np.array([t[k],x[i],y[j]])
+                
+                dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
+                dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
+                
+                curlf[k,i,j] = dfydx - dfxdy
+    
+    return curlf 
 
 
 @njit
