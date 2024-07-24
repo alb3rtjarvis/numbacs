@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit, prange
 import numba
+from math import floor
 
 @njit
 def unravel_index(index,shape):
@@ -452,3 +453,97 @@ def dist_tol(point,arr,tol):
         k+=1
     return near
 
+
+@njit
+def shoelace(polygon):
+    """
+    Compute area of simple polygon using shoelace algorithm
+
+    Parameters
+    ----------
+    polygon : np.ndarray, shape = (n,2)
+        array containing vertices of polygon, first and last vertex should be the same.
+
+    Returns
+    -------
+    area : float
+        area of polygon.
+
+    """
+    
+    n = polygon.shape[0]
+    x0 = polygon[0,0]
+    y1 = polygon[1,1]
+    area = x0*y1
+    for k in range(1,n-1):
+        x1 = polygon[k,0]
+        y2 = polygon[k+1,1]
+        y0 = polygon[k-1,1]
+        area+=x1*(y2 - y0)
+        
+    area = abs(0.5*(area - polygon[n-1,0]*polygon[n-2,1]))
+                
+    return area
+
+
+@njit
+def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
+    """
+    Finds n local maxima values in arr such that each max is a local maximum within radius r where
+    spacing in arr is given by dx,dy. If all local maxima are desired, set n = -1. Should pass a
+    copy of arr to the function to avoid orginial arr being overwritten (i.e. pass in arr.copy())
+
+    Parameters
+    ----------
+    arr : np.ndarray, shape = (nx,ny)
+        array in which local maxima are to be found.
+    r : float
+        radius in which points will be discared after a maximum is found at the center.
+    dx : float
+        gird spacing in x-direction.
+    dy : float
+        grid spacing in y-direction.
+    n : int, optional
+        number of maxima to return, -1 returns all. The default is -1.
+    min_val : float, optional
+        miniumum value allowed for local maxima. The default is 0.0.
+
+    Returns
+    -------
+    max_vals : np.ndarray, shape = (k,) where k number of maxima found
+        maxima values in radius.
+    max_inds : np.ndarray, shape = (k,) where k number of maxima found
+        indices corresponding to max_vals.
+
+    """
+
+    nx,ny = arr.shape
+    ix = floor(r/dx)
+    iy = floor(r/dy)
+    arr_shape = np.array([nx,ny])
+    if n == -1:
+        max_inds = np.zeros((int(nx*ny/2),2),numba.int32)
+        max_vals = np.zeros(int(nx*ny/2),numba.float64)
+        k=0
+        while np.max(arr) > min_val:
+            max_ind = np.argmax(arr)
+            max_inds[k,:] = unravel_index(max_ind,arr_shape)
+            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
+            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
+            arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
+                max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
+            k+=1
+            
+    else:
+        max_inds = np.zeros((n,2),numba.int32)
+        max_vals = np.zeros(n,numba.float64)
+        k = 0
+        while np.max(arr) > min_val and k < n:
+            max_ind = np.argmax(arr)
+            max_inds[k,:] = unravel_index(max_ind,arr_shape)
+            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
+            arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
+                max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
+            k+=1
+            
+    return max_vals[:k], max_inds[:k,:]
