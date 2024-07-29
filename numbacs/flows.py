@@ -78,6 +78,42 @@ def get_interp_arrays_2D_steady(xvals,yvals,U,V):
     return grid_vel, C_eval_u, C_eval_v
 
 
+def get_interp_arrays_scalar(tvals,xvals,yvals,f):
+    """
+    Compute coefficient arrays for cubic spline of scalar field f defined over values
+    tvals,xvals,yvals and return the grid tuple and coefficient array which can be used
+    by 'eval_spline' function of the interpolation package.
+
+    Parameters
+    ----------
+    tvals : np.ndarray, shape = (nt,)
+        times over which the f is defined, must be ascending.
+    xvals : np.ndarray, shape = (nx,)
+        x values over which f ode is defined, must be ascending.
+    yvals : np.ndarray, shape = (ny,)
+        y values over which the f is defined, must be ascending.
+    f : np.ndarray, shape = (nt,nx,ny)
+        scalar value to be interpolated.
+
+    Returns
+    -------
+    grid_f : tuple
+        grid endpoints and number of points in t, x and y directions
+    C_eval_f : np.ndarray, shape = (nt+2,nx+2,ny+2) 
+        array containing coefficients for f cubic spline.
+
+    """
+
+    nt,nx,ny = f.shape
+    if tvals[1] < tvals[0]:
+        f = np.flip(f, axis=0)
+        tvals = tvals[::-1]
+    grid_f = UCGrid((tvals[0],tvals[-1],nt),(xvals[0],xvals[-1],nx),(yvals[0],yvals[-1],ny))
+    C_eval_f = prefilter(grid_f,f,out=None,k=3)
+    
+    return grid_f, C_eval_f
+
+
 def get_flow_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=6371.):
     """
     Create a C callback for the ode defined by the vector field (U,V) defined over
@@ -165,7 +201,7 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
     Parameters
     ----------
     grid_vel : tuple
-        grid endpoints and number of points in x and y directions
+        grid endpoints and number of points in t, x, and y directions
     C_eval_u : np.ndarray, shape = (nt+2,nx+2,ny+2) 
         array containing coefficients for u cubic spline.
     C_eval_v : np.ndarray, shape = (nt+2,nx+2,ny+2)
@@ -211,8 +247,37 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
     return vel_spline
         
 
+def get_callable_scalar(grid_f,C_eval_f,extrap_mode='constant'):
+    """
+    Create jit-callable spline for scalar field f defined over grid_f.
+
+    Parameters
+    ----------
+    grid_f : tuple
+        grid endpoints and number of points in t, x, and y directions.
+    C_eval_f : np.ndarray, shape = (nt+2,nx+2,ny+2) 
+        array containing coefficients for f cubic spline.
+    extrap_mode : str, optional
+        type of extrapolation mode used for interpolant. The default is 'constant'.
+
+    Returns
+    -------
+    f_spline : jit-callable
+        jit callable function for spline of f.
+
+    """
     
     
+    @njit
+    def f_spline(point):
+        fi = eval_spline(grid_f,C_eval_f,point,out=None,k=3,diff="None",
+                         extrap_mode=extrap_mode)
+        
+        return fi
+    
+    return f_spline
+    
+
 
 def get_flow_linear_2D(grid_vel,U,V,spherical=0,
                 return_interp=False,extrap_mode='constant',r=6371.):
@@ -355,8 +420,39 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
     return vel_spline
 
 
+def get_callable_scalar_linear(grid_f,f,extrap_mode='constant'):
+    """
+    Create jit-callable linear interpolant for scalar field f defined over grid_f.
+
+    Parameters
+    ----------
+    grid_f : tuple
+        grid endpoints and number of points in t, x, and y directions.
+    f : np.ndarray, shape = (nt,nx,ny) 
+        array containing values of f.
+    extrap_mode : str, optional
+        type of extrapolation mode used for interpolant. The default is 'constant'.
+
+    Returns
+    -------
+    f_interp : jit-callable
+        jit callable function for linear interpolant of f.
+
+    """
+    
+    
+    @njit
+    def f_interp(point):
+        fi = eval_spline(grid_f,f,point,out=None,k=1,diff="None",
+                         extrap_mode=extrap_mode)
+        
+        return fi
+    
+    return f_interp
+
+
 def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
-                        return_domain=True):
+                        return_domain=True,parameter_description=False):
     """
     Create a C callback for one of the predefined flows.
 
@@ -371,6 +467,9 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
         flag to determine if default parameters will be returned. The default is True.
     return_domain : boolean, optional
         flag to determine if domain will be returned. The default is True.
+    parameter_description : boolean, optional
+        flag to determine if string containing description of parameters is returned.
+        The default if False.
 
     Returns
     -------
@@ -380,6 +479,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
         default parameters.
     domain : tuple, optional
         array containing endpoints of domain for each dimension.
+    p_str : str, optional
+        string containing description of parameters in equation.
     
 
     """
@@ -414,6 +515,10 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 
             if return_domain:
                 domain = ((0.,2.),(0.,1.))
+                
+            if parameter_description:
+                p_str = """p[0] = int_direction, p[1] = A, p[2] = eps, p[3] = alpha, p[4] = omega,
+                         p[5] = psi, p[6] = eta"""
                 
                 
         case 'bickley_jet':
@@ -454,8 +559,13 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
 
                 default_params = np.array([int_direction,U0,L,A1,A2,A3,k1,k2,k3,c1,c2,c3])
                 
-                if return_domain:
-                    domain = ((0.0,r_e*pi),(-3.0,3.0))                
+            if return_domain:
+                domain = ((0.0,r_e*pi),(-3.0,3.0))
+                
+            if parameter_description:
+                p_str = """p[0] = int_direction, p[1] = U0, p[2] = L, p[3] = A1, p[4] = A2,
+                           p[5] = A3, p[6] = k1, p[7] = k2, p[8] = k3, p[9] = c1, p[10] = c2,
+                           p[11] = c3"""                    
                 
             
         case 'abc':
@@ -482,18 +592,30 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
             if return_domain:
                 domain = ((0.,2*pi),(0.,2*pi),(0.,2*pi))
                 
-    match [return_default_params,return_domain]:
-        case [False,False]:
+            if parameter_description:
+                p_str = """p[0] = int_direction, p[1] = A-amplitude, p[2] = B-amplitude,
+                           p[3] = C-amplitude, p[4] = forcing amplitdue"""                  
+                
+    match [return_default_params,return_domain,parameter_description]:
+        case [False,False,False]:
             return funcptr
-        case [True,False]:
+        case [True,False,False]:
             return funcptr, default_params
-        case [False,True]:
+        case [False,True,False]:
             return funcptr, domain
-        case [True,True]:
+        case [True,True,False]:
             return funcptr, default_params, domain
+        case [False,False,True]:
+            return funcptr, p_str
+        case [True,False,True]:
+            return funcptr, default_params, p_str
+        case [False,True,True]:
+            return funcptr, domain, p_str
+        case [True,True,True]:
+            return funcptr, default_params, domain, p_str  
 
 
-def get_predefined_callable(flow_str,params=None,return_domain=True):
+def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_description=False):
     """
     Create a C callback for one of the predefined flows.
 
@@ -506,6 +628,9 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
         parameters to be used to define the flow. The default is None, i.e. default params.
     return_domain : boolean, optional
         flag to determine if domain will be returned. The default is True.
+    parameter_description : boolean, optional
+        flag to determine if string containing description of parameters is returned.
+        The default if False.        
 
     Returns
     -------
@@ -513,6 +638,8 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
         jit callable function for vector field.
     domain : tuple, optional
         array containing endpoints of domain for each dimension.
+    p_str : str, optional
+        string containing description of parameters in equation.        
     
 
     """
@@ -549,6 +676,10 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
                 
             if return_domain:
                 domain = ((0.,2.),(0.,1.))
+                
+            if parameter_description:
+                p_str = """p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi,
+                           p[5] = eta"""                
                 
                 
         case 'bickley_jet':
@@ -593,6 +724,10 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
             if return_domain:
                 domain = ((0.0,r_e*pi),(-3.0,3.0))
                 
+            if parameter_description:
+                p_str = """p[0] = U0, p[1] = L, p[2] = A1, p[3] = A2, p[4] = A3, p[5] = k1,
+                           p[6] = k2, p[7] = k3, p[8] = c1, p[9] = c2, p[10] = c3"""                  
+                
             
         case 'abc':
             if params is None:
@@ -618,7 +753,17 @@ def get_predefined_callable(flow_str,params=None,return_domain=True):
             if return_domain:
                 domain = ((0.,2*pi),(0.,2*pi),(0.,2*pi))
                 
-    if return_domain:
-        return func, domain
-    else:
-        return func          
+            if parameter_description:
+                p_str = """p[0] = A-amplitude, p[1] = B-amplitude, p[2] = C-amplitude,
+                           p[3] = forcing amplitude"""                 
+                
+                
+    match [return_domain,parameter_description]:
+        case [False,False]:
+            return func
+        case [True,False]:
+            return func, domain
+        case [True,False]:
+            return func, p_str
+        case [True,True]:
+            return func, domain, p_str
