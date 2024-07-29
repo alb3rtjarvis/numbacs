@@ -6,10 +6,59 @@ import numba
 parallel_flag=True
 
 @njit(parallel=parallel_flag)
-def flowmap(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
+def flowmap(funcptr,t0,T,pts,params,method='dop853',rtol=1e-6,atol=1e-8):
     """
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
-    created within numbalsoda using the '@cfunc' decorator. Flow map is computed from initial
+    created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
+    conditions given by pts where pts has dim (npts,2). t0 denotes initial time and T denotes
+    integration time.
+
+    Parameters
+    ----------
+    funcptr : int
+        pointer to C callback.
+    t0 : float
+        intial time.
+    T : float
+        integration time.
+    pts : np.ndarray, shape = (npts,2)
+        array of points to be integrated.
+    params : np.ndarray, shape = (nprms,)
+        array of parameters to be passed to the ode function defined by funcptr.
+    method : str, optional
+        method to be used by numbalsoda to solve ode. The default is 'dop853'.
+    rtol : float, optional
+        relative tolerance for ode solver. The default is 1e-6.
+    atol : float, optional
+        absolute tolerance for ode solver. The default is 1e-8.
+
+    Returns
+    -------
+    flowmap : np.ndarray, shape = (npts,2)
+        array containing final position of particles pts after integration from [t0,t0+T].
+
+    """
+    flowmap = np.zeros(pts.shape,numba.float64)
+    t_eval = params[0]*np.linspace(t0,t0+T,2)
+    if method == 'dop853':
+        for i in prange(pts.shape[0]):
+            flowmap_tmp,success = dop853(funcptr, np.array([pts[i,0],pts[i,1]]),
+                                         t_eval,rtol=rtol,atol=atol,data=params)
+            flowmap[i,:] = flowmap_tmp[-1,:]
+    elif method == 'lsoda':
+        for i in prange(pts.shape[0]):
+            flowmap_tmp,success = lsoda(funcptr, np.array([pts[i,0],pts[i,1]]),
+                                         t_eval,rtol=rtol,atol=atol,data=params)
+            flowmap[i,:] = flowmap_tmp[-1,:]
+    
+    return flowmap
+
+
+@njit(parallel=parallel_flag)
+def flowmap_n(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
+    """
+    Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
+    created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
     conditions given by pts where pts has dim (npts,2). t0 denotes initial time and T denotes
     integration time.
 
@@ -28,7 +77,7 @@ def flowmap(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
     method : str, optional
         method to be used by numbalsoda to solve ode. The default is 'dop853'.
     n : int, optional
-        number of points to return the flowmap at. The default is 2.
+        number of points to return the flowmap at (including initial condition). The default is 2.
     rtol : float, optional
         relative tolerance for ode solver. The default is 1e-6.
     atol : float, optional
@@ -38,11 +87,13 @@ def flowmap(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
     -------
     flowmap : np.ndarray, shape = (npts,n,2)
         array containing n positions of particles pts after integration from [t0,t0+T].
+    t_eval : np.ndarray, shape = (n,)
+        array containing times the flowmap is returned at.
 
     """
-
-    flowmap = np.zeros(pts.shape,numba.float64)
-    t_eval = params[0]*np.linspace(t0,t0+T,2)
+    npts = len(pts)
+    flowmap = np.zeros((npts,n,2),numba.float64)
+    t_eval = params[0]*np.linspace(t0,t0+T,n)
     if method == 'dop853':
         for i in prange(pts.shape[0]):
             flowmap_tmp,success = dop853(funcptr, np.array([pts[i,0],pts[i,1]]),
@@ -54,13 +105,14 @@ def flowmap(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
                                          t_eval,rtol=rtol,atol=atol,data=params)
             flowmap[i,:,:] = flowmap_tmp
     
-    return flowmap
+    return flowmap, params[0]*t_eval
+
 
 @njit(parallel=parallel_flag)
 def flowmap_grid_2D(funcptr,t0,T,x,y,params,method='dop853',rtol=1e-6,atol=1e-8):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is a
-    pointer to a C callback created within numba using the '@cfunc' decorator. Flow map is
+    pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by x,y. t0 denotes initial time and T denotes
     integration time.
 
@@ -116,7 +168,7 @@ def flowmap_grid_2D(funcptr,t0,T,x,y,params,method='dop853',rtol=1e-6,atol=1e-8)
 def flowmap_grid_ND(funcptr,t0,T,IC_flat,ndims,params,method='dop853',rtol=1e-6,atol=1e-8):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is a
-    pointer to a C callback created within numba using the '@cfunc' decorator. Flow map is
+    pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by IC_flat where IC_flat has shape
     (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time.
 
@@ -170,7 +222,7 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                         method='dop853',rtol=1e-6,atol=1e-8):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is
-    a pointer to a C callback created within numba using the '@cfunc' decorator. Flow map
+    a pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map
     is computed over the aux grid defined by np.meshgrid(x,y) +-h. t0 denotes initial time
     and T denotes integration time.
 
@@ -382,7 +434,7 @@ def flowmap_n_grid_2D(funcptr,t0,T,x,y,params,n=50,method='dop853',rtol=1e-6,ato
 def flowmap_n_grid_ND(funcptr,t0,T,IC_flat,ndims,params,n=50,method='dop853',rtol=1e-6,atol=1e-8):
     """
     Computes the flow map at the n times of the ode defined by funcptr where funcptr is a
-    pointer to a C callback created within numba using the '@cfunc' decorator. Flow map is
+    pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by IC_flat where IC_flat has shape
     (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time.
     
