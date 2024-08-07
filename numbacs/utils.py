@@ -1,7 +1,8 @@
 import numpy as np
 from numba import njit, prange
 import numba
-from math import floor
+from math import floor, pi, cos, sin
+from scipy.interpolate import splprep, splev
 
 @njit
 def unravel_index(index,shape):
@@ -133,7 +134,7 @@ def finite_diff_ND(f,ind,h,axis,shape,direction=0):
     axis : int
         axis over which finite differencing is performed.
     shape : np.ndarray, shape = (ndims,)
-        DESCRIPTION.
+        shape of original array before raveled.
     direction : str, optional
         finite differencing direction, optional values are -1 for backward,
         0 for centered, and 1 for forward. The default is 0.
@@ -202,49 +203,72 @@ def finite_diff_2D_2nd(f,i,j,h,axis,direction='c'):
 
 
 @njit(parallel=True)
-def curl(f,dx,dy):
+def curl_vel(u,v,dx,dy):
     """
-    Compute curl of vector field defined by f with underlying grid spacing dx and dy.
+    Compute curl of vector field defined by u and v.
 
     Parameters
     ----------
-    f : np.ndarray, shape = (nx,ny,2)
-        array containing x and y components of vector field.
+    u : np.ndarray, shape = (nx,ny)
+        array containing x component of vector field.
+    v : np.ndarray, shape = (nx,ny)
+        array containing y component of vector field.
     dx : float
-        grid spacing in x-direction.
-    dy : int
-        grid spacing in y-direction.
+        spacing in grid in x-direction.
+    dy : float
+        spacing in grid in y-direction.        
 
     Returns
     -------
-    curlf : np.ndarray, shape = (nx,ny)
-        array containing values of curl of f.
+    curl : np.ndarray, shape = (nx,ny)
+        array containing values of curl of vector field defined by u and v.
 
     """
-    
-    nx,ny = f.shape[:-1]
-    curlf = np.zeros((nx,ny),numba.float64)
-    for i in prange(nx):
-        if i == 0:
-            dxdir = 'f'
-        elif i == nx-1:
-            dxdir = 'b'
-        else:
-            dxdir = 'c'
-        for j in range(ny):
-            if j == 0:
-               dydir = 'f'
-            elif j == ny-1:
-                dydir = 'b'
-            else:
-                dydir = 'c'
+    nx,ny = u.shape
+    curl = np.zeros((nx,ny),numba.float64)
+    for i in range(1,nx-1):
+        for j in range(1,ny-1):
+            dfydx = (v[i+1,j] - v[i-1,j])(2*dx)
+            dfxdy = (u[i,j+1] - u[i,j-1])(2*dy)
             
-            dfydx = finite_diff_2D(f[:,:,1],i,j,dx,0,dxdir)
-            dfxdy = finite_diff_2D(f[:,:,0],i,j,dy,1,dydir)
-            
-            curlf[i,j] = dfydx - dfxdy
+            curl[i,j] = dfydx - dfxdy
     
-    return curlf
+    return curl
+
+
+@njit(parallel=True)
+def curl_vel_tspan(u,v,dx,dy):
+    """
+    Compute curl of vector field defined by u and v over some timespan.
+
+    Parameters
+    ----------
+    u : np.ndarray, shape = (nt,nx,ny)
+        array containing x component of vector field.
+    v : np.ndarray, shape = (nt,nx,ny)
+        array containing y component of vector field.
+    dx : float
+        spacing in grid in x-direction.
+    dy : float
+        spacing in grid in y-direction.        
+
+    Returns
+    -------
+    curl : np.ndarray, shape = (nt,nx,ny)
+        array containing values of curl of vector field defined by u and v.
+
+    """
+    nt,nx,ny = u.shape
+    curl = np.zeros((nt,nx,ny),numba.float64)
+    for k in prange(nt):
+        for i in range(1,nx-1):
+            for j in range(1,ny-1):
+                dfydx = (v[k,i+1,j] - v[k,i-1,j])(2*dx)
+                dfxdy = (u[k,i,j+1] - u[k,i,j-1])(2*dy)
+                
+                curl[k,i,j] = dfydx - dfxdy
+    
+    return curl
     
     
 @njit(parallel=True)
@@ -457,7 +481,7 @@ def dist_tol(point,arr,tol):
 @njit
 def shoelace(polygon):
     """
-    Compute area of simple polygon using shoelace algorithm
+    Compute area of simple polygon using shoelace algorithm.
 
     Parameters
     ----------
@@ -479,11 +503,12 @@ def shoelace(polygon):
         x1 = polygon[k,0]
         y2 = polygon[k+1,1]
         y0 = polygon[k-1,1]
-        area+=x1*(y2 - y0)
+        area += x1*(y2 - y0)
         
     area = abs(0.5*(area - polygon[n-1,0]*polygon[n-2,1]))
                 
     return area
+
 
 
 @njit
@@ -547,3 +572,334 @@ def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
             k+=1
             
     return max_vals[:k], max_inds[:k,:]
+
+
+@njit
+def gen_circ(r,c,n,xlims=None,ylims=None):
+    """
+    Generate n points on a circle with radius r and center c.
+
+    Parameters
+    ----------
+    r : float
+        radius of circle.
+    c : np.ndarray, shape = (2,)
+        center of circle.
+    n : int
+        number of points on circle.
+    xlims : tuple, optional
+        boundary in x-direction, points outside of this boundary will not be returned.
+        The default is None.
+    ylims : tuple, optional
+        boundary in y-direction, points outside of this boundary will not be returned.
+        The default is None.        
+
+    Returns
+    -------
+    pts : np.ndarray, shape = (n,2)
+          points on the circle.
+
+    """
+    
+    theta = np.linspace(0,2*pi,n)
+    pts = np.zeros((n,2),np.float64)
+    cx = c[0]
+    cy = c[1]
+    for k in prange(n):
+        pts[k,0] = r*cos(theta[k]) + cx
+        pts[k,1] = r*sin(theta[k]) + cy
+        
+    if xlims is not None:
+        xm = pts[:,0] < xlims[0]
+        xM = pts[:,0] > xlims[1]
+        maskx = ~np.logical_or(xm,xM)
+        pts = pts[maskx,:]
+    if ylims is not None:
+        ym = pts[:,0] < ylims[0]
+        yM = pts[:,0] > ylims[1]
+        masky = ~np.logical_or(ym,yM)
+        pts = pts[masky,:]
+        
+    return pts
+
+
+
+@njit
+def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
+    """
+    Generate points filling a circle with radius r and center c. Uses the sunflower
+    seed arangement.
+
+    Parameters
+    ----------
+    r : float
+        radius of circle.
+    n : int
+        number of points to fill the circle.
+    alpha : float, optional
+        parameter determining how smooth the boundary is. The default is 3.0.
+    c : np.ndarray, shape = (2,), optional
+        center of the circle. The default is np.array([0.0,0.0]).
+    xlims : tuple, optional
+        boundary in x-direction, points outside of this boundary will not be returned.
+        The default is None.
+    ylims : tuple, optional
+        boundary in y-direction, points outside of this boundary will not be returned.
+        The default is None. 
+        
+    Returns
+    -------
+    pts : np.ndarray, shape = (n,2)
+        array containing points which fill the circle.
+
+    """
+    phi = 0.5*(1 + 5**0.5)
+    cd = 1/(phi**2)
+    ar = round(alpha*n**0.5)
+    x = np.zeros(n,np.float64)
+    y = np.zeros(n,np.float64)
+    for k in range(1,n+1):
+        theta = 2*pi*k*cd
+        if k > n - ar:
+            radius = r
+        else:
+            radius = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
+            
+        x[k-1] = radius*cos(theta) + c[0]
+        y[k-1] = radius*sin(theta) + c[1]
+        
+    if xlims is not None:
+        xm = x < xlims[0]
+        xM = x > xlims[1]
+        maskx = ~np.logical_or(xm,xM)
+        x = x[maskx]
+        y = y[maskx]
+    if ylims is not None:
+        ym = y < ylims[0]
+        yM = y > ylims[1]
+        masky = ~np.logical_or(ym,yM)
+        x = x[masky]
+        y = y[masky]
+        
+    pts = np.column_stack((x,y))    
+    return pts
+    
+    
+@njit
+def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
+    """
+    Generate points filling a circle with radius r and center c. Uses the sunflower
+    seed arangement.
+
+    Parameters
+    ----------
+    r : float
+        radius of circle.
+    n : int
+        number of points to fill the circle.
+    alpha : float, optional
+        parameter determining how smooth the boundary is. The default is 3.0.
+    c : np.ndarray, shape = (2,), optional
+        center of the circle. The default is np.array([0.0,0.0]).
+    xlims : tuple, optional
+        boundary in x-direction, points outside of this boundary will not be returned.
+        The default is None.
+    ylims : tuple, optional
+        boundary in y-direction, points outside of this boundary will not be returned.
+        The default is None. 
+        
+    Returns
+    -------
+    pts : np.ndarray, shape = (n,2)
+        array containing points which fill the circle.
+    radius : np.ndarray, shape = (n,), optional
+        array containing radius of earch point from center c.
+
+    """
+    phi = 0.5*(1 + 5**0.5)
+    cd = 1/(phi**2)
+    ar = round(alpha*n**0.5)
+    x = np.zeros(n,np.float64)
+    y = np.zeros(n,np.float64)
+    radius = np.zeros(n,np.float64)
+    for k in range(1,n+1):
+        theta = 2*pi*k*cd
+        if k > n - ar:
+            radius[k-1] = r
+        else:
+            radius[k-1] = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
+            
+        x[k-1] = radius[k-1]*cos(theta) + c[0]
+        y[k-1] = radius[k-1]*sin(theta) + c[1]
+        
+    if xlims is not None:
+        xm = x < xlims[0]
+        xM = x > xlims[1]
+        maskx = ~np.logical_or(xm,xM)
+        x = x[maskx]
+        y = y[maskx]
+        radius = radius[maskx]
+    if ylims is not None:
+        ym = y < ylims[0]
+        yM = y > ylims[1]
+        masky = ~np.logical_or(ym,yM)
+        x = x[masky]
+        y = y[masky]
+        radius = radius[masky]
+        
+    pts = np.column_stack((x,y))    
+    return pts, radius
+
+
+@njit
+def arclength_along_arc(pts):
+    """
+    Compute cummulative arclength at each point defining a curve.
+
+    Parameters
+    ----------
+    pts : np.ndarray, shape=(npts,)
+        points representing curve for which arclength is to be computed.
+
+    Returns
+    -------
+    arclength : np.ndarray, shape = (npts,)
+        array containing cummulative arclength of curve defined by pts.
+
+    """
+    npts = len(pts)
+    arclength = np.zeros(npts,numba.float64)
+    arclength[0] = 0.0
+    for k in range(1,npts):
+        p0 = pts[k-1,:]
+        p1 = pts[k,:]
+        arclength[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5 + arclength[k-1]
+        
+    return arclength
+
+
+def interp_curve(curve,n,s=0,k=3,per=0):
+    """
+    Return n interpolated values of curve.
+
+    Parameters
+    ----------
+    curve : np.ndarray, shape = (npts,2)
+        array containing x,y-coordinates of curve being interpolated.
+    n : int
+        number of equally spaced interpolated points to return.
+    s : float, optional
+        smoothing parameter for spline, 0 will fit all data points exactly. The default is 0.
+    k : int, optional
+        degree of spline, using even numbers is not recommended, must be 1 <= k <= 5.
+        The default is 3.
+    per : int, optional
+        if nonzero, data points are considered periodic. The default is 0.
+
+    Returns
+    -------
+    curvei : np.ndarray, shape = (n,2)
+        array containing interpolated values of curve.
+        
+
+    """
+    
+    tck, u = splprep([curve[:,0], curve[:,1]], s=s, per=per)
+    xi, yi = splev(np.linspace(0, 1, n), tck)
+    
+    curvei = np.column_stack((xi,yi))
+    return curvei
+
+
+@njit
+def wn_pt_in_poly(polygon,point):
+    """
+    Winding number algorithm to determine if point is inside polygon. Based off of
+    java implementation - https://observablehq.com/@jrus/winding-number - by Jacob Rus.
+
+    Parameters
+    ----------
+    polygon : np.ndarray, shape = (n,2)
+        array containing vertices of polygon, first and last points should match.
+    point : np.ndarray, shape = (2,)
+        array containing the coordinates of point to be checked.
+
+    Returns
+    -------
+    wn : int
+        winding number, returns 1 if point is inside polygon and 0 if not.
+
+    """
+    n = len(polygon)
+    ptx = point[0]
+    pty = point[1]
+    wn = 0
+    dx1 = polygon[0,0] - ptx
+    dy1 = polygon[0,1] - pty
+    below1 = dy1 <= 0
+    for k in range(1,n):
+        dx0 = dx1
+        dy0 = dy1
+        below0 = below1
+        dx1 = polygon[k,0] - ptx
+        dy1 = polygon[k,1] - pty
+        below1 = dy1 <= 0
+        is_left = dx0*dy1 - dx1*dy0 > 0
+        wn += (below0 & (below1 ^ 1) & is_left) - (below1 & (below0 ^ 1) & ~is_left)
+
+    return wn
+
+@njit
+def pts_in_poly(polygon,pts):
+    """
+    Checks if any point from pts is inside polygon. If a point is, the index of the
+    first point found inside polygon is returned. Else, -1 is returned.
+
+    Parameters
+    ----------
+    polygon : np.ndarray, shape = (n,2)
+        array containing vertices of polygon, first and last points should match.
+    pts : np.ndarray, shape = (npts,2)
+        array containing the coordinates of the points to be checked.
+
+    Returns
+    -------
+    int
+        if point from pts is found inside polygon, its index is returned, if not, -1 is returned.
+
+    """
+
+    for k in range(len(pts)):
+        pt = pts[k,:]  
+        
+        if wn_pt_in_poly(polygon,pt):
+            return k
+        
+    return -1
+
+
+@njit
+def pts_in_poly_mask(polygon,pts):
+    """
+    Checks which points from pts are inside polygon. Returns a boolean mask
+    corresponding to points inside polygon.
+
+    Parameters
+    ----------
+    polygon : np.ndarray, shape = (n,2)
+        array containing vertices of polygon, first and last points should match.
+    pts : np.ndarray, shape = (npts,2)
+        array containing the coordinates of the points to be checked.
+
+    Returns
+    -------
+    mask : np.ndarray, shape = (npts,)
+        bool mask with indices matching those of pts, True if in polygon, False if not.
+
+    """
+    npts = len(pts)
+    mask = np.zeros((npts,),np.bool_)
+    for k in range(npts):
+        mask[k] = wn_pt_in_poly(polygon,pts[k,:])
+        
+    return mask
