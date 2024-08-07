@@ -2,8 +2,8 @@ from math import sin, cos, pi, cosh, tanh, sqrt
 import numpy as np
 from numba import njit, cfunc
 from numbalsoda import lsoda_sig
-from interpolation.splines import UCGrid, prefilter, eval_spline
-
+from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
+from interpolation.splines import extrap_options as xto
 def get_interp_arrays_2D(tvals,xvals,yvals,U,V):
     """
     Compute coefficient arrays for cubic spline of velocity field defined by U,V over values
@@ -315,7 +315,12 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
         address to C callback.
 
     """
-
+    if extrap_mode == "constant":
+        extrap_mode = xto.CONSTANT
+    elif extrap_mode == "linear":
+        extrap_mode = xto.LINEAR
+    elif extrap_mode == "nearest":
+        extrap_mode = xto.NEAREST
     
     if spherical == 1:
         @cfunc(lsoda_sig)
@@ -327,10 +332,8 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
             xx = ((y[0]-180)%360)-180
             yy = y[1]
             point = np.array([tt,xx,yy])
-            dy[0] = (p[0]*eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))*180/(pi*r*cos(yy*pi/180))
-            dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))*180/(pi*r)
+            dy[0] = (p[0]*eval_linear(grid_vel,U,point,extrap_mode))*180/(pi*r*cos(yy*pi/180))
+            dy[1] = (p[0]*eval_linear(grid_vel,V,point,extrap_mode))*180/(pi*r)
     elif spherical == 2:
         @cfunc(lsoda_sig)
         def flow_rhs(t,y,dy,p):
@@ -341,10 +344,8 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
             xx = y[0]%360
             yy = y[1]
             point = np.array([tt,xx,yy])
-            dy[0] = (p[0]*eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))*180/(pi*r*cos(yy*pi/180))
-            dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))*180/(pi*r)
+            dy[0] = (p[0]*eval_linear(grid_vel,U,point,extrap_mode))*180/(pi*r*cos(yy*pi/180))
+            dy[1] = (p[0]*eval_linear(grid_vel,V,point,extrap_mode))*180/(pi*r)
     else:
         @cfunc(lsoda_sig)
         def flow_rhs(t,y,dy,p):
@@ -353,10 +354,8 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
             """
             tt = p[0]*t
             point = np.array([tt,y[0],y[1]])
-            dy[0] = (p[0]*eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))
-            dy[1] = (p[0]*eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode))
+            dy[0] = (p[0]*eval_linear(grid_vel,U,point,extrap_mode))
+            dy[1] = (p[0]*eval_linear(grid_vel,V,point,extrap_mode))
         
     funcptr = flow_rhs.address 
     
@@ -396,25 +395,27 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
         jit-callable function for vector field.
 
     """
+    if extrap_mode == "constant":
+        extrap_mode = xto.CONSTANT
+    elif extrap_mode == "linear":
+        extrap_mode = xto.LINEAR
+    elif extrap_mode == "nearest":
+        extrap_mode = xto.NEAREST
     
     if spherical == 1:
         @njit
         def vel_spline(point):
 
-            ui = eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
-            vi = eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                                      extrap_mode=extrap_mode)*180/(pi*r)
+            ui = eval_linear(grid_vel,U,point,extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
+            vi = eval_linear(grid_vel,V,point,extrap_mode)*180/(pi*r)
             return np.array([ui,vi],np.float64)
         
     else:
         @njit
         def vel_spline(point):
             
-            ui = eval_spline(grid_vel,U,point,out=None,k=1,diff="None",
-                             extrap_mode=extrap_mode)
-            vi = eval_spline(grid_vel,V,point,out=None,k=1,diff="None",
-                             extrap_mode=extrap_mode)
+            ui = eval_linear(grid_vel,U,point,extrap_mode)
+            vi = eval_linear(grid_vel,V,point,extrap_mode)
             return np.array([ui,vi],np.float64)
         
     return vel_spline
@@ -440,11 +441,16 @@ def get_callable_scalar_linear(grid_f,f,extrap_mode='constant'):
 
     """
     
-    
+    if extrap_mode == "constant":
+        extrap_mode = xto.CONSTANT
+    elif extrap_mode == "linear":
+        extrap_mode = xto.LINEAR
+    elif extrap_mode == "nearest":
+        extrap_mode = xto.NEAREST
+        
     @njit
     def f_interp(point):
-        fi = eval_spline(grid_f,f,point,out=None,k=1,diff="None",
-                         extrap_mode=extrap_mode)
+        fi = eval_linear(grid_f,f,point,extrap_mode)
         
         return fi
     
@@ -517,8 +523,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 domain = ((0.,2.),(0.,1.))
                 
             if parameter_description:
-                p_str = """p[0] = int_direction, p[1] = A, p[2] = eps, p[3] = alpha, p[4] = omega,
-                         p[5] = psi, p[6] = eta"""
+                p_str = "p[0] = int_direction, p[1] = A, p[2] = eps, p[3] = alpha, " + \
+                        "p[4] = omega, p[5] = psi, p[6] = eta"
                 
                 
         case 'bickley_jet':
@@ -543,6 +549,7 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
             funcptr = _bickley_jet.address
             
             if return_default_params:
+                # units: time - days, length - Mm
                 int_direction = 1.0
                 r_e = 6371.0e-3
                 U0 = 86400*62.66e-6
@@ -563,9 +570,9 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 domain = ((0.0,r_e*pi),(-3.0,3.0))
                 
             if parameter_description:
-                p_str = """p[0] = int_direction, p[1] = U0, p[2] = L, p[3] = A1, p[4] = A2,
-                           p[5] = A3, p[6] = k1, p[7] = k2, p[8] = k3, p[9] = c1, p[10] = c2,
-                           p[11] = c3"""                    
+                p_str = "p[0] = int_direction, p[1] = U0, p[2] = L, p[3] = A1, p[4] = A2, " + \
+                        "p[5] = A3, p[6] = k1, p[7] = k2, p[8] = k3, p[9] = c1, p[10] = c2, " + \
+                        "p[11] = c3, units: time - days, length - Mm"
                 
             
         case 'abc':
@@ -580,6 +587,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 dy[1] = p[0]*(p[2]*sin(y[0]) + (p[1] + p[4]*sin(pi*tt))*cos(y[1]))
                 dy[2] = p[0]*(p[3]*sin(y[1]) + p[2]*cos(y[1]))
                 
+            funcptr = _abc.address
+                
             if return_default_params:
                 A = 3**0.5
                 B = 2**0.5
@@ -593,8 +602,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 domain = ((0.,2*pi),(0.,2*pi),(0.,2*pi))
                 
             if parameter_description:
-                p_str = """p[0] = int_direction, p[1] = A-amplitude, p[2] = B-amplitude,
-                           p[3] = C-amplitude, p[4] = forcing amplitdue"""                  
+                p_str = "p[0] = int_direction, p[1] = A-amplitude, p[2] = B-amplitude, " + \
+                        "p[3] = C-amplitude, p[4] = forcing amplitdue"
                 
     match [return_default_params,return_domain,parameter_description]:
         case [False,False,False]:
@@ -678,12 +687,13 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 domain = ((0.,2.),(0.,1.))
                 
             if parameter_description:
-                p_str = """p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi,
-                           p[5] = eta"""                
+                p_str = "p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi, " + \
+                        "p[5] = eta"
                 
                 
         case 'bickley_jet':
             if params is None:
+                # units: time - days, length - Mm
                 r_e = 6371.0e-3
                 U0 = 86400*62.66e-6
                 L = 1770.0e-3
@@ -725,8 +735,9 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 domain = ((0.0,r_e*pi),(-3.0,3.0))
                 
             if parameter_description:
-                p_str = """p[0] = U0, p[1] = L, p[2] = A1, p[3] = A2, p[4] = A3, p[5] = k1,
-                           p[6] = k2, p[7] = k3, p[8] = c1, p[9] = c2, p[10] = c3"""                  
+                p_str = "p[0] = U0, p[1] = L, p[2] = A1, p[3] = A2, p[4] = A3, p[5] = k1, " + \
+                        "p[6] = k2, p[7] = k3, p[8] = c1, p[9] = c2, p[10] = c3, " + \
+                        "units: time - days, length - Mm"
                 
             
         case 'abc':
@@ -749,13 +760,15 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 dz = p[2]*sin(y[2]) + p[1]*cos(y[2])
                 
                 return np.array([dx,dy,dz],np.float64)
+            
+            func = _abc
                 
             if return_domain:
                 domain = ((0.,2*pi),(0.,2*pi),(0.,2*pi))
                 
             if parameter_description:
-                p_str = """p[0] = A-amplitude, p[1] = B-amplitude, p[2] = C-amplitude,
-                           p[3] = forcing amplitude"""                 
+                p_str = "p[0] = A-amplitude, p[1] = B-amplitude, p[2] = C-amplitude, " + \
+                        "p[3] = forcing amplitude"
                 
                 
     match [return_domain,parameter_description]:
