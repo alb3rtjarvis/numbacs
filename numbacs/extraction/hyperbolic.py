@@ -2,7 +2,8 @@ import numpy as np
 from numba import njit, prange
 import numba                                 
 from ..utils import composite_simpsons_38_irregular, dist_2d, max_in_radius
-from interpolation.splines import UCGrid, eval_spline, prefilter
+from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
+from interpolation.splines import extrap_options as xto
 from math import copysign
 
 parallel_flag=True
@@ -54,10 +55,8 @@ def _reorient_eigvec(pt,x,y,eigvec):
     grid = ((x[indx-1],x[indx],2),(y[indy-1],y[indy],2))
     
     # Linear interpolant for eigenvectors based on grid box
-    eigvec_interp = np.array([eval_spline(grid,grid_eigvec_x,pt,k=1,
-                                          diff="None",extrap_mode="constant"),
-                              eval_spline(grid,grid_eigvec_y,pt,k=1,
-                                          diff="None",extrap_mode="constant")])
+    eigvec_interp = np.array([eval_linear(grid,grid_eigvec_x,pt,xto.CONSTANT),
+                              eval_linear(grid,grid_eigvec_y,pt,xto.CONSTANT)])
     return  eigvec_interp
 
        
@@ -633,7 +632,8 @@ def _endpoint_distances_lcs(pt,arr,dist_tol):
     return dist, tol_bool
 
 
-def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,percentile=0):
+def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,percentile=0,
+                 interp_method='linear'):
     """
     Compute hyperbolic LCS using eigval_max and eigvecs obtained from Cauchy Green
     tensor.
@@ -664,7 +664,9 @@ def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,pe
         minimum allowed value for lambda_avg for curve to be considered for lcs.
     percentile : int, optional
         percentile of eigval_max used for min allowed value. The default is 0.
-
+    interp_method : str, optional
+        method used for interpolation of eigenvalue field, options are
+        'linear' and 'cubic'. The default is 'linear'.
     Returns
     -------
     lcs_arr : np.ndarray, shape = (2*steps,2*k)
@@ -686,10 +688,15 @@ def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,pe
     max_vals,max_inds = max_in_radius(eigval_max.copy(),r,dx,dy,n=nmax)
     
     grid = UCGrid((x[1],x[-2],nx-2),(y[1],y[-2],ny-2))
-    C_eval = prefilter(grid,eigval_max_nb,out=None,k=3)
-    @njit
-    def eigval_max_spline(point):
-        return eval_spline(grid,C_eval,point,out=None,k=3,diff="None",extrap_mode="linear")
+    if interp_method == 'linear':
+        @njit
+        def eigval_max_spline(point):
+            return eval_linear(grid,eigval_max_nb,point,xto.LINEAR)    
+    elif interp_method == 'cubic':  
+        C_eval = prefilter(grid,eigval_max_nb,out=None,k=3)
+        @njit
+        def eigval_max_spline(point):
+            return eval_spline(grid,C_eval,point,out=None,k=3,diff="None",extrap_mode="linear")
     
     U0 = _lcs_region(eigval_max,eigvecs[:,:,:,1],dx,dy,percentile=percentile)
     nic = len(max_inds)
@@ -918,7 +925,7 @@ def hyperbolic_oecs(eigval_max,eigvecs,x,y,r,h,steps,maxlen,minval,n=-1):
     minval : float
         minimum value allowed for eigval_max.
     n : int, optional
-        number of local maxima to look for, if n = -1, all are used. The default is -1.
+        number of local maxima to look for, if n = -1, all are used. The default is -1.        
 
     Returns
     -------
@@ -937,7 +944,7 @@ def hyperbolic_oecs(eigval_max,eigvecs,x,y,r,h,steps,maxlen,minval,n=-1):
     grid = UCGrid((x[0],x[-1],nx),(y[0],y[-1],ny))
     @njit
     def eigval_max_interp(point):
-        return eval_spline(grid,eigval_max,point,out=None,k=1,diff="None",extrap_mode="constant")
+        return eval_linear(grid,eigval_max,point,xto.LINEAR)
     
     oecs_fwd, oecs_bwd, centers = _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,
                                           ic_inds,h,steps,maxlen,minval)
