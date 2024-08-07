@@ -72,6 +72,7 @@ instance/
 docs/
 docs/_build/
 data/
+requirements.txt
 
 # PyBuilder
 .pybuilder/
