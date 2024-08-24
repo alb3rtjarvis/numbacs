@@ -1,6 +1,5 @@
 import numpy as np
-from numba import njit, prange
-import numba                                 
+from numba import njit, prange, float64, int32, bool_                        
 from ..utils import composite_simpsons_38_irregular, dist_2d, max_in_radius
 from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
 from interpolation.splines import extrap_options as xto
@@ -35,10 +34,10 @@ def _reorient_eigvec(pt,x,y,eigvec):
     # Find which grid box point lies in
     indx = np.searchsorted(x, pt[0])
     indy = np.searchsorted(y, pt[1])
-    inds = np.array([[indx-1,indy-1],[indx-1,indy],[indx,indy-1],[indx,indy]],numba.int32)
-    grid_eigvecs = np.zeros((4,2),numba.float64)
-    grid_eigvec_x = np.zeros((2,2),numba.float64)
-    grid_eigvec_y = np.zeros((2,2),numba.float64)
+    inds = np.array([[indx-1,indy-1],[indx-1,indy],[indx,indy-1],[indx,indy]],int32)
+    grid_eigvecs = np.zeros((4,2),float64)
+    grid_eigvec_x = np.zeros((2,2),float64)
+    grid_eigvec_y = np.zeros((2,2),float64)
     
     # Orient eigenvectors
     for k in range(4):
@@ -56,7 +55,7 @@ def _reorient_eigvec(pt,x,y,eigvec):
     
     # Linear interpolant for eigenvectors based on grid box
     eigvec_interp = np.array([eval_linear(grid,grid_eigvec_x,pt,xto.CONSTANT),
-                              eval_linear(grid,grid_eigvec_y,pt,xto.CONSTANT)])
+                              eval_linear(grid,grid_eigvec_y,pt,xto.CONSTANT)],float64)
     return  eigvec_interp
 
        
@@ -135,7 +134,7 @@ def _in_region(pt,xvals,yvals,arr):
 
     indx1 = np.searchsorted(xvals, pt[0])
     indy1 = np.searchsorted(yvals, pt[1])
-    inds = np.array([[indx1-1,indy1-1],[indx1-1,indy1],[indx1,indy1-1],[indx1,indy1]],numba.int32)
+    inds = np.array([[indx1-1,indy1-1],[indx1-1,indy1],[indx1,indy1-1],[indx1,indy1]],int32)
     for k in range(4):
         near = arr[inds[k,0],inds[k,1]]
         if near == 1:
@@ -181,8 +180,8 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
     for direction in np.array([1,-1],np.int32):
         init_direction = direction                  # initialize integration direction
         L=0                                         # initialize failure length
-        y = np.zeros((steps+1,2),np.float64)
-        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],np.float64) # set initial condition
+        y = np.zeros((steps+1,2),float64)
+        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],float64) # set initial condition
         init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
         a1 = _alpha(y[0,:],eigval_max)              # initial alpha
         i = 0
@@ -292,13 +291,20 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
     for direction in np.array([1,-1],np.int32):
         init_direction = direction                  # initialize integration direction
         L=0                                         # initialize failure length
-        y = np.zeros((steps+1,2),np.float64)
-        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],np.float64) # set initial condition
-        init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
+        y = np.zeros((steps+1,2),float64)
+        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],float64) # set initial condition
+        init_vec = np.zeros(2,float64)
+        init_vec[0] = eigvec_min[ic_ind[0],ic_ind[1],0]
+        init_vec[1] = eigvec_min[ic_ind[0],ic_ind[1],1]
+        # init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
         s0 = eigval_max(y[0,:])                             # initial eigval
         i = 0
         remove_inds = 0
         monotone_flag = False
+        # k1 = np.zeros(2,float64)
+        # k2 = np.zeros(2,float64)
+        # k3 = np.zeros(2,float64)
+        # k4 = np.zeros(2,float64)
         while L<maxlen and i<steps:
             # rk4 to integrate tensorlines from eigvec_min field
             k1 = init_vec
@@ -335,14 +341,14 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
                 if np.dot(r0,r1) >= 0:
                     # set updated init_vector and init_direction
                     init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                    init_direction = np.sign(np.dot(k4,init_vec))
+                    init_direction = copysign(1,np.dot(k4,init_vec))
                     i+=1
                 else:
                     break
             else:
                 # set updated init_vector and init_direction
                 init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                init_direction = np.sign(np.dot(k4,init_vec))
+                init_direction = copysign(1,np.dot(k4,init_vec))
                 i+=1
         
         i -= remove_inds
@@ -376,7 +382,7 @@ def _arclength_arr(pts):
 
     """
     npts = len(pts)
-    arclength = np.zeros(npts-1,numba.float64)
+    arclength = np.zeros(npts-1,float64)
     for k in prange(npts-1):
         p0 = pts[k,:]
         p1 = pts[k+1,:]
@@ -407,12 +413,12 @@ def _pts_in_dist_ind(pt,arr,tol,attach_ind=-1):
         indices near pt from arr.
     
     """
-    inds = np.zeros((arr.shape[0]+1,2),numba.int32)
+    inds = np.zeros((arr.shape[0]+1,2),int32)
     for k in range(arr.shape[0]):
         if dist_2d(pt, arr[k,1:]) < tol:
-            inds[k,:] = np.array([int(arr[k,0]),1],numba.int32)
+            inds[k,:] = np.array([int(arr[k,0]),1],int32)
     if attach_ind != -1:
-        inds[k+1,:] = np.array([attach_ind,1],numba.int32)
+        inds[k+1,:] = np.array([attach_ind,1],int32)
         
     return np.unique(inds[inds[:,1]==1,0])   
 
@@ -447,11 +453,11 @@ def _hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
     nt = int(tensorlines.shape[-1]/2)       # number of tensorlines
     max_intersects=10                       # maximum times we look at tensorline intersection
     keep_inds = -1*np.ones(nt,np.int32)    # prealocate array for inds to keep
-    # keep_inds_bool = np.zeros(nt,numba.bool_)
-    # keep_inds = np.arange(0,nt,numba.int32)
+    # keep_inds_bool = np.zeros(nt,bool_)
+    # keep_inds = np.arange(0,nt,int32)
     jj = 0
     for vl in vlines:
-        v_intersect = np.zeros((nt*max_intersects,3),np.float64) # prealocate 
+        v_intersect = np.zeros((nt*max_intersects,3),float64) # prealocate 
         ii=0        # initialize counter for storing intersection points
         for k in range(nt): 
             len_ind = int(tensorlines[-1,2*k])   # ind len of tensorline k
@@ -496,7 +502,7 @@ def _hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
             keep_inds[jj] = max_ind                         # keep the max
             jj+=1
     for hl in hlines:
-        h_intersect = np.zeros((nt*max_intersects,3),numba.float64) # prealocate 
+        h_intersect = np.zeros((nt*max_intersects,3),float64) # prealocate 
         ii = 0      # initialize counter for storing intersection points
         for k in range(nt):
             len_ind = int(tensorlines[-1,2*k])  # ind len of tensorline k
@@ -574,7 +580,7 @@ def _lcs_region(eigval_max,eigvec_max,dx,dy,percentile=0):
     else:
         eigval_min_val = np.percentile(eigval_max,percentile)
     nx,ny = eigval_max.shape
-    lcs_reg = np.zeros((nx,ny),numba.int32)
+    lcs_reg = np.zeros((nx,ny),int32)
     for i in prange(2,nx-2):
         for j in range(2,ny-2):
             if eigval_max[i,j] <= eigval_min_val:
@@ -623,8 +629,8 @@ def _endpoint_distances_lcs(pt,arr,dist_tol):
     """
     
     len_arr = arr.shape[0]
-    dist = np.zeros(len_arr,numba.float64)
-    tol_bool = np.zeros(len_arr,numba.bool_)
+    dist = np.zeros(len_arr,float64)
+    tol_bool = np.zeros(len_arr,bool_)
     for k in prange(len_arr):
         dist[k] = ((arr[k,0]-pt[0])**2 + (arr[k,1]-pt[1])**2)**0.5
         if dist[k] < dist_tol:
@@ -758,11 +764,12 @@ def hyperbolic_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines
     nmax : int
         number of maxima, i.e. initial conditions for tensorlines.
     dist_tol : float
-        distance tolerance used when comparing candidate LCS.
+        distance tolerance used when comparing candidate LCS. If dist_tol = 0.0,
+        no comparison will be made and all candidate LCS will be returned.
     nlines : int
         number of lines in dimension with largest length used when comparing
         candidate LCS, number of lines in other dimension will be scaled by
-        the ratio of the dimensions lengths.    
+        the ratio of the dimensions lengths. Only used if dist_tol > 0.    
     lambda_avg_min : int
         minimum allowed value for lambda_avg for curve to be considered for lcs. The default is 0.
     percentile : int, optional
@@ -770,7 +777,7 @@ def hyperbolic_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines
     ep_dist_tol : float, optional
         value used to compare starting/ending points of curves, if endpoints are within
         this value, all curves with smaller lambda_avg values are discarded. If
-        ep_dist_tol < 0.0, this step is skipped and endpoints are not compared. The
+        ep_dist_tol <= 0.0, this step is skipped and endpoints are not compared. The
         default is 0.0.
     arclen_flag : bool, optional
         flag to determine if the average attraction/repulsion rate along curve is used
@@ -875,9 +882,9 @@ def _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,ic_inds,h,steps,maxlen,minval
     eigvec_min = eigvecs[:,:,:,0]
     eigvec_max = eigvecs[:,:,:,1]
     ni = ic_inds.shape[0]
-    oecs_fwd = np.zeros((ni,2*steps+1,2),np.float64)
-    oecs_bwd = np.zeros((ni,2*steps+1,2),np.float64)
-    centers = np.zeros((ni,2),np.float64)
+    oecs_fwd = np.zeros((ni,2*steps+1,2),float64)
+    oecs_bwd = np.zeros((ni,2*steps+1,2),float64)
+    centers = np.zeros((ni,2),float64)
     keep_inds = np.zeros(ni,np.bool_)
     for k in prange(ni):
         ic = ic_inds[k,:]
