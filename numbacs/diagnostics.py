@@ -1,7 +1,6 @@
 import numpy as np
 from math import log
-import numba
-from numba import njit, prange
+from numba import njit, prange, float64
 from .utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_diff_ND
 
 parallel_flag = True
@@ -30,7 +29,7 @@ def ftle_grid_2D(flowmap,T,dx,dy):
 
     """
     nx,ny = flowmap.shape[:-1]
-    ftle = np.zeros((nx,ny),numba.float64)
+    ftle = np.zeros((nx,ny),float64)
     absT = abs(T)
     for i in prange(1,nx-1):
         for j in range(1,ny-1):
@@ -76,7 +75,7 @@ def ftle_grid_2D_edge(flowmap,T,dx,dy):
 
     """
     nx,ny = flowmap.shape[:-1]
-    ftle = np.zeros((nx,ny),numba.float64)
+    ftle = np.zeros((nx,ny),float64)
     absT = abs(T)
     for i in prange(nx):
         if i == 0:
@@ -134,7 +133,7 @@ def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
 
     """
     nx,ny = flowmap_aux.shape[:2]
-    C = np.zeros((nx,ny,3),numba.float64)
+    C = np.zeros((nx,ny,3),float64)
     for i in prange(2,nx-2):
         for j in range(2,ny-2):
             dxdx_aux = (flowmap_aux[i,j,0,0] - flowmap_aux[i,j,1,0])/(2*h)
@@ -179,8 +178,8 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
     """
 
     nx,ny = flowmap_aux.shape[:-2]
-    eigvals = np.zeros((nx,ny,2),numba.float64)
-    eigvecs = np.zeros((nx,ny,2,2),numba.float64)
+    eigvals = np.zeros((nx,ny,2),float64)
+    eigvecs = np.zeros((nx,ny,2,2),float64)
     if eig_main:
         for i in prange(2,nx-2):
             for j in range(2,ny-2):
@@ -255,8 +254,8 @@ def C_eig_2D(flowmap,dx,dy):
     """
 
     nx,ny = flowmap.shape[:-1]
-    eigvals = np.zeros((nx,ny,2),numba.float64)
-    eigvecs = np.zeros((nx,ny,2,2),numba.float64)
+    eigvals = np.zeros((nx,ny,2),float64)
+    eigvecs = np.zeros((nx,ny,2,2),float64)
     for i in prange(1,nx-1):
         for j in range(1,ny-1):
             dxdx = (flowmap[i+1,j,0] - flowmap[i-1,j,0])/(2*dx)
@@ -338,13 +337,13 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
 
     nx,ny,n = flowmap_n.shape[:-1]
     npts = len(xrav)
-    vort_avg = np.zeros(n,numba.float64)
+    vort_avg = np.zeros(n,float64)
     for k in prange(n):
         gpts = np.column_stack((tspan[k]*np.ones(npts),xrav,yrav))
         vort_k = vort_interp(gpts)
         vort_avg[k] = np.mean(vort_k)
         
-    lavd = np.zeros((nx,ny),numba.float64)
+    lavd = np.zeros((nx,ny),float64)
     dt = abs(tspan[1] - tspan[0])
     if period_x + period_y == 0.0:
         tspan = np.expand_dims(tspan,axis=1)
@@ -423,7 +422,7 @@ def ftle_grid_ND(flowmap,IC,T,dX):
                 dXdir[ii] = -1
             else:
                 dXdir[ii] = 0  
-        Df = np.zeros((ndims,ndims),numba.float64)                   
+        Df = np.zeros((ndims,ndims),float64)                   
         for i in range(ndims):
             for j in range(ndims):
                 Df[i,j] = finite_diff_ND(flowmap[:,i],inds,dX[j],j,grid_shape,dXdir[j])
@@ -467,14 +466,14 @@ def ile_2D_func(vel,x,y,t0=None,h=1e-3):
     """
 
     nx,ny = len(x), len(y)
-    ile = np.zeros((nx,ny),numba.float64)
+    ile = np.zeros((nx,ny),float64)
     if t0 is None:
-        dx_vec = np.array([h,0.0],numba.float64)
-        dy_vec = np.array([0.0,h],numba.float64)
+        dx_vec = np.array([h,0.0],float64)
+        dy_vec = np.array([0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
                     
-                pt = np.array([x[i],y[j]],numba.float64)
+                pt = np.array([x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
@@ -483,12 +482,12 @@ def ile_2D_func(vel,x,y,t0=None,h=1e-3):
                 S = 0.5*(grad_vel + grad_vel.T)
                 ile[i,j] = np.linalg.eigvalsh(S)[-1]
     else:
-        dx_vec = np.array([0.0,h,0.0],numba.float64)
-        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        dx_vec = np.array([0.0,h,0.0],float64)
+        dy_vec = np.array([0.0,0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
                     
-                pt = np.array([t0,x[i],y[j]],numba.float64)
+                pt = np.array([t0,x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
@@ -529,14 +528,14 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
     """
 
     nx,ny = len(x), len(y)
-    eigvals = np.zeros((nx,ny,2),numba.float64)
-    eigvecs = np.zeros((nx,ny,2,2),numba.float64)
+    eigvals = np.zeros((nx,ny,2),float64)
+    eigvecs = np.zeros((nx,ny,2,2),float64)
     if t0 is None:
-        dx_vec = np.array([h,0.0],numba.float64)
-        dy_vec = np.array([0.0,h],numba.float64)
+        dx_vec = np.array([h,0.0],float64)
+        dy_vec = np.array([0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
-                pt = np.array([x[i],y[j]],numba.float64)
+                pt = np.array([x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
@@ -546,11 +545,11 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
                 eigvals[i,j,:] = evals_tmp
                 eigvecs[i,j,:,:] = evecs_tmp
     else:
-        dx_vec = np.array([0.0,h,0.0],numba.float64)
-        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        dx_vec = np.array([0.0,h,0.0],float64)
+        dy_vec = np.array([0.0,0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
-                pt = np.array([t0,x[i],y[j]],numba.float64)
+                pt = np.array([t0,x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
@@ -594,23 +593,23 @@ def S_2D_func(vel,x,y,t0=None,h=1e-3):
     """
 
     nx,ny = len(x), len(y)
-    S = np.zeros((nx,ny,3),numba.float64)
+    S = np.zeros((nx,ny,3),float64)
     if t0 is None:
-        dx_vec = np.array([h,0.0],numba.float64)
-        dy_vec = np.array([0.0,h],numba.float64)
+        dx_vec = np.array([h,0.0],float64)
+        dy_vec = np.array([0.0,h],float64)
         for i in prange(nx):
             for j in range(ny):
-                pt = np.array([x[i],y[j]],numba.float64)
+                pt = np.array([x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
                 S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
     else:
-        dx_vec = np.array([0.0,h,0.0],numba.float64)
-        dy_vec = np.array([0.0,0.0,h],numba.float64)
+        dx_vec = np.array([0.0,h,0.0],float64)
+        dy_vec = np.array([0.0,0.0,h],float64)
         for i in prange(nx):
             for j in range(ny):
-                pt = np.array([t0,x[i],y[j]],numba.float64)
+                pt = np.array([t0,x[i],y[j]],float64)
                 
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
@@ -684,8 +683,8 @@ def S_eig_2D_data(u,v,dx,dy):
     """
 
     nx,ny = u.shape
-    eigvals = np.zeros((nx,ny,2),numba.float64)
-    eigvecs = np.zeros((nx,ny,2,2),numba.float64)
+    eigvals = np.zeros((nx,ny,2),float64)
+    eigvecs = np.zeros((nx,ny,2,2),float64)
     for i in prange(1,nx-1):
         for j in range(1,ny-1):
 
