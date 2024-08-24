@@ -228,8 +228,8 @@ def curl_vel(u,v,dx,dy):
     curl = np.zeros((nx,ny),numba.float64)
     for i in range(1,nx-1):
         for j in range(1,ny-1):
-            dfydx = (v[i+1,j] - v[i-1,j])(2*dx)
-            dfxdy = (u[i,j+1] - u[i,j-1])(2*dy)
+            dfydx = (v[i+1,j] - v[i-1,j])/(2*dx)
+            dfxdy = (u[i,j+1] - u[i,j-1])/(2*dy)
             
             curl[i,j] = dfydx - dfxdy
     
@@ -263,8 +263,8 @@ def curl_vel_tspan(u,v,dx,dy):
     for k in prange(nt):
         for i in range(1,nx-1):
             for j in range(1,ny-1):
-                dfydx = (v[k,i+1,j] - v[k,i-1,j])(2*dx)
-                dfxdy = (u[k,i,j+1] - u[k,i,j-1])(2*dy)
+                dfydx = (v[k,i+1,j] - v[k,i-1,j])/(2*dx)
+                dfxdy = (u[k,i,j+1] - u[k,i,j-1])/(2*dy)
                 
                 curl[k,i,j] = dfydx - dfxdy
     
@@ -689,7 +689,7 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
 def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
     """
     Generate points filling a circle with radius r and center c. Uses the sunflower
-    seed arangement.
+    seed arangement. Also returns radius.
 
     Parameters
     ----------
@@ -751,6 +751,34 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
     return pts, radius
 
 
+
+@njit
+def arclength(pts):
+    """
+    Compute total arclength of curve defined by pts.
+
+    Parameters
+    ----------
+    pts : np.ndarray, shape=(npts,)
+        points representing curve for which arclength is to be computed.
+
+    Returns
+    -------
+    arclength_ : float
+        arclength of curve defined by points.
+
+    """
+    npts = len(pts)
+    arclength_ = 0
+    for k in prange(npts-1):
+        p0 = pts[k,:]
+        p1 = pts[k+1,:]
+        arclength_ += ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
+        
+    return arclength_
+
+
+
 @njit
 def arclength_along_arc(pts):
     """
@@ -763,19 +791,19 @@ def arclength_along_arc(pts):
 
     Returns
     -------
-    arclength : np.ndarray, shape = (npts,)
+    arclength_ : np.ndarray, shape = (npts,)
         array containing cummulative arclength of curve defined by pts.
 
     """
     npts = len(pts)
-    arclength = np.zeros(npts,numba.float64)
-    arclength[0] = 0.0
+    arclength_ = np.zeros(npts,numba.float64)
+    arclength_[0] = 0.0
     for k in range(1,npts):
         p0 = pts[k-1,:]
         p1 = pts[k,:]
-        arclength[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5 + arclength[k-1]
+        arclength_[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5 + arclength_[k-1]
         
-    return arclength
+    return arclength_
 
 
 def interp_curve(curve,n,s=0,k=3,per=0):
@@ -804,7 +832,7 @@ def interp_curve(curve,n,s=0,k=3,per=0):
 
     """
     
-    tck, u = splprep([curve[:,0], curve[:,1]], s=s, per=per)
+    tck, u = splprep([curve[:,0], curve[:,1]], k=k, s=s, per=per)
     xi, yi = splev(np.linspace(0, 1, n), tck)
     
     curvei = np.column_stack((xi,yi))
