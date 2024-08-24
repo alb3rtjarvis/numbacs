@@ -1,9 +1,10 @@
 from math import sin, cos, pi, cosh, tanh, sqrt
 import numpy as np
-from numba import njit, cfunc
+from numba import njit, cfunc, float64
 from numbalsoda import lsoda_sig
 from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
 from interpolation.splines import extrap_options as xto
+
 def get_interp_arrays_2D(tvals,xvals,yvals,U,V):
     """
     Compute coefficient arrays for cubic spline of velocity field defined by U,V over values
@@ -193,7 +194,8 @@ def get_flow_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=
     return funcptr
 
 
-def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=6371.):
+def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant',r=6371.0,
+                    fdtype=float64):
     """
     Create a jit-callable spline for the ode defined by the vector field (U,V) defined over
     a spatial grid given by (xvals,yvals) over times defined by tvals.
@@ -215,7 +217,10 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
     extrap_mode : str, optional
         type of extrapolation mode used for interpolant. The default is 'constant'.
     r : float, optional
-        radius used for spherical conversion, used if spherical = 1. The default is 6371.
+        radius used for spherical conversion, used if spherical = 1. The default is 6371.0.
+    fdtype : datatype, optional
+        data type used for floats. The default is float64 which is a reference to numba.float64.
+        Using numba dtypes is marginally faster than numpy dtypes, both will work.
 
     Returns
     -------
@@ -232,7 +237,7 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
                                       extrap_mode=extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
             vi = eval_spline(grid_vel,C_eval_v,point,out=None,k=3,diff="None",
                                       extrap_mode=extrap_mode)*180/(pi*r)
-            return np.array([ui,vi],np.float64)
+            return np.array([ui,vi],fdtype)
         
     else:
         @njit
@@ -242,7 +247,7 @@ def get_callable_2D(grid_vel,C_eval_u,C_eval_v,spherical=0,extrap_mode='constant
                              extrap_mode=extrap_mode)
             vi = eval_spline(grid_vel,C_eval_v,point,out=None,k=3,diff="None",
                              extrap_mode=extrap_mode)
-            return np.array([ui,vi],np.float64)
+            return np.array([ui,vi],fdtype)
         
     return vel_spline
         
@@ -280,7 +285,7 @@ def get_callable_scalar(grid_f,C_eval_f,extrap_mode='constant'):
 
 
 def get_flow_linear_2D(grid_vel,U,V,spherical=0,
-                return_interp=False,extrap_mode='constant',r=6371.):
+                       return_interp=False,extrap_mode='constant',r=6371.):
     """
     Create a C callback for the ode defined by the vector field (U,V) defined over
     a grid given by (xvals,yvals) over times defined by tvals. Linear interpolant
@@ -362,7 +367,7 @@ def get_flow_linear_2D(grid_vel,U,V,spherical=0,
     return funcptr
 
 
-def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=6371.):
+def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=6371.0,fdtype=float64):
     """
     Create a jit-callable for the ode defined by the vector field (U,V) defined over
     a spatial grid given by (xvals,yvals) over times defined by tvals. Linear interpolant
@@ -387,7 +392,10 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
     extrap_mode : str, optional
         type of extrapolation mode used for interpolant. The default is 'constant'.
     r : float, optional
-        radius used for spherical conversion, used if spherical > 0. The default is 6371.
+        radius used for spherical conversion, used if spherical > 0. The default is 6371.0.
+    fdtype : datatype, optional
+        data type used for floats. The default is float64 which is a reference to numba.float64.
+        Using numba dtypes is marginally faster than numpy dtypes, both will work.        
 
     Returns
     -------
@@ -408,7 +416,7 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
 
             ui = eval_linear(grid_vel,U,point,extrap_mode)*180/(pi*r*cos(point[2]*pi/180))
             vi = eval_linear(grid_vel,V,point,extrap_mode)*180/(pi*r)
-            return np.array([ui,vi],np.float64)
+            return np.array([ui,vi],fdtype)
         
     else:
         @njit
@@ -416,7 +424,7 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
             
             ui = eval_linear(grid_vel,U,point,extrap_mode)
             vi = eval_linear(grid_vel,V,point,extrap_mode)
-            return np.array([ui,vi],np.float64)
+            return np.array([ui,vi],fdtype)
         
     return vel_spline
 
@@ -497,15 +505,15 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
             def _double_gyre(t,y,dy,p):
                 """
                 p[0] = int_direction, p[1] = A, p[2] = eps, p[3] = alpha, p[4] = omega,
-                p[5] = psi, p[6] = eta
+                p[5] = psi
                 """
                 tt = p[0]*t
                 a = p[2]*sin(p[4]*tt + p[5])
-                b = 1 - 2*p[2]*sin(p[4]*tt + p[5])
+                b = 1 - 2*a
                 f = a*y[0]**2 + b*y[0]
                 df = 2*a*y[0] + b
-                dy[0] = p[0]*(-pi*p[1]*sin(pi*f)*cos(pi*y[1]) - p[3]*y[0] + p[6])
-                dy[1] = p[0]*(pi*p[1]*cos(pi*f)*sin(pi*y[1])*df - p[3]*y[1] + p[6])
+                dy[0] = p[0]*(-pi*p[1]*sin(pi*f)*cos(pi*y[1]) - p[3]*y[0])
+                dy[1] = p[0]*(pi*p[1]*cos(pi*f)*sin(pi*y[1])*df - p[3]*y[1])
             
             funcptr = _double_gyre.address
                 
@@ -515,16 +523,15 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 alpha = 0.
                 omega = 0.2*pi
                 psi = 0.
-                eta = 0.
                 
-                default_params = np.array([int_direction,A,eps,alpha,omega,psi,eta])
+                default_params = np.array([int_direction,A,eps,alpha,omega,psi])
                 
             if return_domain:
                 domain = ((0.,2.),(0.,1.))
                 
             if parameter_description:
                 p_str = "p[0] = int_direction, p[1] = A, p[2] = eps, p[3] = alpha, " + \
-                        "p[4] = omega, p[5] = psi, p[6] = eta"
+                        "p[4] = omega, p[5] = psi"
                 
                 
         case 'bickley_jet':
@@ -583,8 +590,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
                 p[4] = forcing amplitdue
                 """
                 tt = p[0]*t
-                dy[0] = p[0]*((p[1]+p[4]*sin(pi*tt))*sin(y[2]) + p[3]*cos(y[1]))
-                dy[1] = p[0]*(p[2]*sin(y[0]) + (p[1] + p[4]*sin(pi*tt))*cos(y[1]))
+                dy[0] = p[0]*((p[1]+p[4]*tt*sin(pi*tt))*sin(y[2]) + p[3]*cos(y[1]))
+                dy[1] = p[0]*(p[2]*sin(y[0]) + (p[1] + p[4]*tt*sin(pi*tt))*cos(y[1]))
                 dy[2] = p[0]*(p[3]*sin(y[1]) + p[2]*cos(y[1]))
                 
             funcptr = _abc.address
@@ -624,7 +631,8 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
             return funcptr, default_params, domain, p_str  
 
 
-def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_description=False):
+def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_description=False,
+                            fdtype=float64):
     """
     Create a C callback for one of the predefined flows.
 
@@ -639,7 +647,10 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
         flag to determine if domain will be returned. The default is True.
     parameter_description : boolean, optional
         flag to determine if string containing description of parameters is returned.
-        The default if False.        
+        The default if False.    
+    fdtype : datatype, optional
+        data type used for floats. The default is float64 which is a reference to numba.float64.
+        Using numba dtypes is marginally faster than numpy dtypes, both will work.        
 
     Returns
     -------
@@ -661,25 +672,24 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 alpha = 0.
                 omega = 0.2*pi
                 psi = 0.
-                eta = 0.
-                default_params = np.array([A,eps,alpha,omega,psi,eta])
+                default_params = np.array([A,eps,alpha,omega,psi],fdtype)
                 p = default_params
             else:
                 p = params
             @njit
             def _double_gyre(y):
                 """
-                p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi, p[5] = eta
+                p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi
                 """
                 
                 a = p[1]*sin(p[3]*y[0] + p[4])
-                b = 1 - 2*p[1]*sin(p[3]*y[0] + p[4])
+                b = 1 - 2*a
                 f = a*y[1]**2 + b*y[1]
                 df = 2*a*y[1] + b
-                dx = -pi*p[0]*sin(pi*f)*cos(pi*y[2]) - p[2]*y[1] + p[5]
-                dy = pi*p[0]*cos(pi*f)*sin(pi*y[2])*df - p[2]*y[2] + p[5]
+                dx = -pi*p[0]*sin(pi*f)*cos(pi*y[2]) - p[2]*y[1]
+                dy = pi*p[0]*cos(pi*f)*sin(pi*y[2])*df - p[2]*y[2]
                                   
-                return np.array([dx,dy],np.float64)
+                return np.array([dx,dy],fdtype)
             
             func = _double_gyre
                 
@@ -687,8 +697,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 domain = ((0.,2.),(0.,1.))
                 
             if parameter_description:
-                p_str = "p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi, " + \
-                        "p[5] = eta"
+                p_str = "p[0] = A, p[1] = eps, p[2] = alpha, p[3] = omega, p[4] = psi"
                 
                 
         case 'bickley_jet':
@@ -706,7 +715,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 c2 = 0.205*U0
                 c3 = 0.461*U0
                 c1 = c3 + (sqrt(5) - 1)*(c2-c3)
-                default_params = np.array([U0,L,A1,A2,A3,k1,k2,k3,c1,c2,c3])
+                default_params = np.array([U0,L,A1,A2,A3,k1,k2,k3,c1,c2,c3],fdtype)
                 p = default_params
             else:
                 p = params            
@@ -727,7 +736,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                                        p[3]*p[6]*sin(p[6]*(y[1] - p[9]*y[0])) + 
                                        p[4]*p[7]*sin(p[7]*(y[1] - p[10]*y[0])))
                     
-                return np.array([dx,dy],np.float64)
+                return np.array([dx,dy],fdtype)
             
             func = _bickley_jet
             
@@ -746,7 +755,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 B = 2**0.5
                 C = 1.
                 f = 0.5
-                default_params = np.array([A,B,C,f])
+                default_params = np.array([A,B,C,f],fdtype)
                 p = default_params
             else:
                 p = params
@@ -755,11 +764,11 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
                 """
                 p[0] = A-amplitude, p[1] = B-amplitude, p[2] = C-amplitude, p[3] = forcing amplitude
                 """
-                dx = (p[0]+p[3]*sin(pi*y[0]))*sin(y[3]) + p[2]*cos(y[2])
-                dy = p[1]*sin(y[1]) + (p[0] + p[3]*sin(pi*y[0]))*cos(y[2])
+                dx = (p[0]+p[3]*y[0]*sin(pi*y[0]))*sin(y[3]) + p[2]*cos(y[2])
+                dy = p[1]*sin(y[1]) + (p[0] + p[3]*y[0]*sin(pi*y[0]))*cos(y[2])
                 dz = p[2]*sin(y[2]) + p[1]*cos(y[2])
-                
-                return np.array([dx,dy,dz],np.float64)
+            
+                return np.array([dx,dy,dz],fdtype)
             
             func = _abc
                 
@@ -776,7 +785,7 @@ def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_de
             return func
         case [True,False]:
             return func, domain
-        case [True,False]:
+        case [False,True]:
             return func, p_str
         case [True,True]:
             return func, domain, p_str
