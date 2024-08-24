@@ -1,36 +1,13 @@
 import numpy as np
 from numba import njit                                 
-from ..utils import max_in_radius, shoelace, pts_in_poly
-from math import pi, atan2
+from ..utils import max_in_radius, shoelace, pts_in_poly, arclength
 from contourpy import contour_generator
 from scipy.spatial import ConvexHull
 
 
-@njit
-def is_approx_convex(curve,ang_tol=pi/8):
-    convex = True
-    n = curve.shape[0]
-    ang = np.zeros(n,np.float64)
-    
-    for k in range(n-2):
-        p0 = curve[k,:]
-        p1 = curve[k+1,:]
-        p2 = curve[k+2,:]
-        x1 = p1[0] - p0[0]
-        y1 = p1[1] - p0[1]
-        x2 = p2[0] - p1[0]
-        y2 = p2[1] - p1[1]
-        dot = x1*x2 + y1*y2
-        cross = x1*y2 - y1*x2
-        ang[k] = atan2(cross,dot)
-        if ang[k] < -ang_tol:
-            convex = False
-            break
-    return convex
-
 
 def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-3,min_val=-1.0,
-        nlevs=20,start_level=0.0,end_level=0.0):
+        nlevs=20,start_level=0.0,end_level=0.0,min_len=0.0):
     """
     Compute rotationally coherent vortices which are (approximately) convex closed
     contours of the lavd (or ivd) field.
@@ -93,14 +70,12 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
     nrem = len(rem_max_pts)
     rcv = []
     c = contour_generator(x=x,y=y,z=lavd.T)
-    
-    match convexity_method:
-        case 'convex_hull':
-            for k in range(nlevs):
-                ck = c.lines(clevels[k])
-                
-                for contour in ck:
-                    if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
+    if min_len:
+        for k in range(nlevs):
+            ck = c.lines(clevels[k])
+            for contour in ck:
+                if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
+                    if arclength(contour) > min_len:
                         ind = pts_in_poly(contour,rem_max_pts)
                         if ind >= 0:
                             hull = ConvexHull(contour)
@@ -115,23 +90,26 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
                                 if nrem == 0:
                                     
                                     return rcv
-        case 'angle':
-            for k in range(nlevs):
-                ck = c.lines(clevels[k])
-                
-                for contour in ck:
-                    if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
-                        ind = pts_in_poly(contour,rem_max_pts)
-                        if ind >= 0:
-                            if is_approx_convex(contour,ang_tol=convexity_deficiency):
-                                rcv.append([contour,rem_max_pts[ind,:]])
-                                mask = np.ones(nrem,np.bool_)
-                                mask[ind] = False
-                                rem_max_pts = rem_max_pts[mask,:]
-                                nrem = len(rem_max_pts)
-                                if nrem == 0:
-                                    
-                                    return rcv
+    else:
+        for k in range(nlevs):
+            ck = c.lines(clevels[k])
+            for contour in ck:
+                if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
+                    ind = pts_in_poly(contour,rem_max_pts)
+                    if ind >= 0:
+                        hull = ConvexHull(contour)
+                        ch = contour[np.hstack((hull.vertices,hull.vertices[0])),:]
+                        area = shoelace(contour)
+                        if (hull.volume - area)/area < convexity_deficiency:
+                            rcv.append([ch,rem_max_pts[ind,:]])
+                            mask = np.ones(nrem,np.bool_)
+                            mask[ind] = False
+                            rem_max_pts = rem_max_pts[mask,:]
+                            nrem = len(rem_max_pts)
+                            if nrem == 0:
+                                
+                                return rcv                                
+                        
                             
                             
     return rcv
