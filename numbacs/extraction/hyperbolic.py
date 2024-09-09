@@ -5,8 +5,6 @@ from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
 from interpolation.splines import extrap_options as xto
 from math import copysign
 
-parallel_flag=True
-
 @njit
 def _reorient_eigvec(pt,x,y,eigvec):
     """
@@ -365,7 +363,7 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
 
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def _arclength_arr(pts):
     """
     Compute arclength of each segment of curve defined by pts.
@@ -551,7 +549,7 @@ def _hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
     return keep_inds[:jj]
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def _lcs_region(eigval_max,eigvec_max,dx,dy,percentile=0):
     """
     Compute LCS region.
