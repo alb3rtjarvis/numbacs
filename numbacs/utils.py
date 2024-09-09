@@ -931,3 +931,56 @@ def pts_in_poly_mask(polygon,pts):
         mask[k] = wn_pt_in_poly(polygon,pts[k,:])
         
     return mask
+
+
+@njit(parallel=True)
+def cart_prod(vecs):
+    """
+    Computes the Cartesian product using vectors from vecs, works for any
+    number of vectors.
+
+    Parameters
+    ----------
+    vecs : tuple
+        tuple containing vectors representing the sets which will be used
+        to compute Cartestian product, all vectors must be 1D np.ndarrays
+        of the same type.
+
+    Returns
+    -------
+    prod : np.ndarray, shape = (npts,nvecs)
+        array containing the Cartesian product.
+
+    """
+    
+    nvecs = len(vecs)
+    dtype = vecs[0].dtype
+    shape = np.zeros(nvecs,np.int32)
+    for k in range(nvecs):
+        shape[k] = len(vecs[k])
+    npts = np.prod(shape)
+    prod = np.zeros((npts,nvecs),dtype)
+    
+    if nvecs > 2:
+        for k in prange(nvecs-1):
+            cl = np.prod(shape[-1:k:-1])
+            arr = vecs[k]
+            shapek = shape[k]
+            for j in range(shapek):
+                prod[j*cl:(j+1)*cl,k] = arr[j]
+                
+            full_len = shapek*cl
+            for i in range(np.prod(shape[:k])-1):
+                prod[(i+1)*full_len:(i+2)*full_len,k] = prod[:full_len,k]
+    else:
+        cl = shape[1]
+        arr = vecs[0]
+        for j in prange(shape[0]):
+            prod[j*cl:(j+1)*cl,0] = arr[j]
+                        
+    nlast = shape[-1]
+    arr = vecs[-1]
+    for j in prange(np.prod(shape[:-1])):
+        prod[j*nlast:(j+1)*nlast,-1] = arr 
+
+    return prod
