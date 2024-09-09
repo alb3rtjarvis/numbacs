@@ -3,9 +3,8 @@ from math import log
 from numba import njit, prange, float64
 from .utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_diff_ND
 
-parallel_flag = True
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ftle_grid_2D(flowmap,T,dx,dy):
     """
     Compute 2D FTLE field from flowmap which is solution of ode over an initial grid defined by x
@@ -51,7 +50,7 @@ def ftle_grid_2D(flowmap,T,dx,dy):
     return ftle
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ftle_grid_2D_edge(flowmap,T,dx,dy):
     """
     Compute 2D FTLE field from flowmap which is solution of ode over an initial grid defined by x
@@ -109,7 +108,7 @@ def ftle_grid_2D_edge(flowmap,T,dx,dy):
     return ftle
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
     """
     Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
@@ -149,7 +148,7 @@ def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
     return C
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
     """
     Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
@@ -229,7 +228,7 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
     return eigvals,eigvecs
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def C_eig_2D(flowmap,dx,dy):
     """
     Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
@@ -299,7 +298,7 @@ def ftle_from_eig(eigval_max,T):
     return ftle
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0.0):
     """
     Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
@@ -383,7 +382,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
             
     return lavd
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ftle_grid_ND(flowmap,IC,T,dX):
     """
     Compute ND FTLE field from flowmap which is solution of ode over an initial grid defined by IC
@@ -438,7 +437,7 @@ def ftle_grid_ND(flowmap,IC,T,dX):
     return ftle
     
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ile_2D_func(vel,x,y,t0=None,h=1e-3):
     """
     Compute the iLE field from the flow defined by vel which is a jit-callable function, step size
@@ -498,7 +497,7 @@ def ile_2D_func(vel,x,y,t0=None,h=1e-3):
             
     return ile
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
     """
     Compute eigenvalues and eigenvectors of Eulerian rate of strain tensor in 2D from vel which
@@ -563,7 +562,7 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
     return eigvals,eigvecs
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def S_2D_func(vel,x,y,t0=None,h=1e-3):
     """
     Compute Eulerian rate of strain tensor in 2D from vel which is a jit-callable functions,
@@ -618,7 +617,7 @@ def S_2D_func(vel,x,y,t0=None,h=1e-3):
             
     return S
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ile_2D_data(u,v,dx,dy):
     """
     Compute the iLE field from the flow defined by u,v over an intial grid defined by x,y.
@@ -656,7 +655,7 @@ def ile_2D_data(u,v,dx,dy):
             
     return ile
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def S_eig_2D_data(u,v,dx,dy):
     """
     Compute eigenvalues and eigenvectors of Eulerian rate of strain tensor in 2D from u,v which
