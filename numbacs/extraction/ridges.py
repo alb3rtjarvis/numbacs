@@ -5,10 +5,8 @@ from ..utils import ravel_index
 from math import copysign, floor, acos, atan2, pi
 from scipy.ndimage import label, generate_binary_structure
 
-parallel_flag=True
 
-
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def ftle_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
     """
     Compute FTLE ridge points by finding points (with subpixel accuracy) at which:
@@ -77,7 +75,7 @@ def ftle_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
     return r_pts[ridge_bool,:]
 
 
-@njit(parallel=parallel_flag)
+@njit(parallel=True)
 def _ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0):
     """
     Compute FTLE ridge points by finding points (with subpixel accuracy) at which:
@@ -214,14 +212,14 @@ def ftle_ridges(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,min_ridge_pts=3):
     """
     
     r_pts_, ridge_bool_, nx, ny = _ftle_ridges(f,eigvec_max,x,y,
-                                                sdd_thresh=sdd_thresh,
-                                                percentile=percentile)
+                                               sdd_thresh=sdd_thresh,
+                                               percentile=percentile)
     nx,ny = f.shape
     s = generate_binary_structure(2,2)
     labels,nlabels = label(ridge_bool_,structure=s)
     ind_arr = np.arange(0,nx*ny).reshape(nx,ny)
     ridges = []
-    for i in range(nlabels):
+    for i in range(1,nlabels+1):
         inds = ind_arr[labels==i]
         ridges.append(_get_ridges(r_pts_,inds,nx,ny,min_ridge_pts))
         
@@ -564,10 +562,18 @@ def _linked_ridge_pts(f,eigvec_max,x,y,sdd_thresh=0.,percentile=0,c=1.):
                     ridge_len[ridge_num_counter,:] = np.array([ridge_pt_counter,
                                                                ridge_pt_counter-ridge0_start])
 
-                    endpoints[2*ridge_num_counter:2*ridge_num_counter+2,:] = np.array([[ept0[0],ept0[1],ridge_num_counter],
-                                                                                         [ept1[0],ept1[1],-(ridge_num_counter+0.1)]])
-                    ep_tanvecs[2*ridge_num_counter:2*ridge_num_counter+2,:] = np.array([[epvec0[0],epvec0[1]],
-                                                                                          [epvec1[0],epvec1[1]]])
+                    endpoints[2*ridge_num_counter:2*ridge_num_counter+2,:] = np.array(
+                        [
+                            [ept0[0],ept0[1],ridge_num_counter],
+                            [ept1[0],ept1[1],-(ridge_num_counter+0.1)]
+                        ]
+                    )
+                    ep_tanvecs[2*ridge_num_counter:2*ridge_num_counter+2,:] = np.array(
+                        [
+                            [epvec0[0],epvec0[1]],
+                            [epvec1[0],epvec1[1]]
+                        ]
+                    )
                     ridge0_start = ridge_pt_counter
                     ridge_num_counter+=1
                     
@@ -788,13 +794,16 @@ def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
-                                                                                new_endpoint,
-                                                                                current_tan_vec,
-                                                                                rem_endpoints,
-                                                                                rem_endpoints_tan,
-                                                                                ep_tan_ang,
-                                                                                dist_tol)
+                (rem_endpoints,
+                 rem_endpoints_tan,
+                 connect_ind,
+                 new_endpoint,
+                 current_tan_vec) = _connect_endpoints(new_endpoint,
+                                                       current_tan_vec,
+                                                       rem_endpoints,
+                                                       rem_endpoints_tan,
+                                                       ep_tan_ang,
+                                                       dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
                     break
@@ -820,13 +829,16 @@ def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
-                                                                                new_endpoint,
-                                                                                current_tan_vec,
-                                                                                rem_endpoints,
-                                                                                rem_endpoints_tan,
-                                                                                ep_tan_ang,
-                                                                                dist_tol)
+                (rem_endpoints,
+                 rem_endpoints_tan,
+                 connect_ind,
+                 new_endpoint,
+                 current_tan_vec) = _connect_endpoints(new_endpoint,
+                                                       current_tan_vec,
+                                                       rem_endpoints,
+                                                       rem_endpoints_tan,
+                                                       ep_tan_ang,
+                                                       dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
                     break
@@ -887,13 +899,16 @@ def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
-                                                                                new_endpoint,
-                                                                                current_tan_vec,
-                                                                                rem_endpoints,
-                                                                                rem_endpoints_tan,
-                                                                                ep_tan_ang,
-                                                                                dist_tol)
+                (rem_endpoints,
+                 rem_endpoints_tan,
+                 connect_ind,
+                 new_endpoint,
+                 current_tan_vec) = _connect_endpoints(new_endpoint,
+                                                       current_tan_vec,
+                                                       rem_endpoints,
+                                                       rem_endpoints_tan,
+                                                       ep_tan_ang,
+                                                       dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
                     break
@@ -945,13 +960,16 @@ def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=
             current_tan_vec = current_tan_vecs[ep_ind,:]
             # keep searching for endpoints for current ridge until there are none
             for kk in range(nridges):
-                rem_endpoints, rem_endpoints_tan, connect_ind, new_endpoint, current_tan_vec = _connect_endpoints(
-                                                                                new_endpoint,
-                                                                                current_tan_vec,
-                                                                                rem_endpoints,
-                                                                                rem_endpoints_tan,
-                                                                                ep_tan_ang,
-                                                                                dist_tol)
+                (rem_endpoints,
+                 rem_endpoints_tan,
+                 connect_ind,
+                 new_endpoint,
+                 current_tan_vec) = _connect_endpoints(new_endpoint,
+                                                       current_tan_vec,
+                                                       rem_endpoints,
+                                                       rem_endpoints_tan,
+                                                       ep_tan_ang,
+                                                       dist_tol)
                 # break if no more endpoints
                 if new_endpoint is None:
                     break
