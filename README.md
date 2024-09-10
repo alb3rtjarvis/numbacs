@@ -1,5 +1,9 @@
 # NumbaCS
 
+**Documentation:** [https://numbacs.readthedocs.io/](https://numbacs.readthedocs.io/en/latest/)
+
+**Source Code (MPL-2.0):** [https://github.com/alb3rtjarvis/numbacs](https://github.com/alb3rtjarvis/numbacs)
+
 NumbaCS (Numba Coherent Structures) is a Python package for performing coherent structure analysis in a user-friendly and efficient manner. It implements methods referred to as "coherent structure methods", an umbrella term for any method that can be used to infer or extract Lagrangian and Eulerian coherent structures. These are tools for performing analysis of time-dependent dynamical systems, mainly with a focus on material transport in fluid flows. While this package can be used with any (incompressible) flow, methods are provided which make it simple for the user to take advantage of these tools for large-scale geophysical flows.
 
 ## Features
