@@ -92,7 +92,6 @@ flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
 # compute FTLE over grid
 ftle = ftle_grid_2D(flowmap, T, dx, dy)
 ```
-Thorough documentation coming soon...
 
 ## Key dependencies
 
