@@ -1,0 +1,4 @@
+numbalsoda
+interpolation
+contourpy
+scipy
