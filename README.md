@@ -134,8 +134,7 @@ longer maintained.
 [Aquila-LCS](https://github.com/ChristianLagares/Aquila-LCS) -- Python code
 designed to compute FTLE for high-speed turbulent boundary layers in 3D.
 Utilizes Numba to implement GPU and CPU versions of the code for fast execution
-times. Particle integration performed by 4th order Runge-Kutta
-method (RK4).
+times. Particle integration performed by Euler method.
 
 [CoherentStructures.jl](https://coherentstructures.github.io/CoherentStructures.jl/stable/) 
 -- Julia toolbox for computing LCS/FTCS in aperiodic flows. Implements elliptic
