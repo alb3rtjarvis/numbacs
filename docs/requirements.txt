@@ -1,4 +1,6 @@
 numbalsoda
 interpolation
 contourpy
+numba
+numpy
 scipy

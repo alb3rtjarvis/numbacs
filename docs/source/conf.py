@@ -41,7 +41,7 @@ extensions = [
 		]
 
 
-autoapi_dirs = ['../../numbacs']
+autoapi_dirs = ['../../src/numbacs']
 autoapi_options = [
 		   'undoc-members',
 		   'imported-members',
