@@ -46,7 +46,7 @@ def get_interp_arrays_2D(tvals,xvals,yvals,U,V):
 def get_interp_arrays_2D_steady(xvals,yvals,U,V):
     """
     Compute coefficient arrays for cubic spline of velocity field defined by U,V over values
-    tvals,xvals,yvals and return the grid tuple and coefficient arrays which can be used
+    xvals,yvals and return the grid tuple and coefficient arrays which can be used
     by 'eval_spline' function of the interpolation package.
 
     Parameters
@@ -473,6 +473,7 @@ def get_callable_linear_2D(grid_vel,U,V,spherical=0,extrap_mode='constant',r=637
 def get_callable_scalar_linear(grid_f,f,extrap_mode='constant'):
     """
     Create jit-callable linear interpolant for scalar field f defined over grid_f.
+    Linear interpolant is used.
 
     Parameters
     ----------
@@ -675,7 +676,7 @@ def get_predefined_flow(flow_str,int_direction=1.,return_default_params=True,
 def get_predefined_callable(flow_str,params=None,return_domain=True,parameter_description=False,
                             return_type="array"):
     """
-    Create a C callback for one of the predefined flows.
+    Create a jit-callable for one of the predefined flows.
 
     Parameters
     ----------

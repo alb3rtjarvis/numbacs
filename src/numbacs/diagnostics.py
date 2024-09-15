@@ -8,7 +8,7 @@ from .utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_
 def ftle_grid_2D(flowmap,T,dx,dy):
     """
     Compute 2D FTLE field from flowmap which is solution of ode over an initial grid defined by x
-    and y for integration time T
+    and y for integration time T.
 
     Parameters
     ----------
@@ -54,8 +54,8 @@ def ftle_grid_2D(flowmap,T,dx,dy):
 @njit(parallel=True)
 def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
     """
-    Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
-    solution of ode over an auxilary grid defined by x,y +-h for integration time T
+    Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap_aux which is
+    solution of ode over an auxilary grid defined by x,y +-h for integration time T.
 
     Parameters
     ----------
@@ -94,8 +94,8 @@ def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
 @njit(parallel=True)
 def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
     """
-    Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
-    solution of ode over an auxilary grid defined by x,y +-h for integration time T
+    Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap_aux which is
+    solution of ode over an auxilary grid defined by x,y +-h for integration time T.
 
     Parameters
     ----------
@@ -175,7 +175,7 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
 def C_eig_2D(flowmap,dx,dy):
     """
     Compute eigenvalues and eigenvectors of Cauchy Green tensor in 2D from flowmap which is
-    solution of ode over a grid defined by x,y for integration time T
+    solution of ode over a grid defined by x,y for integration time T.
 
     Parameters
     ----------
@@ -219,7 +219,7 @@ def C_eig_2D(flowmap,dx,dy):
 def ftle_from_eig(eigval_max,T):
     """
     Compute FTLE field from eigval_max where eigval_max is eigenvalue of Cauchy-Green tensor
-    computed using integration time T
+    computed using integration time T.
     
     Parameters
     ----------
@@ -246,7 +246,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
     """
     Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
     defined by xrav,yrav for an integration time T and trajectories are returned at times given by
-    tspan. vort_interp is an interpolant function of vorticity over (at least) that time window
+    tspan. vort_interp is an interpolant function of vorticity over (at least) that time window.
     
     Parameters
     ----------

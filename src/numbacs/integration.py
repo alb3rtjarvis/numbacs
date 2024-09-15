@@ -60,7 +60,7 @@ def flowmap_n(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
     created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
     conditions given by pts where pts has dim (npts,2). t0 denotes initial time and T denotes
-    integration time.
+    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).
 
     Parameters
     ----------
@@ -376,7 +376,10 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
 @njit(parallel=True)
 def flowmap_n_grid_2D(funcptr,t0,T,x,y,params,n=50,method='dop853',rtol=1e-6,atol=1e-8):
     """
-    
+    Computes the flow map of the ode defined by funcptr where funcptr is a
+    pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
+    computed over the grid defined by x,y. t0 denotes initial time and T denotes
+    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).    
 
     Parameters
     ----------
@@ -437,7 +440,8 @@ def flowmap_n_grid_ND(funcptr,t0,T,IC_flat,ndims,params,n=50,method='dop853',rto
     Computes the flow map at the n times of the ode defined by funcptr where funcptr is a
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by IC_flat where IC_flat has shape
-    (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time.
+    (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time,
+    flowmap is returned at n times in [t0,t0+T] (inclusive).
     
 
     Parameters

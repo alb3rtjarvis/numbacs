@@ -1015,6 +1015,3 @@ def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=
             ridges.append(ridge_pts[rind-rlen:rind,:])  
         
     return ridges
-
-
-

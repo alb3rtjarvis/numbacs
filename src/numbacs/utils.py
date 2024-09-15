@@ -41,7 +41,7 @@ def unravel_index(index,shape):
 def ravel_index(inds,shape):
     """
     Finds raveled index corresponding to grid index given by inds from array with
-    shape=shape where shape must be a numpy.array 
+    shape=shape where shape must be a np.ndarray 
 
     Parameters
     ----------
@@ -314,7 +314,7 @@ def curl_func(fnc,x,y,h=1e-3):
 @njit(parallel=True)
 def curl_func_tspan(fnc,t,x,y,h=1e-3):
     """
-    Compute curl over x,y of vector field defined by fnc.
+    Compute curl over x,y of vector field defined by func over times t.
 
     Parameters
     ----------
@@ -388,7 +388,7 @@ def composite_simpsons_38(f,h):
 def composite_simpsons_38_irregular(f,h):
     """
     Composite Simpson's 3/8 rule to compute integral of f between endpoitns of pts with
-    irregular spacing given by h which is an array.
+    irregular spacing given by h which is an np.ndarray.
 
     Parameters
     ----------
@@ -427,7 +427,7 @@ def composite_simpsons_38_irregular(f,h):
 @njit
 def dist_2d(p1,p2):
     """
-    Compute 2D Euclidean distance between p1 and p2
+    Compute 2D Euclidean distance between p1 and p2.
 
     Parameters
     ----------
@@ -689,7 +689,7 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
 def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
     """
     Generate points filling a circle with radius r and center c. Uses the sunflower
-    seed arangement. Also returns radius.
+    seed arangement. Also returns radius of each point from center c.
 
     Parameters
     ----------
@@ -713,7 +713,7 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
     pts : np.ndarray, shape = (n,2)
         array containing points which fill the circle.
     radius : np.ndarray, shape = (n,), optional
-        array containing radius of earch point from center c.
+        array containing radius of each point from center c.
 
     """
     phi = 0.5*(1 + 5**0.5)
@@ -893,7 +893,8 @@ def pts_in_poly(polygon,pts):
     Returns
     -------
     int
-        if point from pts is found inside polygon, its index is returned, if not, -1 is returned.
+        if point from pts is found inside polygon, its index is returned,
+        if not, -1 is returned.
 
     """
 

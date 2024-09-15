@@ -9,7 +9,7 @@ from math import copysign
 def _reorient_eigvec(pt,x,y,eigvec):
     """
     Interpolates eigvec at point pt, where eigvec is defined over np.meshgrid(x,y),
-    with possible orientation discontinuity
+    with possible orientation discontinuity.
 
     Parameters
     ----------
@@ -62,7 +62,7 @@ def _reorient_eigvec(pt,x,y,eigvec):
 def _alpha(pt,eigval_max):
     """
     Compute alpha to be used in tensorline computation at point pt using eigval_max which is an 
-    interpolant function
+    interpolant function.
 
     Parameters
     ----------
@@ -144,7 +144,7 @@ def _in_region(pt,xvals,yvals,arr):
 @njit
 def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
     """
-    Compute tensorlines in eigvec_min field originially defined on over xvals,yvals.
+    Compute tensorlines in eigvec_min field originially defined over xvals,yvals.
 
     Parameters
     ----------
@@ -257,7 +257,7 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
 @njit
 def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen,minval):
     """
-    Compute tensorlines in eigvec_min field originially defined on over xvals,yvals.
+    Compute tensorlines in eigvec_min field originially defined over xvals,yvals.
 
     Parameters
     ----------
@@ -299,10 +299,6 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
         i = 0
         remove_inds = 0
         monotone_flag = False
-        # k1 = np.zeros(2,float64)
-        # k2 = np.zeros(2,float64)
-        # k3 = np.zeros(2,float64)
-        # k4 = np.zeros(2,float64)
         while L<maxlen and i<steps:
             # rk4 to integrate tensorlines from eigvec_min field
             k1 = init_vec
@@ -843,6 +839,8 @@ def hyperbolic_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines
 @njit
 def _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,ic_inds,h,steps,maxlen,minval):
     """
+    Compute hyperbolic oecs from using eigval_max_interp and eigvecs from
+    Eulerian rate of strain tensor.
     
 
     Parameters
