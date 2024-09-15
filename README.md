@@ -95,7 +95,7 @@ ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 ## Key dependencies
 
-NumbaCS is built on top of three main packages: [Numba](https://numba.pydata.org), [numbalsoda](https://github.com/Nicholaswogan/numbalsoda), and [interpolation](https://www.econforge.org/interpolation.py/). Numba is a JIT-compiler for Python array and numerical functions that generates optimized machine code "just-in-time" (using the LLVM compiler library) to significantly speed up numerical operations in Python. Numbalsoda is a Python wrapper to ODE solvers in both C++ (LSODA) and FORTRAN (DOP853) that is compatible with Numba (standard Python ODE solvers cannot be used within Numba functions) and bypasses the Python interpreter, speeding up the most computationally expensive piece of Lagrangian coherent structure methods, particle integration. The interpolation package is a Numba-compatible package which optimizes interpolation in Python. It is used in NumbaCS to generate JIT-compiled interpolant functions of numerical velocity fields which can be fed into solvers from the numbalsoda package, resulting in efficient particle integration for flows defined by numerical velocity data. All of this interfacing, which is done behind the scenes through modules the user can call in a straightforward manner, is how NumbaCS achieves impressive speeds while maintaining a relatively simple user experience. We are grateful to the creators, maintainers, and contributors of each of these packages, as well as the other dependencies which NumbaCS relies on ([NumPy](https://numpy.org/), [SciPy](https://scipy.org/), and [ContourPy](https://contourpy.readthedocs.io/en/v1.3.0/)).
+NumbaCS is built on top of three main packages: [Numba](https://numba.pydata.org), [numbalsoda](https://github.com/Nicholaswogan/numbalsoda), and [interpolation](https://www.econforge.org/interpolation.py/). Numba is a JIT-compiler for Python array and numerical functions that generates optimized machine code just-in-time (using the LLVM compiler library) to significantly speed up numerical operations in Python. Numbalsoda is a Python wrapper to ODE solvers in both C++ (LSODA) and FORTRAN (DOP853) that is compatible with Numba (standard Python ODE solvers cannot be used within Numba functions) and bypasses the Python interpreter, speeding up the most computationally expensive piece of Lagrangian coherent structure methods, particle integration. The interpolation package is a Numba-compatible package which optimizes interpolation in Python. It is used in NumbaCS to generate JIT-compiled interpolant functions of numerical velocity fields which can be fed into solvers from the numbalsoda package, resulting in efficient particle integration for flows defined by numerical velocity data. All of this interfacing, which is done behind the scenes through modules the user can call in a straightforward manner, is how NumbaCS achieves impressive speeds while maintaining a relatively simple user experience. We are grateful to the creators, maintainers, and contributors of each of these packages, as well as the other dependencies which NumbaCS relies on ([NumPy](https://numpy.org/), [SciPy](https://scipy.org/), and [ContourPy](https://contourpy.readthedocs.io/en/v1.3.0/)).
 
 ## Roadmap
 
@@ -113,7 +113,7 @@ Please make sure to update tests as appropriate.
 [Lagrangian](https://lagrangian.readthedocs.io/en/latest/index.html) -- Python
 package for computing FSLE, FTLE, and eigenvectors of Cauchy-Green tensor with a
 focus on geophysical flows. Largely written in C++ with pybind11 used for
-binding, producing fast code. Particle integration is performed by
+binding, resulting in fast runtimes. Particle integration is performed by
 4th order Runge-Kutta method (RK4).
 
 [Dynlab](https://github.com/hokiepete/dynlab) --  Object oriented Python package
@@ -136,8 +136,8 @@ longer maintained.
 
 [Aquila-LCS](https://github.com/ChristianLagares/Aquila-LCS) -- Python code
 designed to compute FTLE for high-speed turbulent boundary layers in 3D.
-Utilizes Numba to implement GPU and CPU versions of the code for fast execution
-times. Particle integration performed by Euler method.
+Utilizes Numba to implement GPU and CPU versions of the code for fast runtimes.
+Particle integration performed by Euler method.
 
 [CoherentStructures.jl](https://coherentstructures.github.io/CoherentStructures.jl/stable/) 
 -- Julia toolbox for computing LCS/FTCS in aperiodic flows. Implements elliptic
