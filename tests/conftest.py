@@ -72,7 +72,7 @@ def S_data():
 @pytest.fixture
 def S_eig_func_data():
 
-    return (np.load(join(dir_path,"./testing_data/Svals.npy")),
+    return (np.load(join(dir_path,"testing_data/Svals.npy")),
             np.load(join(dir_path,"testing_data/Svecs.npy")))
 
 @pytest.fixture
@@ -94,8 +94,8 @@ def vort_data():
 @pytest.fixture
 def vel_data():
 
-    return (np.load(join(dir_path,"./testing_data/u.npy")),
-            np.load(join(dir_path,"./testing_data/v.npy")))
+    return (np.load(join(dir_path,"testing_data/u.npy")),
+            np.load(join(dir_path,"testing_data/v.npy")))
 
 
 @pytest.fixture
@@ -110,13 +110,13 @@ def ridge_pts_data():
 
 @pytest.fixture
 def ridge_data():
-    with open(join(dir_path,"/testing_data/ridges.pkl"), 'rb') as f:
+    with open(join(dir_path,"testing_data/ridges.pkl"), 'rb') as f:
         ridges = pickle.load(f)
     return ridges
 
 @pytest.fixture
 def ordered_ridge_data():
-    with open("./testing_data/ordered_ridges.pkl", 'rb') as f:
+    with open(join(dir_path,"testing_data/ordered_ridges.pkl"), 'rb') as f:
         oridges = pickle.load(f)
     return oridges
 
