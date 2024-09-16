@@ -25,7 +25,14 @@ NumbaCS currently implements the following features:
 
 ## Installation
 
-Package is currently under construction, conda installation coming soon...
+Conda:
+```
+conda install -c conda-forge numbacs
+```
+Pip:
+```
+python -m pip install numbacs
+```
 
 ## Basic usage
 
