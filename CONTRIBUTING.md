@@ -66,7 +66,7 @@ following rules before you submit a pull request:
 -  Please prefix the title of your pull request with `[MRG]` (Ready for
    Merge), if the contribution is complete and ready for a detailed review.
    A developer will review your code and change the prefix of the pull
-   request to `[MRG + 1]` and `[MRG + 2]` on approval, making it eligible
+   request to `[MRG + 1]` on approval, making it eligible
    for merging. An incomplete contribution -- where you expect to do more work before
    receiving a full review -- should be prefixed `[WIP]` (to indicate a work
    in progress) and changed to `[MRG]` when it matures. WIPs may be useful
@@ -95,8 +95,7 @@ following rules before you submit a pull request:
    the example.
 
 Bonus points for contributions that include a performance analysis with
-a benchmark script and profiling output (please report on the mailing
-list or on the GitHub issue).
+a benchmark script and profiling output (please report on the GitHub issue).
 
 Filing bugs
 -----------
@@ -173,5 +172,5 @@ illustrating it.
 
 
 This Contribution guide is strongly inspired by the one of the 
-[POT](https://github.com/PythonOT/POT) team which was inspired by the one
+[POT](https://github.com/PythonOT/POT) team, which was inspired by the one
 of the [scikit-learn](https://github.com/scikit-learn/scikit-learn) team.
