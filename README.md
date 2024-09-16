@@ -34,6 +34,9 @@ Pip:
 python -m pip install numbacs
 ```
 
+**_NOTE:_** It is strongly recommended to use conda for installation
+due to some reported issues when using pip for one of the dependencies.
+
 ## Basic usage
 
 ### Predefined flow
