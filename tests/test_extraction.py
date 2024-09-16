@@ -1,13 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Aug 26 15:24:48 2024
-
-@author: ajarvis
-"""
-
 import sys
-sys.path.append('/home/ajarvis/numbacs_git/src')
 import pytest
 import numpy as np
 from math import pi

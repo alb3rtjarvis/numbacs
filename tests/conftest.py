@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import pickle
 import sys
-sys.path.append('/home/ajarvis/numbacs_git/src')
 from numbacs.flows import get_predefined_callable
 import os 
 from os.path import join

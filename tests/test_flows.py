@@ -1,5 +1,4 @@
 import sys
-sys.path.append('/home/ajarvis/numbacs_git/src')
 import pytest
 import numpy as np
 from math import pi
