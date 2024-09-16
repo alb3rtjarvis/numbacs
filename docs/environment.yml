@@ -3,11 +3,13 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.11.9
-  - interpolation=2.2.6
-  - numbalsoda=0.3.5
-  - numpy=1.26.4
-  - scipy=1.13.1
+  - python>=3.11, <3.12
+  - interpolation>=2.2.6
+  - numbalsoda
+  - numba
+  - numpy
+  - scipy
+  - contourpy
   - sphinx_rtd_theme
   - myst-parser
   - sphinx-autoapi
