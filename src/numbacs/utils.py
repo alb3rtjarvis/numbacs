@@ -353,15 +353,15 @@ def curl_func_tspan(fnc,t,x,y,h=1e-3):
 
 
 @njit
-def composite_simpsons_38(f,h):
+def composite_simpsons(f,h):
     """
-    Composite Simpson's 3/8 rule to compute integral of f between endpoitns of pts with
+    Composite Simpson's 1/3 rule to compute integral of f between endpoitns of pts with
     regular spacing given by h.
 
     Parameters
     ----------
-    f : np.ndarray, shape = (n,)
-        values of f at irregularly spaced points.
+    f : np.ndarray, shape = (n+1,)
+        values of f at regularly spaced points.
     h : float
         value of spacing between points at which f was evaluated.
 
@@ -371,17 +371,32 @@ def composite_simpsons_38(f,h):
         value of integral.
 
     """
-    n = f.shape[0]
-    val = 0
-    for k in range(n):
-        if k == 0 or k == n-1:
-            val += f[k]
-        elif k%3 != 0:
-            val += 3*f[k]
-        else:
-            val += 2*f[k]
-            
-    return (3*h/8)*val
+    n = len(f)-1
+    if n%2 == 0:
+        val = f[0]
+        val += f[n]
+        for k in range(1,n):
+            if k%2 != 0:
+                val += 4*f[k]
+            else:
+                val += 2*f[k]
+                
+        val *= h/3
+        
+    else:
+        n -= 1
+        val = f[0]
+        val += f[-2]
+        for k in range(1,n):
+            if k%2 != 0:
+                val += 4*f[k]
+            else:
+                val += 2*f[k]
+                
+        val *= h/3        
+        val += (5*h/12)*f[-1] + (2*h/3)*f[-2] - (h/12)*f[-3]   
+        
+    return val
 
 
 @njit
@@ -392,7 +407,7 @@ def composite_simpsons_38_irregular(f,h):
 
     Parameters
     ----------
-    f : np.ndarray, shape = (n,)
+    f : np.ndarray, shape = (n+1,)
         values of f at irregularly spaced points.
     h : np.ndarray, shape = (n,)
         values of spacing between points at which f was evaluated.
@@ -409,7 +424,7 @@ def composite_simpsons_38_irregular(f,h):
     for k in range(int(n/2)):
         h0 = h[2*k]
         h1 = h[2*k+1]
-        val+=(1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) + 
+        val += (1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) + 
                             f[2*k+1]*((h0+h1)**2)/(h0*h1) + 
                             f[2*k+2]*(2-h0/h1))
     
@@ -420,9 +435,10 @@ def composite_simpsons_38_irregular(f,h):
         beta = (h1**2 + 3*h1*h2)/(6*h2)
         eta = (h1**3)/(6*h2*(h2 + h1))
         
-        val+=alph*f[-1] + beta*f[-2] - eta*f[-3]
+        val += alph*f[-1] + beta*f[-2] - eta*f[-3]
             
     return val
+
 
 @njit
 def dist_2d(p1,p2):
