@@ -1,7 +1,7 @@
 import numpy as np
 from math import log
 from numba import njit, prange, float64
-from .utils import finite_diff_2D, composite_simpsons_38, unravel_index, finite_diff_ND
+from .utils import composite_simpsons, unravel_index, finite_diff_ND
 
 
 @njit(parallel=True)
@@ -294,7 +294,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
                 pts = np.concatenate((tspan,flowmap_n[i,j,:,:]),1)
                 vort_traj = vort_interp(pts)
                 integrand = np.abs(vort_traj - vort_avg)
-                lavd[i,j] = composite_simpsons_38(integrand,dt)
+                lavd[i,j] = composite_simpsons(integrand,dt)
     elif period_x and period_y:
         for i in prange(nx):
             for j in range(ny):
@@ -303,7 +303,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
                                        flowmap_n[i,j,:,1]%period_y))
                 vort_traj = vort_interp(pts)
                 integrand = np.abs(vort_traj - vort_avg)
-                lavd[i,j] = composite_simpsons_38(integrand,dt)
+                lavd[i,j] = composite_simpsons(integrand,dt)
     elif period_x:
         for i in prange(nx):
             for j in range(ny):
@@ -312,7 +312,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
                                        flowmap_n[i,j,:,1]))
                 vort_traj = vort_interp(pts)
                 integrand = np.abs(vort_traj - vort_avg)
-                lavd[i,j] = composite_simpsons_38(integrand,dt)
+                lavd[i,j] = composite_simpsons(integrand,dt)
     elif period_y:
         for i in prange(nx):
             for j in range(ny):
@@ -321,7 +321,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
                                        flowmap_n[i,j,:,1]%period_y))
                 vort_traj = vort_interp(pts)
                 integrand = np.abs(vort_traj - vort_avg)
-                lavd[i,j] = composite_simpsons_38(integrand,dt)
+                lavd[i,j] = composite_simpsons(integrand,dt)
             
     return lavd
 
