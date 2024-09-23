@@ -1,18 +1,16 @@
 import pytest
 import numpy as np
 import pickle
-import sys
 from numbacs.flows import get_predefined_callable
 import os 
 from os.path import join
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-#%%
 @pytest.fixture
 def coords_dg():
-    x = np.linspace(0,2,101)
-    y = np.linspace(0,1,51)
+    x = np.linspace(0,2,21)
+    y = np.linspace(0,1,11)
     
     return x,y
 
@@ -32,6 +30,26 @@ def fm_aux_data():
     return np.load(join(dir_path,"testing_data/fm_aux.npy"))
 
 @pytest.fixture
+def fm_ci_data():
+
+    return np.load(join(dir_path,"testing_data/fm_ci.npy"))
+
+@pytest.fixture
+def fms_ci_data():
+
+    return np.load(join(dir_path,"testing_data/fms_ci.npy"))
+
+@pytest.fixture
+def fm_cs_data():
+
+    return np.load(join(dir_path,"testing_data/fm_cs.npy"))
+
+@pytest.fixture
+def fms_cs_data():
+
+    return np.load(join(dir_path,"testing_data/fms_cs.npy"))
+
+@pytest.fixture
 def ftle_data():
 
     return np.load(join(dir_path,"testing_data/ftle.npy"))
@@ -44,14 +62,14 @@ def C_data():
 @pytest.fixture
 def C_eig_aux_data():
 
-    return (np.load(join(dir_path,"testing_data/Cvals_aux.npy")),
-            np.load(join(dir_path,"testing_data/Cvecs_aux.npy")))
+    return (np.load(join(dir_path,"testing_data/Cevals_aux.npy")),
+            np.load(join(dir_path,"testing_data/Cevecs_aux.npy")))
 
 @pytest.fixture
 def C_eig_data():
 
-    return (np.load(join(dir_path,"testing_data/Cvals.npy")),
-            np.load(join(dir_path,"testing_data/Cvecs.npy")))
+    return (np.load(join(dir_path,"testing_data/Cevals.npy")),
+            np.load(join(dir_path,"testing_data/Cevecs.npy")))
 
 @pytest.fixture
 def lavd_data():
@@ -71,14 +89,14 @@ def S_data():
 @pytest.fixture
 def S_eig_func_data():
 
-    return (np.load(join(dir_path,"testing_data/Svals.npy")),
-            np.load(join(dir_path,"testing_data/Svecs.npy")))
+    return (np.load(join(dir_path,"testing_data/Sevals.npy")),
+            np.load(join(dir_path,"testing_data/Sevecs.npy")))
 
 @pytest.fixture
 def S_eig_data():
 
-    return (np.load(join(dir_path,"testing_data/Svals_d.npy")),
-            np.load(join(dir_path,"testing_data/Svecs_d.npy")))
+    return (np.load(join(dir_path,"testing_data/Sevals_d.npy")),
+            np.load(join(dir_path,"testing_data/Sevecs_d.npy")))
 
 @pytest.fixture
 def ivd_data():
