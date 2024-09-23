@@ -702,7 +702,7 @@ def _connect_endpoints(endpoint,current_tan_vec,rem_endpoints,rem_endpoints_tan,
 
 
 def ftle_ordered_ridges(f,eigvec_max,x,y,dist_tol,ep_tan_ang=pi/4,min_ridge_pts=5,
-                      sdd_thresh=0.0,percentile=0,c=1.0):
+                        sdd_thresh=0.0,percentile=0,c=1.0):
     """
     Computes ftle ridge points and links points into ridges. After
     this is done, ridges that should be connected are searched for
