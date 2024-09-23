@@ -5,19 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "numbacs"
 dynamic = ["version"]
-description = 'Numba accelerated coherent structure package'
+description = 'Numba accelerated coherent structure package.'
 readme = "README.md"
-requires-python = ">=3.11, <3.12"
+requires-python = ">=3.10, <3.12"
 license = "MPL-2.0"
 keywords = []
 authors = [
   { name = "alb3rtjarvis", email = "ajarvis@vt.edu" },
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-   "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
-   "Operating System :: OS Independent",
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+  "Operating System :: OS Independent",
 ]
 dependencies = [
   "interpolation >= 2.2.6",
@@ -32,6 +32,11 @@ dependencies = [
 Documentation = "https://numbacs.readthedocs.io/"
 Issues = "https://github.com/alb3rtjarvis/numbacs/issues"
 Source = "https://github.com/alb3rtjarvis/numbacs"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "docs",
+]
 
 [tool.hatch.version]
 path = "src/numbacs/__init__.py"
