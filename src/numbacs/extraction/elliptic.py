@@ -1,13 +1,12 @@
-import numpy as np
-from numba import njit                                 
+import numpy as np                               
 from ..utils import max_in_radius, shoelace, pts_in_poly, arclength
 from contourpy import contour_generator
 from scipy.spatial import ConvexHull
 
 
 
-def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-3,min_val=-1.0,
-        nlevs=20,start_level=0.0,end_level=0.0,min_len=0.0):
+def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-3,
+              min_val=-1.0,nlevs=20,start_level=0.0,end_level=0.0,min_len=0.0):
     """
     Compute rotationally coherent vortices which are (approximately) convex closed
     contours of the lavd (or ivd) field.
