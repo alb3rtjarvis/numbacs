@@ -36,6 +36,7 @@ Source = "https://github.com/alb3rtjarvis/numbacs"
 [tool.hatch.build.targets.sdist]
 exclude = [
   "docs",
+  "examples/data"
 ]
 
 [tool.hatch.version]
