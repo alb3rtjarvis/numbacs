@@ -114,7 +114,6 @@ def vel_data():
     return (np.load(join(dir_path,"testing_data/u.npy")),
             np.load(join(dir_path,"testing_data/v.npy")))
 
-
 @pytest.fixture
 def flow_callable():
     
