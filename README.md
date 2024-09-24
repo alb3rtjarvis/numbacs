@@ -116,7 +116,8 @@ Future releases aim to extend certain methods to higher dimensions, implement ne
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change.
 
-Please make sure to update tests as appropriate.
+Please make sure to update tests as appropriate. See the [Contributing Guide](https://numbacs.readthedocs.io/en/latest/contributing.html)
+for more details.
 
 ## Similar software
 
