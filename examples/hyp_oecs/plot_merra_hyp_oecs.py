@@ -56,7 +56,9 @@ grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, lon, lat, u, v)
 vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
 # set time at which hyperbolic OECS will be computed
-t0 = 96.0 + 24.*19.
+day = 20
+t0_date = np.datetime64("2020-06-{:02d}".format(day))
+t0 = t[np.nonzero(dates == t0_date)[0][0]]
 # %%
 # S eigenvalues, eigenvectors
 # ---------------------------
@@ -104,7 +106,7 @@ for k in range(len(oecs)):
 ax.set_xlim([lonf[0],lonf[-1]])
 ax.set_ylim([latf[0],latf[-1]])
 ax.set_aspect('equal')  
-
+plt.show()
 # %%
 # Advect OECS
 # -----------
@@ -153,4 +155,4 @@ for i in range(nax):
     axs[i].set_xlim([lonf[0],lonf[-1]+10])
     axs[i].set_ylim([latf[0],latf[-1]])
     axs[i].set_aspect('equal')    
-        
+plt.show()

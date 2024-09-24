@@ -72,7 +72,7 @@ for k in range(len(oecs)):
     ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
     ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
 ax.set_aspect('equal')  
-
+plt.show()
 # %%
 # Advect OECS
 # -----------
@@ -120,5 +120,5 @@ for i in range(nax):
         axs[i].scatter(adv_circ[k][:,kt,0],adv_circ[k][:,kt,1],0.5,'g',zorder=0)
     axs[i].set_xlim([0,1])
     axs[i].set_ylim([0,2])
-    axs[i].set_aspect('equal')    
-        
+    axs[i].set_aspect('equal')
+plt.show()        

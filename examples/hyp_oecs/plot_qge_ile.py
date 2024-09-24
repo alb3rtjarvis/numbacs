@@ -47,3 +47,4 @@ fig,ax = plt.subplots(dpi=200)
 ax.contourf(x,y,ile.T,levels=np.linspace(0,np.percentile(ile,99.5),51),
             extend='both',zorder=0)
 ax.set_aspect('equal')
+plt.show()

@@ -102,6 +102,7 @@ ax.set_aspect('equal')
 for rcv,c in elcs:
     ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
     ax.scatter(c[0],c[1],1.5)
+plt.show()
     
 # %%
 # Advect elliptic LCS
