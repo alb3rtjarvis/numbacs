@@ -59,7 +59,7 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 32-67
+.. GENERATED FROM PYTHON SOURCE LINES 32-69
 
 .. code-block:: Python
 
@@ -86,7 +86,9 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
     # set integration span and integration direction
-    t0 = 96.0 + 24.*15.
+    day = 16
+    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0 = t[np.nonzero(dates == t0_date)[0][0]]
     T = -72.0
     params = np.array([copysign(1,T)])
 
@@ -105,13 +107,13 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-71
+.. GENERATED FROM PYTHON SOURCE LINES 70-73
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-73
+.. GENERATED FROM PYTHON SOURCE LINES 73-75
 
 .. code-block:: Python
 
@@ -124,13 +126,13 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-77
+.. GENERATED FROM PYTHON SOURCE LINES 76-79
 
 CG eigenvalues, eigenvectors, and FTLE
 ----------------------------------------------
 Compute eigenvalues/vectors of CG tensor from final particle positions and compute FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-90
+.. GENERATED FROM PYTHON SOURCE LINES 79-92
 
 .. code-block:: Python
 
@@ -154,13 +156,13 @@ Compute eigenvalues/vectors of CG tensor from final particle positions and compu
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-94
+.. GENERATED FROM PYTHON SOURCE LINES 93-96
 
 Ridge extraction
 ----------------
 Compute ordered FTLE ridges.
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-107
+.. GENERATED FROM PYTHON SOURCE LINES 96-109
 
 .. code-block:: Python
 
@@ -184,14 +186,14 @@ Compute ordered FTLE ridges.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 108-112
+.. GENERATED FROM PYTHON SOURCE LINES 110-114
 
 Plot
 ----
 Plot the results. Using the cartopy package for plotting geophysical data is
 advised but it is not a dependency so we simply use matplotlib.
 
-.. GENERATED FROM PYTHON SOURCE LINES 112-121
+.. GENERATED FROM PYTHON SOURCE LINES 114-123
 
 .. code-block:: Python
 
@@ -204,7 +206,7 @@ advised but it is not a dependency so we simply use matplotlib.
     ax.set_xlim([lonf[0],lonf[-1]])
     ax.set_ylim([latf[0],latf[-1]])
     ax.set_aspect('equal')
-
+    plt.show()
 
 
 .. image-sg:: /auto_examples/ftle/images/sphx_glr_plot_merra_ftle_ridges_001.png
@@ -219,7 +221,7 @@ advised but it is not a dependency so we simply use matplotlib.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 31.662 seconds)
+   **Total running time of the script:** (0 minutes 12.544 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_merra_ftle_ridges.py:

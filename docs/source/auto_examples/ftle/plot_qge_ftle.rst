@@ -138,7 +138,7 @@ Plot the results.
     fig,ax = plt.subplots(dpi=200)
     ax.contourf(x,y,ftle.T,levels=100)
     ax.set_aspect('equal')
-
+    plt.show()
 
 
 .. image-sg:: /auto_examples/ftle/images/sphx_glr_plot_qge_ftle_001.png
@@ -153,7 +153,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 4.588 seconds)
+   **Total running time of the script:** (0 minutes 8.252 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_qge_ftle.py:

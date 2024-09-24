@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**01:11.460** total execution time for 8 files **from auto_examples/ftle**:
+**01:07.632** total execution time for 8 files **from auto_examples/ftle**:
 
 .. container::
 
@@ -32,27 +32,27 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_ftle_plot_merra_ftle_ridges.py` (``plot_merra_ftle_ridges.py``)
-     - 00:31.662
-     - 0.0
    * - :ref:`sphx_glr_auto_examples_ftle_plot_merra_ftle.py` (``plot_merra_ftle.py``)
-     - 00:30.718
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_ftle_plot_qge_ftle.py` (``plot_qge_ftle.py``)
-     - 00:04.588
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_ftle_plot_qge_ftle_ridges.py` (``plot_qge_ftle_ridges.py``)
-     - 00:04.491
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_ftle_plot_bickley_ftle.py` (``plot_bickley_ftle.py``)
-     - 00:00.000
+     - 00:18.059
      - 0.0
    * - :ref:`sphx_glr_auto_examples_ftle_plot_bickley_ftle_ridges.py` (``plot_bickley_ftle_ridges.py``)
-     - 00:00.000
+     - 00:15.934
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_ftle_plot_merra_ftle_ridges.py` (``plot_merra_ftle_ridges.py``)
+     - 00:12.544
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_ftle_plot_qge_ftle.py` (``plot_qge_ftle.py``)
+     - 00:08.252
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_ftle_plot_bickley_ftle.py` (``plot_bickley_ftle.py``)
+     - 00:06.852
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_ftle_plot_qge_ftle_ridges.py` (``plot_qge_ftle_ridges.py``)
+     - 00:04.414
      - 0.0
    * - :ref:`sphx_glr_auto_examples_ftle_plot_dg_ftle.py` (``plot_dg_ftle.py``)
-     - 00:00.000
+     - 00:00.799
      - 0.0
    * - :ref:`sphx_glr_auto_examples_ftle_plot_dg_ftle_ridges.py` (``plot_dg_ftle_ridges.py``)
-     - 00:00.000
+     - 00:00.778
      - 0.0

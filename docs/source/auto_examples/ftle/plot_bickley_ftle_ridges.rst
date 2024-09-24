@@ -157,7 +157,7 @@ Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-83
+.. GENERATED FROM PYTHON SOURCE LINES 78-84
 
 .. code-block:: Python
 
@@ -166,6 +166,7 @@ Plot the results.
     for rc in ridge_curves:
         ax.plot(rc[:,0],rc[:,1],lw=1.5)
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -181,7 +182,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 15.864 seconds)
+   **Total running time of the script:** (0 minutes 15.934 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_bickley_ftle_ridges.py:

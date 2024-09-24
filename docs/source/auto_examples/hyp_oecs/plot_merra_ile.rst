@@ -55,7 +55,7 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 28-57
+.. GENERATED FROM PYTHON SOURCE LINES 28-59
 
 .. code-block:: Python
 
@@ -87,7 +87,9 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
     vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical = 1)
 
     # set time at which iLE will be computed
-    t0 = 96.0 + 24.*19.
+    day = 20
+    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0 = t[np.nonzero(dates == t0_date)[0][0]]
 
 
 
@@ -95,13 +97,13 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 58-61
+.. GENERATED FROM PYTHON SOURCE LINES 60-63
 
 iLE
 ----
 Compute iLE field from velocity data directly at time t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-63
+.. GENERATED FROM PYTHON SOURCE LINES 63-65
 
 .. code-block:: Python
 
@@ -114,14 +116,14 @@ Compute iLE field from velocity data directly at time t0.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-68
+.. GENERATED FROM PYTHON SOURCE LINES 66-70
 
 Plot
 ----
 Plot the results. Using the cartopy package for plotting geophysical data is
 advised but it is not a dependency so we simply use matplotlib.
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-76
+.. GENERATED FROM PYTHON SOURCE LINES 70-79
 
 .. code-block:: Python
 
@@ -133,6 +135,7 @@ advised but it is not a dependency so we simply use matplotlib.
     ax.set_xlim([lonf[0],lonf[-1]])
     ax.set_ylim([latf[0],latf[-1]])
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -148,7 +151,7 @@ advised but it is not a dependency so we simply use matplotlib.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 11.962 seconds)
+   **Total running time of the script:** (0 minutes 7.589 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_merra_ile.py:

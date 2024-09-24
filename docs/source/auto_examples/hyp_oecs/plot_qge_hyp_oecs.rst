@@ -145,7 +145,7 @@ Plot the OECS overlaid on iLE.
         ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
         ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
     ax.set_aspect('equal')  
-
+    plt.show()
 
 
 
@@ -224,8 +224,8 @@ Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
             axs[i].scatter(adv_circ[k][:,kt,0],adv_circ[k][:,kt,1],0.5,'g',zorder=0)
         axs[i].set_xlim([0,1])
         axs[i].set_ylim([0,2])
-        axs[i].set_aspect('equal')    
-        
+        axs[i].set_aspect('equal')
+    plt.show()        
 
 
 
@@ -241,7 +241,7 @@ Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 7.362 seconds)
+   **Total running time of the script:** (0 minutes 7.186 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_qge_hyp_oecs.py:

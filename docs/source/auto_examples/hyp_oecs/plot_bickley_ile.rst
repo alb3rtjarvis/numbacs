@@ -99,13 +99,14 @@ Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-50
+.. GENERATED FROM PYTHON SOURCE LINES 47-51
 
 .. code-block:: Python
 
     fig,ax = plt.subplots(dpi=200)
     ax.contourf(x,y,ile.T,levels=80)
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -121,7 +122,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.307 seconds)
+   **Total running time of the script:** (0 minutes 4.085 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_bickley_ile.py:

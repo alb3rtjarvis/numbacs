@@ -150,7 +150,7 @@ Plot
 ----
 Plot the elliptic OECS over the IVD field.
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-78
+.. GENERATED FROM PYTHON SOURCE LINES 71-79
 
 .. code-block:: Python
 
@@ -162,6 +162,7 @@ Plot the elliptic OECS over the IVD field.
     for rcv,c in elcs:
         ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
         ax.scatter(c[0],c[1],1.5)
+    plt.show()
 
 
 .. image-sg:: /auto_examples/elliptic_oecs/images/sphx_glr_plot_bickley_elliptic_oecs_001.png
@@ -176,7 +177,7 @@ Plot the elliptic OECS over the IVD field.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 16.296 seconds)
+   **Total running time of the script:** (0 minutes 12.470 seconds)
 
 
 .. _sphx_glr_download_auto_examples_elliptic_oecs_plot_bickley_elliptic_oecs.py:

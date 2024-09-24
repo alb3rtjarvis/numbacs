@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**02:36.517** total execution time for 2 files **from auto_examples/hyp_lcs**:
+**02:18.208** total execution time for 2 files **from auto_examples/hyp_lcs**:
 
 .. container::
 
@@ -33,8 +33,8 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_hyp_lcs_plot_merra_hyp_lcs.py` (``plot_merra_hyp_lcs.py``)
-     - 02:36.517
+     - 01:48.034
      - 0.0
    * - :ref:`sphx_glr_auto_examples_hyp_lcs_plot_dg_hyp_lcs.py` (``plot_dg_hyp_lcs.py``)
-     - 00:00.000
+     - 00:30.174
      - 0.0

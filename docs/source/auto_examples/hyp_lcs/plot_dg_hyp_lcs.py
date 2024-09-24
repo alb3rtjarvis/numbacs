@@ -96,3 +96,4 @@ ax.contourf(x,y,ftle.T,levels=80)
 for l in lcs:
     ax.plot(l[:,0],l[:,1],'r',lw=1)
 ax.set_aspect('equal')
+plt.show()

@@ -120,13 +120,14 @@ Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-58
+.. GENERATED FROM PYTHON SOURCE LINES 55-59
 
 .. code-block:: Python
 
     fig,ax = plt.subplots(dpi=200)
     ax.contourf(x,y,ftle.T,levels=80)
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -142,7 +143,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.171 seconds)
+   **Total running time of the script:** (0 minutes 0.799 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_dg_ftle.py:

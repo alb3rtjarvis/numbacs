@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**14:09.458** total execution time for 25 files **from all galleries**:
+**03:49.162** total execution time for 25 files **from all galleries**:
 
 .. container::
 
@@ -32,14 +32,14 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_numbacs_vs_scipy_reduced.py` (``../../examples/time_series/plot_qge_numbacs_vs_scipy_reduced.py``)
-     - 14:09.458
-     - 0.0
    * - :ref:`sphx_glr_auto_examples_elliptic_lcs_plot_bickley_elliptic_lcs.py` (``../../examples/elliptic_lcs/plot_bickley_elliptic_lcs.py``)
-     - 00:00.000
+     - 01:59.402
      - 0.0
    * - :ref:`sphx_glr_auto_examples_elliptic_lcs_plot_qge_elliptic_lcs.py` (``../../examples/elliptic_lcs/plot_qge_elliptic_lcs.py``)
-     - 00:00.000
+     - 01:44.875
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_dg_ile.py` (``../../examples/hyp_oecs/plot_dg_ile.py``)
+     - 00:04.885
      - 0.0
    * - :ref:`sphx_glr_auto_examples_elliptic_oecs_plot_bickley_elliptic_oecs.py` (``../../examples/elliptic_oecs/plot_bickley_elliptic_oecs.py``)
      - 00:00.000
@@ -80,9 +80,6 @@ Computation times
    * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_bickley_ile.py` (``../../examples/hyp_oecs/plot_bickley_ile.py``)
      - 00:00.000
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_dg_ile.py` (``../../examples/hyp_oecs/plot_dg_ile.py``)
-     - 00:00.000
-     - 0.0
    * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_merra_hyp_oecs.py` (``../../examples/hyp_oecs/plot_merra_hyp_oecs.py``)
      - 00:00.000
      - 0.0
@@ -99,6 +96,9 @@ Computation times
      - 00:00.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_time_series_plot_dg_time_series.py` (``../../examples/time_series/plot_dg_time_series.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_numbacs_vs_scipy_reduced.py` (``../../examples/time_series/plot_qge_numbacs_vs_scipy_reduced.py``)
      - 00:00.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_ridge_time_series.py` (``../../examples/time_series/plot_qge_ridge_time_series.py``)

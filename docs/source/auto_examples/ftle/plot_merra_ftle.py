@@ -48,9 +48,11 @@ dy = 0.15
 lonf = np.arange(-100,35+dx,dx)
 latf = np.arange(-5,45+dy,dy)
 
-
+#%%
 # set integration span and integration direction
-t0 = 96.0 + 24.*15.
+day = 16
+t0_date = np.datetime64("2020-06-{:02d}".format(day))
+t0 = t[np.nonzero(dates == t0_date)[0][0]]
 T = -72.0
 params = np.array([copysign(1,T)])
 
@@ -86,3 +88,4 @@ ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
 ax.set_xlim([lonf[0],lonf[-1]])
 ax.set_ylim([latf[0],latf[-1]])
 ax.set_aspect('equal')
+plt.show()

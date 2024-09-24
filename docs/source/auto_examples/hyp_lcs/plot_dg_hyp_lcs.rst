@@ -173,7 +173,7 @@ Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-98
+.. GENERATED FROM PYTHON SOURCE LINES 94-99
 
 .. code-block:: Python
 
@@ -182,6 +182,7 @@ Plot the results.
     for l in lcs:
         ax.plot(l[:,0],l[:,1],'r',lw=1)
     ax.set_aspect('equal')
+    plt.show()
 
 
 .. image-sg:: /auto_examples/hyp_lcs/images/sphx_glr_plot_dg_hyp_lcs_001.png
@@ -196,7 +197,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 44.601 seconds)
+   **Total running time of the script:** (0 minutes 30.174 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_lcs_plot_dg_hyp_lcs.py:

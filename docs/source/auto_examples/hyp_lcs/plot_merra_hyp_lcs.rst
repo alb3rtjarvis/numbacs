@@ -58,7 +58,7 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-66
+.. GENERATED FROM PYTHON SOURCE LINES 31-68
 
 .. code-block:: Python
 
@@ -85,7 +85,9 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
     # set integration span and integration direction
-    t0 = 96.0 + 24.*15.
+    day = 16
+    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0 = t[np.nonzero(dates == t0_date)[0][0]]
     T = -72.0
     params = np.array([copysign(1,T)])
 
@@ -104,13 +106,13 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 67-70
+.. GENERATED FROM PYTHON SOURCE LINES 69-72
 
 Integrate
 ---------
 Integrate grid of particles and auxillary grid with spacing h, return final positions
 
-.. GENERATED FROM PYTHON SOURCE LINES 70-76
+.. GENERATED FROM PYTHON SOURCE LINES 72-78
 
 .. code-block:: Python
 
@@ -127,13 +129,13 @@ Integrate grid of particles and auxillary grid with spacing h, return final posi
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-80
+.. GENERATED FROM PYTHON SOURCE LINES 79-82
 
 CG eigenvalues, eigenvectors, and FTLE
 ----------------------------------------------
 Compute eigenvalues/vectors of CG tensor from final particle positions and compute FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-88
+.. GENERATED FROM PYTHON SOURCE LINES 82-90
 
 .. code-block:: Python
 
@@ -152,13 +154,13 @@ Compute eigenvalues/vectors of CG tensor from final particle positions and compu
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 89-92
+.. GENERATED FROM PYTHON SOURCE LINES 91-94
 
 Hyperbolic LCS
 --------------
 Compute hyperbolic LCS using the variational theory.
 
-.. GENERATED FROM PYTHON SOURCE LINES 92-118
+.. GENERATED FROM PYTHON SOURCE LINES 94-120
 
 .. code-block:: Python
 
@@ -195,13 +197,13 @@ Compute hyperbolic LCS using the variational theory.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 119-122
+.. GENERATED FROM PYTHON SOURCE LINES 121-124
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 122-132
+.. GENERATED FROM PYTHON SOURCE LINES 124-135
 
 .. code-block:: Python
 
@@ -215,6 +217,7 @@ Plot the results.
     ax.set_xlim([lonf[0],lonf[-1]])
     ax.set_ylim([latf[0],latf[-1]])
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -230,7 +233,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (2 minutes 36.517 seconds)
+   **Total running time of the script:** (1 minutes 48.034 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_lcs_plot_merra_hyp_lcs.py:

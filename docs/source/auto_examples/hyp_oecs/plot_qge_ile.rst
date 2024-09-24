@@ -99,7 +99,7 @@ Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-50
+.. GENERATED FROM PYTHON SOURCE LINES 46-51
 
 .. code-block:: Python
 
@@ -107,6 +107,7 @@ Plot the results.
     ax.contourf(x,y,ile.T,levels=np.linspace(0,np.percentile(ile,99.5),51),
                 extend='both',zorder=0)
     ax.set_aspect('equal')
+    plt.show()
 
 
 
@@ -122,7 +123,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.691 seconds)
+   **Total running time of the script:** (0 minutes 1.619 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_qge_ile.py:

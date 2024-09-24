@@ -57,7 +57,7 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 30-60
+.. GENERATED FROM PYTHON SOURCE LINES 30-62
 
 .. code-block:: Python
 
@@ -90,7 +90,9 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
     vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
     # set time at which hyperbolic OECS will be computed
-    t0 = 96.0 + 24.*19.
+    day = 20
+    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0 = t[np.nonzero(dates == t0_date)[0][0]]
 
 
 
@@ -98,13 +100,13 @@ iLE computation, set time, and retrieve jit-callable function for velocity data.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-64
+.. GENERATED FROM PYTHON SOURCE LINES 63-66
 
 S eigenvalues, eigenvectors
 ---------------------------
 Compute eigenvalues/vectors of S tensor from velocity field at time t = t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-69
+.. GENERATED FROM PYTHON SOURCE LINES 66-71
 
 .. code-block:: Python
 
@@ -120,13 +122,13 @@ Compute eigenvalues/vectors of S tensor from velocity field at time t = t0.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 70-73
+.. GENERATED FROM PYTHON SOURCE LINES 72-75
 
 Hyperbolic OECS saddles
 -----------------------
 Compute generalized saddle points and hyperbolic oecs.
 
-.. GENERATED FROM PYTHON SOURCE LINES 73-85
+.. GENERATED FROM PYTHON SOURCE LINES 75-87
 
 .. code-block:: Python
 
@@ -149,7 +151,7 @@ Compute generalized saddle points and hyperbolic oecs.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 86-93
+.. GENERATED FROM PYTHON SOURCE LINES 88-95
 
 Plot all OECS
 -------------
@@ -159,7 +161,7 @@ Plot the OECS overlaid on iLE.
    Cartopy is a useful package for geophysical plotting but it is not
    a dependency so we use matplotlib here.
 
-.. GENERATED FROM PYTHON SOURCE LINES 93-108
+.. GENERATED FROM PYTHON SOURCE LINES 95-110
 
 .. code-block:: Python
 
@@ -177,7 +179,7 @@ Plot the OECS overlaid on iLE.
     ax.set_xlim([lonf[0],lonf[-1]])
     ax.set_ylim([latf[0],latf[-1]])
     ax.set_aspect('equal')  
-
+    plt.show()
 
 
 
@@ -190,13 +192,13 @@ Plot the OECS overlaid on iLE.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 109-112
+.. GENERATED FROM PYTHON SOURCE LINES 111-114
 
 Advect OECS
 -----------
 Advect OECS and a circle centered at the generalized saddle point.
 
-.. GENERATED FROM PYTHON SOURCE LINES 112-135
+.. GENERATED FROM PYTHON SOURCE LINES 114-137
 
 .. code-block:: Python
 
@@ -230,13 +232,13 @@ Advect OECS and a circle centered at the generalized saddle point.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 136-139
+.. GENERATED FROM PYTHON SOURCE LINES 138-141
 
 Plot advected OECS
 ------------------
 Plot advected OECS at 0, 8, 16, and 24 hours after t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-157
+.. GENERATED FROM PYTHON SOURCE LINES 141-158
 
 .. code-block:: Python
 
@@ -257,8 +259,7 @@ Plot advected OECS at 0, 8, 16, and 24 hours after t0.
         axs[i].set_xlim([lonf[0],lonf[-1]+10])
         axs[i].set_ylim([latf[0],latf[-1]])
         axs[i].set_aspect('equal')    
-        
-
+    plt.show()
 
 
 .. image-sg:: /auto_examples/hyp_oecs/images/sphx_glr_plot_merra_hyp_oecs_002.png
@@ -273,7 +274,7 @@ Plot advected OECS at 0, 8, 16, and 24 hours after t0.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 17.528 seconds)
+   **Total running time of the script:** (0 minutes 16.850 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_merra_hyp_oecs.py:

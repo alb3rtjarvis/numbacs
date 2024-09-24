@@ -57,7 +57,7 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 30-65
+.. GENERATED FROM PYTHON SOURCE LINES 30-51
 
 .. code-block:: Python
 
@@ -83,8 +83,23 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
     latf = np.arange(-5,45+dy,dy)
 
 
-    # set integration span and integration direction
-    t0 = 96.0 + 24.*15.
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 52-53
+
+set integration span and integration direction
+
+.. GENERATED FROM PYTHON SOURCE LINES 53-67
+
+.. code-block:: Python
+
+    day = 16
+    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0 = t[np.nonzero(dates == t0_date)[0][0]]
     T = -72.0
     params = np.array([copysign(1,T)])
 
@@ -103,13 +118,13 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-69
+.. GENERATED FROM PYTHON SOURCE LINES 68-71
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 69-71
+.. GENERATED FROM PYTHON SOURCE LINES 71-73
 
 .. code-block:: Python
 
@@ -122,13 +137,13 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-75
+.. GENERATED FROM PYTHON SOURCE LINES 74-77
 
 FTLE
 ----
 Compute FTLE field from final particle positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-77
+.. GENERATED FROM PYTHON SOURCE LINES 77-79
 
 .. code-block:: Python
 
@@ -141,14 +156,14 @@ Compute FTLE field from final particle positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-82
+.. GENERATED FROM PYTHON SOURCE LINES 80-84
 
 Plot
 ----
 Plot the results. Using the cartopy package for plotting geophysical data is
 advised but it is not a dependency so we simply use matplotlib.
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-89
+.. GENERATED FROM PYTHON SOURCE LINES 84-91
 
 .. code-block:: Python
 
@@ -159,7 +174,7 @@ advised but it is not a dependency so we simply use matplotlib.
     ax.set_xlim([lonf[0],lonf[-1]])
     ax.set_ylim([latf[0],latf[-1]])
     ax.set_aspect('equal')
-
+    plt.show()
 
 
 .. image-sg:: /auto_examples/ftle/images/sphx_glr_plot_merra_ftle_001.png
@@ -174,7 +189,7 @@ advised but it is not a dependency so we simply use matplotlib.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 30.718 seconds)
+   **Total running time of the script:** (0 minutes 18.059 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_merra_ftle.py:

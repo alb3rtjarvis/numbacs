@@ -95,3 +95,4 @@ ax.contourf(x,y,ftle_c.T,levels=80)
 for rc in ridge_curves:
     ax.plot(rc[:,0],rc[:,1],'r',lw=1.0)
 ax.set_aspect('equal')
+plt.show()
