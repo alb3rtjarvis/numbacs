@@ -72,7 +72,7 @@ instance/
 # docs/
 # docs/_build/
 # requirements.txt
-examples/data/
+# examples/data/
 
 # PyBuilder
 .pybuilder/
