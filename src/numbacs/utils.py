@@ -425,8 +425,8 @@ def composite_simpsons_38_irregular(f,h):
         h0 = h[2*k]
         h1 = h[2*k+1]
         val += (1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) + 
-                            f[2*k+1]*((h0+h1)**2)/(h0*h1) + 
-                            f[2*k+2]*(2-h0/h1))
+                              f[2*k+1]*((h0+h1)**2)/(h0*h1) + 
+                              f[2*k+2]*(2-h0/h1))
     
     if n%2 == 1:
         h1 = h[n-1]
