@@ -158,6 +158,6 @@ diffusion maps for coherent sets). Makes use of DifferentialEquations.jl for
 particle integration, a very advanced and efficient suite of DE solvers in
 Julia.
 
-[LCS Tool] -- (https://github.com/haller-group/LCStool) MATLAB code used to compute
+[LCS Tool](https://github.com/haller-group/LCStool) -- MATLAB code used to compute
 Elliptic LCS, Hyperbolic LCS, and FTLE. Particle integration performed by
 MATLAB's ode45 function (based off of RK5(4) due to Dormand and Prince).
