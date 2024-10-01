@@ -119,7 +119,7 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
-![QGE FTLE](./img/qge_ftle.png)
+![QGE FTLE](./img/qge_ftle.png){width="350" height="600" style="display: block; margin: 0 auto"}
 
 ## Key dependencies
 
