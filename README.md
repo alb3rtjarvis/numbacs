@@ -76,7 +76,6 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
-![DG FTLE](./img/dg_ftle.png)
 
 ### Numerical velocity data
 
@@ -119,7 +118,6 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
-![QGE FTLE](./img/qge_ftle.png#center)
 
 ## Key dependencies
 
