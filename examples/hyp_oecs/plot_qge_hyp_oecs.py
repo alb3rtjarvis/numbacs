@@ -4,9 +4,7 @@
 Quasi-geostrophic hyperbolic OECS
 =================================
 
-Compute the hyperbolic OECS saddles for atmospheric flow at time of Godzilla
-dust storm using MERRA-2 data which is vertically averaged over pressure surfaces
-ranging from 500hPa to 800hPa.
+Compute the hyperbolic OECS saddles for QGE flow.
 """
 
 # Author: ajarvis

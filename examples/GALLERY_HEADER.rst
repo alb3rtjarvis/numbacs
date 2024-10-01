@@ -10,7 +10,7 @@ This gallery contains all the NumbaCS examples.
    and therefore, their first function call can be slow (especially for
    functions which call many compiled functions internally like
    :func:`numbacs.extraction.ftle_ordered_ridges`).
-   For each example here, these warmup times are included in the timings. The times
+   For many examples here, these warmup times are included in the timings. The times
    listed at the end of each example should not be seen as representative of
    potential speed of NumbaCS when a time series of one of the diagnostics or
    extraction methods are desired. For more representative timings, see examples

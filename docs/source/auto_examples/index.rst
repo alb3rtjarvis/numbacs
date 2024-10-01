@@ -12,7 +12,7 @@ This gallery contains all the NumbaCS examples.
    and therefore, their first function call can be slow (especially for
    functions which call many compiled functions internally like
    :func:`numbacs.extraction.ftle_ordered_ridges`).
-   For each example here, these warmup times are included in the timings. The times
+   For many examples here, these warmup times are included in the timings. The times
    listed at the end of each example should not be seen as representative of
    potential speed of NumbaCS when a time series of one of the diagnostics or
    extraction methods are desired. For more representative timings, see examples
@@ -471,7 +471,7 @@ This gallery contains examples for iLE fields and hyperbolic OECS.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="Compute the hyperbolic OECS saddles for atmospheric flow at time of Godzilla dust storm using MERRA-2 data which is vertically averaged over pressure surfaces ranging from 500hPa to 800hPa.">
+    <div class="sphx-glr-thumbcontainer" tooltip="Compute the hyperbolic OECS saddles for QGE flow.">
 
 .. only:: html
 

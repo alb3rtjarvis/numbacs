@@ -21,11 +21,9 @@
 Quasi-geostrophic hyperbolic OECS
 =================================
 
-Compute the hyperbolic OECS saddles for atmospheric flow at time of Godzilla
-dust storm using MERRA-2 data which is vertically averaged over pressure surfaces
-ranging from 500hPa to 800hPa.
+Compute the hyperbolic OECS saddles for QGE flow.
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-21
+.. GENERATED FROM PYTHON SOURCE LINES 9-19
 
 .. code-block:: Python
 
@@ -46,13 +44,13 @@ ranging from 500hPa to 800hPa.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 22-25
+.. GENERATED FROM PYTHON SOURCE LINES 20-23
 
 Get flow data
 --------------
 Load velocity data and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-37
+.. GENERATED FROM PYTHON SOURCE LINES 23-35
 
 .. code-block:: Python
 
@@ -75,13 +73,13 @@ Load velocity data and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 38-41
+.. GENERATED FROM PYTHON SOURCE LINES 36-39
 
 S eigenvalues, eigenvectors
 ---------------------------
 Compute eigenvalues/vectors of S tensor from velocity field at time t = t[k0].
 
-.. GENERATED FROM PYTHON SOURCE LINES 41-47
+.. GENERATED FROM PYTHON SOURCE LINES 39-45
 
 .. code-block:: Python
 
@@ -98,13 +96,13 @@ Compute eigenvalues/vectors of S tensor from velocity field at time t = t[k0].
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 48-51
+.. GENERATED FROM PYTHON SOURCE LINES 46-49
 
 Hyperbolic OECS saddles
 -----------------------
 Compute generalized saddle points and hyperbolic oecs.
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-63
+.. GENERATED FROM PYTHON SOURCE LINES 49-61
 
 .. code-block:: Python
 
@@ -127,13 +125,13 @@ Compute generalized saddle points and hyperbolic oecs.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-67
+.. GENERATED FROM PYTHON SOURCE LINES 62-65
 
 Plot all OECS
 -------------
 Plot the OECS overlaid on iLE. 
 
-.. GENERATED FROM PYTHON SOURCE LINES 67-76
+.. GENERATED FROM PYTHON SOURCE LINES 65-74
 
 .. code-block:: Python
 
@@ -158,13 +156,13 @@ Plot the OECS overlaid on iLE.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-80
+.. GENERATED FROM PYTHON SOURCE LINES 75-78
 
 Advect OECS
 -----------
 Advect OECS and a circle centered at the generalized saddle point.
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-105
+.. GENERATED FROM PYTHON SOURCE LINES 78-103
 
 .. code-block:: Python
 
@@ -200,13 +198,13 @@ Advect OECS and a circle centered at the generalized saddle point.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-109
+.. GENERATED FROM PYTHON SOURCE LINES 104-107
 
 Plot advected OECS
 ------------------
 Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 109-125
+.. GENERATED FROM PYTHON SOURCE LINES 107-123
 
 .. code-block:: Python
 
@@ -241,7 +239,7 @@ Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 7.186 seconds)
+   **Total running time of the script:** (0 minutes 34.091 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_qge_hyp_oecs.py:
