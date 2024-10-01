@@ -49,7 +49,7 @@ from numbacs.integration import flowmap_grid_2D
 from numbacs.diagnostics import ftle_grid_2D
 import matplotlib.pyplot as plt
 
-# set integration span and integration direction
+# set initial time, integration span, and integration direction
 t0 = 0.
 T = -10.
 int_direction = copysign(1, T)
@@ -76,7 +76,7 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
-![DG FTLE](./auto_examples/ftle/images/sphx_glr_plot_dg_ftle_001.png)
+![DG FTLE](./img/dg_ftle.png)
 
 ### Numerical velocity data
 
@@ -119,7 +119,7 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
-![QGE FTLE](./auto_examples/ftle/images/sphx_glr_plot_qge_ftle_001.png)
+![QGE FTLE](./img/qge_ftle.png)
 
 ## Key dependencies
 
