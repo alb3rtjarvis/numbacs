@@ -47,6 +47,7 @@ from math import copysign
 from numbacs.flows import get_predefined_flow
 from numbacs.integration import flowmap_grid_2D
 from numbacs.diagnostics import ftle_grid_2D
+import matplotlib.pyplot as plt
 
 # set integration span and integration direction
 t0 = 0.
@@ -68,7 +69,14 @@ flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
 
 # compute FTLE over grid
 ftle = ftle_grid_2D(flowmap, T, dx, dy)
+
+# plot FTLE
+fig, ax = plt.subplots(dpi=200)
+ax.contourf(x, y, ftle.T, levels=50)
+ax.set_aspect('equal')
+plt.show()
 ```
+![DG FTLE](./auto_examples/ftle/images/sphx_glr_plot_dg_ftle_001.png)
 
 ### Numerical velocity data
 
@@ -78,18 +86,21 @@ from math import copysign
 from numbacs.flows import get_interp_arrays_2D, get_flow_2D
 from numbacs.integration import flowmap_grid_2D
 from numbacs.diagnostics import ftle_grid_2D
+import matplotlib.pyplot as plt
 
-# given you have data in current directory,
-# load data, set integration span and direction
-t = np.load('./t.npy')
-x = np.load('./x.npy')
-y = np.load('./y.npy')
-U = np.load('./u.npy')
-V = np.load('./v.npy')
-dx = abs(x[1] - x[0])
-dy = abs(y[1] - y[0])
+# load velocity data and set up domain
+u = np.load('../data/qge/qge_u.npy')
+v = np.load('../data/qge/qge_v.npy')
+nt,nx,ny = u.shape
+x = np.linspace(0, 1, nx)
+y = np.linspace(0, 2, ny)
+t = np.linspace(0, 1, nt)
+dx = x[1] - x[0]
+dy = y[1] - y[0]
+
+# set initial time, integration time, and params array
 t0 = 0.
-T = -10.
+T = 0.1
 params = np.array([copysign(1, T)])
 
 # get ode to be used by 'flowmap_grid_2D'
@@ -101,7 +112,14 @@ flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
 
 # compute FTLE over grid
 ftle = ftle_grid_2D(flowmap, T, dx, dy)
+
+# plot FTLE
+fig, ax = plt.subplots(dpi=200)
+ax.contourf(x, y, ftle.T, levels=50)
+ax.set_aspect('equal')
+plt.show()
 ```
+![QGE FTLE](./auto_examples/ftle/images/sphx_glr_plot_qge_ftle_001.png)
 
 ## Key dependencies
 
