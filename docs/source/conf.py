@@ -22,7 +22,7 @@ copyright = '2024, Albert Jarvis'
 author = 'Albert Jarvis'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.1.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +39,6 @@ extensions = [
 		'myst_parser',
 		'sphinx_gallery.gen_gallery'
 		]
-
 
 autoapi_dirs = ['../../src/numbacs']
 autoapi_options = [
