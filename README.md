@@ -76,6 +76,9 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
+<p align="center" width="100%">
+    <img width="70%" src="./img/dg_ftle.png">
+</p>
 
 ### Numerical velocity data
 
@@ -103,8 +106,8 @@ T = 0.1
 params = np.array([copysign(1, T)])
 
 # get ode to be used by 'flowmap_grid_2D'
-grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, U, V)
-funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v)
+grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
+funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
 
 # computes final position of particle trajectories over grid
 flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
@@ -118,6 +121,10 @@ ax.contourf(x, y, ftle.T, levels=50)
 ax.set_aspect('equal')
 plt.show()
 ```
+
+<p align="center" width="100%">
+    <img width="40%" src="./img/qge_ftle.png">
+</p>
 
 ## Key dependencies
 
@@ -137,43 +144,74 @@ for more details.
 
 ## Similar software
 
-[Lagrangian](https://lagrangian.readthedocs.io/en/latest/index.html) -- Python
-package for computing FSLE, FTLE, and eigenvectors of Cauchy-Green tensor with a
-focus on geophysical flows. Largely written in C++ with pybind11 used for
-binding, resulting in fast runtimes. Particle integration is performed by
-4th order Runge-Kutta method (RK4).
+[`Lagrangian`](https://lagrangian.readthedocs.io/en/latest/index.html) -- 
+Python package for computing FSLE, FTLE, and eigenvectors of Cauchy-Green tensor with a
+focus on geophysical flows. Only works with NetCDF files for velocity data.
+Largely written in C++ with pybind11 used for binding, resulting in fast
+runtimes.
+- *Features*: FTLE, FSLE, Cauchy Green eigenvectors
+- *Integration*: RK4 (C++)
+- *Interpolation*: Linear
 
-[Dynlab](https://github.com/hokiepete/dynlab) --  Object oriented Python package
+[`Dynlab`](https://github.com/hokiepete/dynlab) -- 
+Object oriented Python package
 which computes Lagrangian and Eulerian diagnostics along with ridge extraction.
 Provides a large collection of predefined flows and is very user friendly.
-Particle integration performed by scipy.integrate.odeint (LSODA).
+- *Features*: FTLE, iLE, Trajectory repulsion rate, FTLE ridge extractio, iLE ridge extraction
+- *Integration*: LSODA (Python)
+- *Interpolation*: N/A
 
-[TBarrier](https://github.com/haller-group/TBarrier) -- Collection of Jupyter
+[`TBarrier`](https://github.com/haller-group/TBarrier) -- 
+Collection of Jupyter
 notebooks accompanying the book *Transport Barriers and Coherent Structures
 in Flow Data -- Advective, Diffusive, Stochastic, and Active methods by George
-Haller*. Python code which implements a variety of Lagrangian and Eulerian
-diagnostics and extraction methods for a variety of different transport settings
-(NumbaCS currently only implements purely advective methods). Particle
-integration performed by 4th order Runge-Kutta method (RK4).
+Haller*. Python code which implements a wide variety of Lagrangian
+and Eulerian diagnostics and extraction methods for a variety of different
+transport settings, many in both 2 and 3 dimensions (NumbaCS currently only
+implements purely advective methods in 2D).
+- *Features* (both 2D and 3D): FTLE, iLE, variational hyperbolic LCS and OECS, variational elliptic LCS and OECS, variational parabolic LCS, active hyperbolic LCS and OECS, active elliptic LCS and OECS, DBS, diffusive and stochastic elliptic LCS and OECS
+- *Integration*: RK4 (Python)
+- *Interpolation*: Linear in time, cubic in space
 
-[Newman](https://github.com/RossDynamics/Newmanv3.1) -- Fast C++ code for
-computing FTLE which works with geophysical flows and storm tracking. Various
-methods for particle integration, both fixed and adaptive step-size methods. No
-longer maintained.
+[`Newman`](https://github.com/RossDynamics/Newmanv3.1) -- 
+Fast C++ code for computing FTLE which works with geophysical flows and storm
+tracking. Velocity data must be raw binary or ASCII format. No longer maintained.
+- *Features* (both 2D and 3D): FTLE, Cauchy Green eigenvectors
+- *Integration*: RK45, RK4, Euler (C++)
+- *Interpolation*: Linear
 
-[Aquila-LCS](https://github.com/ChristianLagares/Aquila-LCS) -- Python code
-designed to compute FTLE for high-speed turbulent boundary layers in 3D.
+[`Aquila-LCS`](https://github.com/ChristianLagares/Aquila-LCS) -- 
+Python code designed to compute FTLE for high-speed turbulent boundary layers in 3D.
 Utilizes Numba to implement GPU and CPU versions of the code for fast runtimes.
-Particle integration performed by Euler method.
+- *Features* (both 2D and 3D): FTLE, FSLE
+- *Integration*: Euler (Python/Numba)
+- *Interpolation*: Linear
 
-[CoherentStructures.jl](https://coherentstructures.github.io/CoherentStructures.jl/stable/) 
--- Julia toolbox for computing LCS/FTCS in aperiodic flows. Implements elliptic
+[`CoherentStructures.jl`](https://coherentstructures.github.io/CoherentStructures.jl/stable/) -- 
+Julia toolbox for computing LCS/FTCS in aperiodic flows. Implements elliptic
 LCS methods, FEM-based methods (FEM approximation of dynamic Laplacian for FTCS
 extraction), and Graph Laplacian-based methods (spectral clustering and
-diffusion maps for coherent sets). Makes use of DifferentialEquations.jl for
-particle integration, a very advanced and efficient suite of DE solvers in
-Julia.
+diffusion maps for coherent sets).
+- *Features*: FTLE, finite time coherent sets (via both FEM approximation of dynamic Laplacian and graph Laplacian-based methods), variational elliptic LCS and OECS, diffusive and stochastic elliptic LCS and OECS
+- *Integration*: DifferentialEquations.jl, a very advanced and efficient suite of DE solvers (Julia)
+- *Interpolation*: Linear, cubic, B-Spline
 
-[LCS Tool](https://github.com/haller-group/LCStool) -- MATLAB code used to compute
-Elliptic LCS, Hyperbolic LCS, and FTLE. Particle integration performed by
-MATLAB's ode45 function (based off of RK5(4) due to Dormand and Prince).
+[`LCS Tool`](https://github.com/haller-group/LCStool) -- 
+MATLAB code used to compute elliptic LCS, hyperbolic LCS, and FTLE.
+- *Features*: FTLE, variational hyperbolic LCS, variational elliptic LCS
+- *Integration*: ode45 - based off of RK5(4) due to Dormand and Prince (MATLAB)
+- *Interpolation*: Linear, cubic
+
+[`LCS MATLAB Kit`](https://dabirilab.com/software) -- 
+MATLAB GUI for computing FTLE from a time series of 2D velocity data. Has FTLE
+implementation for intertial particles as well (iFTLE).
+- *Features*: FTLE, iFTLE
+- *Integration*: Version 1.0 -- RK4 (MATLAB), Version 2.3 -- Euler (MATLAB)
+- *Interpolation* Version 1.0 -- Cubic, Version 2.3 -- Linear
+
+[`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) -- 
+Numba accelerated Python package which efficiently computes a wide variety of
+coherent structure methods.
+- *Features*: FTLE, iLE, FTLE ridge extraction, variational hyperbolic LCS and OECS, LAVD-based elliptic LCS, IVD-based elliptic OECS, flow map composition
+- *Integration*: DOP853 (FORTRAN), LSODA (C++)
+- *Interpolation*: Linear, cubic
