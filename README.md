@@ -180,7 +180,7 @@ Provides a large collection of predefined flows and is very user friendly.
 Collection of Jupyter
 notebooks accompanying the book *Transport Barriers and Coherent Structures
 in Flow Data -- Advective, Diffusive, Stochastic, and Active methods by George
-Haller* [@haller2023]. Python code which implements a wide variety of Lagrangian
+Haller*. Python code which implements a wide variety of Lagrangian
 and Eulerian diagnostics and extraction methods for a variety of different
 transport settings, in both 2 and 3 dimensions (NumbaCS currently only
 implements purely advective methods in 2D).
