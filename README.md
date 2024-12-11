@@ -172,7 +172,7 @@ runtimes.
 Object oriented Python package
 which computes Lagrangian and Eulerian diagnostics along with ridge extraction.
 Provides a large collection of predefined flows and is very user friendly.
-- *Features*: FTLE, iLE, Trajectory repulsion rate, FTLE ridge extractio, iLE ridge extraction
+- *Features*: FTLE, iLE, Trajectory repulsion rate, FTLE ridge extraction, iLE ridge extraction
 - *Integration*: LSODA (Python)
 - *Interpolation*: N/A
 
@@ -225,8 +225,16 @@ implementation for intertial particles as well (iFTLE).
 - *Interpolation* Version 1.0 -- Cubic, Version 2.3 -- Linear
 
 [`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) -- 
-Numba accelerated Python package which efficiently computes a wide variety of
+Numba accelerated Python package which efficiently computes a variety of
 coherent structure methods.
 - *Features*: FTLE, iLE, FTLE ridge extraction, variational hyperbolic LCS and OECS, LAVD-based elliptic LCS, IVD-based elliptic OECS, flow map composition
 - *Integration*: DOP853 (FORTRAN), LSODA (C++)
 - *Interpolation*: Linear, cubic
+
+# Acknowledgments
+
+This work was partially supported by the National Science Foundation (NSF) under
+grant number 1821145 and the National Aeronautics and Space Administration
+(NASA) under grant number 80NSSC20K1532 issued through the Interdisciplinary
+Research in Earth Science (IDS) and Biological Diversity & Ecological
+Conservation programs.
