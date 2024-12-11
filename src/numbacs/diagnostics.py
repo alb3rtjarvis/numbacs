@@ -1,6 +1,6 @@
 import numpy as np
 from math import log
-from numba import njit, prange, float64
+from numba import njit, prange, float64, int32
 from .utils import composite_simpsons, unravel_index, finite_diff_ND
 
 
@@ -356,7 +356,7 @@ def ftle_grid_ND(flowmap,IC,T,dX):
     absT = abs(T)
     for k in prange(npts):
         inds = unravel_index(k,grid_shape)
-        dXdir = np.zeros(ndims,numba.int64)
+        dXdir = np.zeros(ndims,int32)
         for ii,ind in enumerate(inds):
             if ind == 0:
                 dXdir[ii] = 1
