@@ -231,7 +231,7 @@ coherent structure methods.
 - *Integration*: DOP853 (FORTRAN), LSODA (C++)
 - *Interpolation*: Linear, cubic
 
-# Acknowledgments
+## Acknowledgments
 
 This work was partially supported by the National Science Foundation (NSF) under
 grant number 1821145 and the National Aeronautics and Space Administration
