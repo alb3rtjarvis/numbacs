@@ -116,7 +116,7 @@ for k in range(1,n):
     flowmap = flowmap_grid_2D(funcptr, t0span[k], T, x, y, params)
     fkf = time.perf_counter()
     fmtt += fkf - fks
-    
+
     # compute eigenvalues/vectors of Cauchy Green tensor
     cks = time.perf_counter()
     eigvals,eigvecs = C_eig_2D(flowmap, dx, dy)
@@ -132,7 +132,7 @@ for k in range(1,n):
 
     # smooth ftle field, usually a good idea for numerical velocity field
     ftle_c = gaussian_filter(ftle_k,sigma,mode='nearest')
-    
+
     # identify ridge points, link points in each ridge in an ordered manner,
     # connect close enough ridges
     rks = time.perf_counter()
@@ -145,22 +145,22 @@ for k in range(1,n):
 ftf = time.perf_counter()
 ftt = ftf - ft0
 #%%
-print("Full run for FTLE ridges (with warmup)" 
+print("Full run for FTLE ridges (with warmup)"
       + " took {:.5f} seconds for {} iterates".format(fmtt+ctt+rtt,n))
-print("Average time for flowmap, CG, and ridges" 
+print("Average time for flowmap, CG, and ridges"
       + " (with warmup) was {:.5f} seconds".format((fmtt+ctt+rtt)/n))
-print("Average time for flowmap, CG, and ridges" 
+print("Average time for flowmap, CG, and ridges"
       + " (without warmup) was {:.5f} seconds".format((fmtt+ctt+rtt-wu_fm-wu_c-wu_r)/(n-1)))
 print("First call to flowmap_grid_2D -- {:.5f} seconds (warmup)".format(wu_fm))
-print("Mean time for flowmap_grid_2D -- " 
+print("Mean time for flowmap_grid_2D -- "
       + "{:.5f} seconds (w/o warmup)".format((fmtt-wu_fm)/(n-1)))
 print("First call to C_eig_2D -- {:.5f} seconds (warmup)".format(wu_c))
-print("Mean time for C_eig_2D -- " 
+print("Mean time for C_eig_2D -- "
       + "{:.5f} seconds (w/o warmup)".format((ctt-wu_c)/(n-1)))
 print("First call to ftle_ordered_ridges -- {:.5f} seconds (warmup)".format(wu_r))
-print("Mean time for ftle_ordered_ridges -- " 
+print("Mean time for ftle_ordered_ridges -- "
       + "{:.5f} seconds (w/o warmup)".format((rtt-wu_r)/(n-1)))
-    
+
 # %%
 # Plot
 # ----

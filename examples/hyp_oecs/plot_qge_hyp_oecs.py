@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Quasi-geostrophic hyperbolic OECS
 =================================
@@ -61,15 +60,15 @@ oecs = hyperbolic_oecs(s2,eigvecs,x,y,r,h,steps,maxlen,minval,n=n)
 # %%
 # Plot all OECS
 # -------------
-# Plot the OECS overlaid on iLE. 
+# Plot the OECS overlaid on iLE.
 fig,ax = plt.subplots(dpi=200)
 ax.contourf(x,y,s2.T,levels=np.linspace(0,np.percentile(s2,99.5),51),
             extend='both',zorder=0)
- 
+
 for k in range(len(oecs)):
     ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
     ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
-ax.set_aspect('equal')  
+ax.set_aspect('equal')
 plt.show()
 # %%
 # Advect OECS
@@ -93,23 +92,23 @@ adv_circ = []
 adv_rep = []
 adv_att = []
 t0 = t[k0]
-# advect the top 2 (in strength) OECS 
+# advect the top 2 (in strength) OECS
 for k in range(len(oecs[:3])):
     circ1 = gen_filled_circ(maxlen,nc,c=oecs[k][2],xlims=(0,1),ylims=(0,2))
     adv_circ.append(flowmap_n(funcptr, t0, T, circ1, np.array([1.0]), n = nT)[0])
     adv_rep.append(flowmap_n(funcptr, t0, T, oecs[k][0], np.array([1.0]), n = nT)[0])
     adv_att.append(flowmap_n(funcptr, t0, T, oecs[k][1], np.array([1.0]), n = nT)[0])
-    
+
 # %%
 # Plot advected OECS
 # ------------------
 # Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 fig,axs = plt.subplots(nrows=1,ncols=4,sharex=True,sharey=True,dpi=200)
 axs = axs.flat
-nax = len(axs) 
+nax = len(axs)
 for i in range(nax):
     kt = i
-    axs[i].set_title('t0 + {:.2f}'.format(t_eval[i]))
+    axs[i].set_title(f't0 + {t_eval[i]:.2f}')
     for k in range(len(adv_rep)):
         axs[i].scatter(adv_rep[k][:,kt,0],adv_rep[k][:,kt,1],1,'r',marker='.',
                        edgecolors=None,linewidths=0)
@@ -119,4 +118,4 @@ for i in range(nax):
     axs[i].set_xlim([0,1])
     axs[i].set_ylim([0,2])
     axs[i].set_aspect('equal')
-plt.show()        
+plt.show()

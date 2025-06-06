@@ -53,14 +53,14 @@ def odeint_fun(yy,tt):
     """
     Function to represent double gyre flow to be used with odeint
     """
-    
+
     a = eps*np.sin(omega*tt + psi)
     b = 1 - 2*a
     f = a*yy[0]**2 + b*yy[0]
     df = 2*a*yy[0] + b
     dx_ = -pi*A*np.sin(pi*f)*np.cos(pi*yy[1]) - alpha*yy[0]
     dy_ = pi*A*np.cos(pi*f)*np.sin(pi*yy[1])*df - alpha*yy[1]
-                      
+
     return dx_, dy_
 
 
@@ -78,30 +78,30 @@ def scipy_odeint_flowmap_par(t0,y0):
     tspan = np.array([t0,t0+T])
     sol = odeint(odeint_fun, y0, tspan, rtol=1e-6, atol=1e-8)
     flowmap = sol[-1,:]
-        
-    return flowmap  
+
+    return flowmap
 
 def numpy_ftle_par(fm,inds):
-    
+
     i,j = inds
     absT = abs(T)
     dxdx = (fm[i+1,j,0] - fm[i-1,j,0])/(2*dx)
     dxdy = (fm[i,j+1,0] - fm[i,j-1,0])/(2*dy)
     dydx = (fm[i+1,j,1] - fm[i-1,j,1])/(2*dx)
     dydy = (fm[i,j+1,1] - fm[i,j-1,1])/(2*dy)
-    
+
     off_diagonal = dxdx*dxdy + dydx*dydy
     C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                    [off_diagonal, dxdy**2 + dydy**2]])
-    
+
     max_eig = np.linalg.eigvalsh(C)[-1]
     if max_eig > 1:
         ftle = 1/(2*absT)*log(max_eig)
-    else: 
+    else:
         ftle = 0
 
     return ftle
-                
+
 # %%
 # Compute SciPy/Numpy flow map, FTLE
 # ----------------------------------
@@ -140,7 +140,7 @@ for k,t0 in enumerate(t0span):
     kf = time.perf_counter()
     sfmtt += kf - ks
     sfmtt_arr[k] = sfmtt
-    
+
     fks = time.perf_counter()
     func2 = partial(numpy_ftle_par,res)
     sftle[k,:,:] = np.array(pl.map(func2, inds)).reshape(nx-2,ny-2)
@@ -196,13 +196,13 @@ for k, t0 in enumerate(t0span[1:]):
     kt = kf-ks
     fmtt += kt
     fmtt_arr[k+1] = fmtt
-    
+
     fks = time.perf_counter()
     ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
     fkf = time.perf_counter()
     ftt += fkf-fks
     ftt_arr[k+1] = ftt
-    
+
 print("NumbaCS flowmap and FTLE took "
       + "{:.5f} for {:1d} iterates".format(fmtt+ftt,n))
 print("Mean time for flowmap and FTLE -- {:.5f} seconds (w/ warmup)".format((fmtt+fmtt)/n))
@@ -225,7 +225,7 @@ print("Mean time for ftle_grid_2D -- "
 # would increase as *n* grows larger. The third column ignores the warm-up time
 # and quantifies the speed-up as *n* goes to infinity and the warm-up time becomes
 # negligible. This represents the theoretical speed-up.
- 
+
 
 stt = sfmtt + sftt
 ntt = fmtt + ftt
@@ -247,7 +247,7 @@ print(format_row.format("", *times))
 
 for name, vals in zip(methods,data):
     print(format_row.format(name,*vals))
-    
+
 # %%
 # Plot run-time
 # -------------
@@ -261,7 +261,7 @@ ax.legend(['SciPy/NumPy', 'NumbaCS'])
 plt.grid()
 
 # %%
-# 
+#
 #
 # .. note::
 #

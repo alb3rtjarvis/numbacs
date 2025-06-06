@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Quasi-geostrophic Elliptic LCS
 ==============================
@@ -101,12 +100,12 @@ elcs = rotcohvrt(lavd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=mi
 # sphinx_gallery_thumbnail_number = 1
 fig,ax = plt.subplots(dpi=200)
 ax.contourf(x,y,lavd.T,levels=80)
-ax.set_aspect('equal')   
+ax.set_aspect('equal')
 for rcv,c in elcs:
     ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
     ax.scatter(c[0],c[1],1.5)
-plt.show()    
-    
+plt.show()
+
 # %%
 # Advect elliptic LCS
 # -------------------
@@ -136,7 +135,7 @@ adv_circ, _ = flowmap_n(funcptr,t0,T,circ_delta,params,n=frames)
 
 # find which points from the filled circle are inside elliptic lcs
 # for plotting purposes
-mask = pts_in_poly_mask(rcv0,circ_delta)    
+mask = pts_in_poly_mask(rcv0,circ_delta)
 
 # create plot
 fig,ax = plt.subplots(dpi = 100)
@@ -146,7 +145,7 @@ scatter_out = ax.scatter(adv_circ[~mask,0,0],adv_circ[~mask,0,1],0.5,'orange',zo
 ax.set_xlim([x[0],x[-1]])
 ax.set_ylim([y[0],1.25])    # only focus on part of domain where particles go
 ax.set_aspect('equal')
-ax.set_title("t = {:.2f}".format(round(teval[0],2)))
+ax.set_title(f"t = {round(teval[0],2):.2f}")
 
 # function for animation
 def update(frame):
@@ -160,15 +159,15 @@ def update(frame):
     data0 = np.column_stack((x0,y0))
     data_in = np.column_stack((x_in,y_in))
     data_out = np.column_stack((x_out,y_out))
-    
+
     # update each scatter plot
     scatter0.set_offsets(data0)
     scatter_in.set_offsets(data_in)
     scatter_out.set_offsets(data_out)
-    
+
     # update title
-    ax.set_title("t = {:.2f}".format(round(teval[frame],2)))
-    
+    ax.set_title(f"t = {round(teval[frame],2):.2f}")
+
     return (scatter0, scatter_in, scatter_out)
 
 # create animation

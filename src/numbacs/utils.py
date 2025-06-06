@@ -31,9 +31,9 @@ def unravel_index(index,shape):
         div_mod = divmod(ind,shape[i])
         arr_ind[i] = div_mod[1]
         ind = div_mod[0]
-        
+
     arr_ind[-1] = div_mod[0]
-    
+
     return np.flip(arr_ind)
 
 
@@ -41,7 +41,7 @@ def unravel_index(index,shape):
 def ravel_index(inds,shape):
     """
     Finds raveled index corresponding to grid index given by inds from array with
-    shape=shape where shape must be a np.ndarray 
+    shape=shape where shape must be a np.ndarray.
 
     Parameters
     ----------
@@ -60,10 +60,10 @@ def ravel_index(inds,shape):
     r_ind = inds[-1]
     for i,ind in enumerate(inds[:-1]):
         r_ind+=ind*np.prod(shape[i+1:])
-        
+
     return r_ind
 
-            
+
 @njit
 def finite_diff_2D(f,i,j,h,axis,direction='c'):
     """
@@ -110,8 +110,8 @@ def finite_diff_2D(f,i,j,h,axis,direction='c'):
         elif direction == 'f':
             df = (-f[i,j+2] + 4*f[i,j+1] - 3*f[i,j])/(2*h)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )  
-    
+            print("Valid difference directions are 'c', 'b', and 'f'" )
+
     return df
 
 
@@ -164,7 +164,7 @@ def finite_diff_ND(f,ind,h,axis,shape,direction=0):
         df = (-f[i_p2] + 4*f[i_p1] - 3*f[i])/(2*h)
     else:
         print("Valid difference directions are 0: centered, -1: backward, and 1: forward" )
-    
+
     return df
 
 
@@ -173,7 +173,7 @@ def finite_diff_2D_2nd(f,i,j,h,axis,direction='c'):
     """
     Compute 2nd order partial finite difference in the array f @ [i,j] along axis=axis and using a
     directional difference scheme defined by direction for the second derivative. axis=2 is for the
-    mixed partial finite difference
+    mixed partial finite difference.
     """
     if axis==0:
         if direction == 'c':
@@ -192,12 +192,12 @@ def finite_diff_2D_2nd(f,i,j,h,axis,direction='c'):
         elif direction == 'f':
             df = (2*f[i,j] - 5*f[i,j+1] + 4*f[i,j+2] - f[i,j+3])/(h**3)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )  
+            print("Valid difference directions are 'c', 'b', and 'f'" )
     if axis==2:
         if direction == 'c':
             df = (f[i+1,j+1] - f[i+1,j-1] - f[i-1,j+1] + f[i-1,j-1])/(4*h**2)
         else:
-            print("Valid difference directions are 'c' for mixed derivative" ) 
+            print("Valid difference directions are 'c' for mixed derivative" )
     return df
 
 
@@ -216,7 +216,7 @@ def curl_vel(u,v,dx,dy):
     dx : float
         spacing in grid in x-direction.
     dy : float
-        spacing in grid in y-direction.        
+        spacing in grid in y-direction.
 
     Returns
     -------
@@ -230,9 +230,9 @@ def curl_vel(u,v,dx,dy):
         for j in range(1,ny-1):
             dfydx = (v[i+1,j] - v[i-1,j])/(2*dx)
             dfxdy = (u[i,j+1] - u[i,j-1])/(2*dy)
-            
+
             curl[i,j] = dfydx - dfxdy
-    
+
     return curl
 
 
@@ -250,7 +250,7 @@ def curl_vel_tspan(u,v,dx,dy):
     dx : float
         spacing in grid in x-direction.
     dy : float
-        spacing in grid in y-direction.        
+        spacing in grid in y-direction.
 
     Returns
     -------
@@ -265,12 +265,12 @@ def curl_vel_tspan(u,v,dx,dy):
             for j in range(1,ny-1):
                 dfydx = (v[k,i+1,j] - v[k,i-1,j])/(2*dx)
                 dfxdy = (u[k,i,j+1] - u[k,i,j-1])/(2*dy)
-                
+
                 curl[k,i,j] = dfydx - dfxdy
-    
+
     return curl
-    
-    
+
+
 @njit(parallel=True)
 def curl_func(fnc,x,y,h=1e-3):
     """
@@ -293,7 +293,7 @@ def curl_func(fnc,x,y,h=1e-3):
         array containing values of curl of f.
 
     """
-    
+
     nx = len(x)
     ny = len(y)
     curlf = np.zeros((nx,ny),numba.float64)
@@ -302,12 +302,12 @@ def curl_func(fnc,x,y,h=1e-3):
     for i in prange(nx):
         for j in range(ny):
             pt = np.array([x[i],y[j]])
-            
+
             dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
             dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
-            
+
             curlf[i,j] = dfydx - dfxdy
-    
+
     return curlf
 
 
@@ -343,13 +343,13 @@ def curl_func_tspan(fnc,t,x,y,h=1e-3):
         for i in range(nx):
             for j in range(ny):
                 pt = np.array([t[k],x[i],y[j]])
-                
+
                 dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
                 dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
-                
+
                 curlf[k,i,j] = dfydx - dfxdy
-    
-    return curlf 
+
+    return curlf
 
 
 @njit
@@ -380,9 +380,9 @@ def composite_simpsons(f,h):
                 val += 4*f[k]
             else:
                 val += 2*f[k]
-                
+
         val *= h/3
-        
+
     else:
         n -= 1
         val = f[0]
@@ -392,10 +392,10 @@ def composite_simpsons(f,h):
                 val += 4*f[k]
             else:
                 val += 2*f[k]
-                
-        val *= h/3        
-        val += (5*h/12)*f[-1] + (2*h/3)*f[-2] - (h/12)*f[-3]   
-        
+
+        val *= h/3
+        val += (5*h/12)*f[-1] + (2*h/3)*f[-2] - (h/12)*f[-3]
+
     return val
 
 
@@ -424,19 +424,19 @@ def composite_simpsons_38_irregular(f,h):
     for k in range(int(n/2)):
         h0 = h[2*k]
         h1 = h[2*k+1]
-        val += (1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) + 
-                              f[2*k+1]*((h0+h1)**2)/(h0*h1) + 
+        val += (1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) +
+                              f[2*k+1]*((h0+h1)**2)/(h0*h1) +
                               f[2*k+2]*(2-h0/h1))
-    
+
     if n%2 == 1:
         h1 = h[n-1]
         h2 = h[n-2]
         alph = (2*h1**2 + 3*h1*h2)/(6*(h2 + h1))
         beta = (h1**2 + 3*h1*h2)/(6*h2)
         eta = (h1**3)/(6*h2*(h2 + h1))
-        
+
         val += alph*f[-1] + beta*f[-2] - eta*f[-3]
-            
+
     return val
 
 
@@ -458,7 +458,7 @@ def dist_2d(p1,p2):
         distance between p1 and p2.
 
     """
-    
+
     return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
 
 
@@ -510,7 +510,7 @@ def shoelace(polygon):
         area of polygon.
 
     """
-    
+
     n = polygon.shape[0]
     x0 = polygon[0,0]
     y1 = polygon[1,1]
@@ -520,9 +520,9 @@ def shoelace(polygon):
         y2 = polygon[k+1,1]
         y0 = polygon[k-1,1]
         area += x1*(y2 - y0)
-        
+
     area = abs(0.5*(area - polygon[n-1,0]*polygon[n-2,1]))
-                
+
     return area
 
 
@@ -532,7 +532,7 @@ def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
     """
     Finds n local maxima values in arr such that each max is a local maximum within radius r where
     spacing in arr is given by dx,dy. If all local maxima are desired, set n = -1. Should pass a
-    copy of arr to the function to avoid orginial arr being overwritten (i.e. pass in arr.copy())
+    copy of arr to the function to avoid orginial arr being overwritten (i.e. pass in arr.copy()).
 
     Parameters
     ----------
@@ -574,7 +574,7 @@ def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
             arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
                 max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
             k+=1
-            
+
     else:
         max_inds = np.zeros((n,2),numba.int32)
         max_vals = np.zeros(n,numba.float64)
@@ -586,7 +586,7 @@ def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
             arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
                 max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
             k+=1
-            
+
     return max_vals[:k], max_inds[:k,:]
 
 
@@ -608,7 +608,7 @@ def gen_circ(r,c,n,xlims=None,ylims=None):
         The default is None.
     ylims : tuple, optional
         boundary in y-direction, points outside of this boundary will not be returned.
-        The default is None.        
+        The default is None.
 
     Returns
     -------
@@ -616,7 +616,7 @@ def gen_circ(r,c,n,xlims=None,ylims=None):
           points on the circle.
 
     """
-    
+
     theta = np.linspace(0,2*pi,n)
     pts = np.zeros((n,2),np.float64)
     cx = c[0]
@@ -624,7 +624,7 @@ def gen_circ(r,c,n,xlims=None,ylims=None):
     for k in prange(n):
         pts[k,0] = r*cos(theta[k]) + cx
         pts[k,1] = r*sin(theta[k]) + cy
-        
+
     if xlims is not None:
         xm = pts[:,0] < xlims[0]
         xM = pts[:,0] > xlims[1]
@@ -635,7 +635,7 @@ def gen_circ(r,c,n,xlims=None,ylims=None):
         yM = pts[:,0] > ylims[1]
         masky = ~np.logical_or(ym,yM)
         pts = pts[masky,:]
-        
+
     return pts
 
 
@@ -661,8 +661,8 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
         The default is None.
     ylims : tuple, optional
         boundary in y-direction, points outside of this boundary will not be returned.
-        The default is None. 
-        
+        The default is None.
+
     Returns
     -------
     pts : np.ndarray, shape = (n,2)
@@ -680,10 +680,10 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
             radius = r
         else:
             radius = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
-            
+
         x[k-1] = radius*cos(theta) + c[0]
         y[k-1] = radius*sin(theta) + c[1]
-        
+
     if xlims is not None:
         xm = x < xlims[0]
         xM = x > xlims[1]
@@ -696,11 +696,11 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
         masky = ~np.logical_or(ym,yM)
         x = x[masky]
         y = y[masky]
-        
-    pts = np.column_stack((x,y))    
+
+    pts = np.column_stack((x,y))
     return pts
-    
-    
+
+
 @njit
 def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
     """
@@ -722,8 +722,8 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
         The default is None.
     ylims : tuple, optional
         boundary in y-direction, points outside of this boundary will not be returned.
-        The default is None. 
-        
+        The default is None.
+
     Returns
     -------
     pts : np.ndarray, shape = (n,2)
@@ -744,10 +744,10 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
             radius[k-1] = r
         else:
             radius[k-1] = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
-            
+
         x[k-1] = radius[k-1]*cos(theta) + c[0]
         y[k-1] = radius[k-1]*sin(theta) + c[1]
-        
+
     if xlims is not None:
         xm = x < xlims[0]
         xM = x > xlims[1]
@@ -762,8 +762,8 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
         x = x[masky]
         y = y[masky]
         radius = radius[masky]
-        
-    pts = np.column_stack((x,y))    
+
+    pts = np.column_stack((x,y))
     return pts, radius
 
 
@@ -790,7 +790,7 @@ def arclength(pts):
         p0 = pts[k,:]
         p1 = pts[k+1,:]
         arclength_ += ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
-        
+
     return arclength_
 
 
@@ -818,7 +818,7 @@ def arclength_along_arc(pts):
         p0 = pts[k-1,:]
         p1 = pts[k,:]
         arclength_[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5 + arclength_[k-1]
-        
+
     return arclength_
 
 
@@ -844,13 +844,13 @@ def interp_curve(curve,n,s=0,k=3,per=0):
     -------
     curvei : np.ndarray, shape = (n,2)
         array containing interpolated values of curve.
-        
+
 
     """
-    
+
     tck, u = splprep([curve[:,0], curve[:,1]], k=k, s=s, per=per)
     xi, yi = splev(np.linspace(0, 1, n), tck)
-    
+
     curvei = np.column_stack((xi,yi))
     return curvei
 
@@ -915,11 +915,11 @@ def pts_in_poly(polygon,pts):
     """
 
     for k in range(len(pts)):
-        pt = pts[k,:]  
-        
+        pt = pts[k,:]
+
         if wn_pt_in_poly(polygon,pt):
             return k
-        
+
     return -1
 
 
@@ -946,7 +946,7 @@ def pts_in_poly_mask(polygon,pts):
     mask = np.zeros((npts,),np.bool_)
     for k in range(npts):
         mask[k] = wn_pt_in_poly(polygon,pts[k,:])
-        
+
     return mask
 
 
@@ -969,7 +969,7 @@ def cart_prod(vecs):
         array containing the Cartesian product.
 
     """
-    
+
     nvecs = len(vecs)
     dtype = vecs[0].dtype
     shape = np.zeros(nvecs,np.int32)
@@ -977,7 +977,7 @@ def cart_prod(vecs):
         shape[k] = len(vecs[k])
     npts = np.prod(shape)
     prod = np.zeros((npts,nvecs),dtype)
-    
+
     if nvecs > 2:
         for k in prange(nvecs-1):
             cl = np.prod(shape[-1:k:-1])
@@ -985,7 +985,7 @@ def cart_prod(vecs):
             shapek = shape[k]
             for j in range(shapek):
                 prod[j*cl:(j+1)*cl,k] = arr[j]
-                
+
             full_len = shapek*cl
             for i in range(np.prod(shape[:k])-1):
                 prod[(i+1)*full_len:(i+2)*full_len,k] = prod[:full_len,k]
@@ -994,10 +994,10 @@ def cart_prod(vecs):
         arr = vecs[0]
         for j in prange(shape[0]):
             prod[j*cl:(j+1)*cl,0] = arr[j]
-                        
+
     nlast = shape[-1]
     arr = vecs[-1]
     for j in prange(np.prod(shape[:-1])):
-        prod[j*nlast:(j+1)*nlast,-1] = arr 
+        prod[j*nlast:(j+1)*nlast,-1] = arr
 
     return prod

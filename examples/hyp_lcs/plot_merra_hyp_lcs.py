@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 MERRA-2 Hyperbolic LCS
 ======================
@@ -22,9 +21,9 @@ import matplotlib.pyplot as plt
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # FTLE computation and integration span. Create interpolant and retrieve flow.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.
@@ -52,7 +51,7 @@ latf = np.arange(-5,45+dy,dy)
 
 # set integration span and integration direction
 day = 16
-t0_date = np.datetime64("2020-06-{:02d}".format(day))
+t0_date = np.datetime64(f"2020-06-{day:02d}")
 t0 = t[np.nonzero(dates == t0_date)[0][0]]
 T = -72.0
 params = np.array([copysign(1,T)])
@@ -108,8 +107,8 @@ lambda_avg_min = 0
 arclen_flag=False
 
 # extract hyperbolic lcs
-lcs = hyperbolic_lcs(eigval_max, eigvecs, lonf, latf, step_size, steps, lf, lmin, r, nmax, 
-                     dist_tol=dtol, 
+lcs = hyperbolic_lcs(eigval_max, eigvecs, lonf, latf, step_size, steps, lf, lmin, r, nmax,
+                     dist_tol=dtol,
                      nlines=nlines,
                      ep_dist_tol=ep_dist_tol,
                      percentile=percentile,
@@ -127,7 +126,7 @@ ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,line
 ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
 for l in lcs:
     ax.plot(l[:,0],l[:,1],'r',lw=0.5)
-    
+
 ax.set_xlim([lonf[0],lonf[-1]])
 ax.set_ylim([latf[0],latf[-1]])
 ax.set_aspect('equal')

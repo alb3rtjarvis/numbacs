@@ -1,5 +1,5 @@
 """
-Extraction package for numbacs
+Extraction package for numbacs.
 """
 
 from .ridges import ftle_ridge_pts, ftle_ridges, ftle_ordered_ridges

@@ -37,7 +37,7 @@ def flowmap(funcptr,t0,T,pts,params,method='dop853',rtol=1e-6,atol=1e-8):
         array containing final position of particles pts after integration from [t0,t0+T].
 
     """
-    	
+
     flowmap = np.zeros(pts.shape,float64)
     t_eval = params[0]*np.linspace(t0,t0+T,2)
     if method.lower() == 'dop853':
@@ -50,7 +50,7 @@ def flowmap(funcptr,t0,T,pts,params,method='dop853',rtol=1e-6,atol=1e-8):
             flowmap_tmp,success = lsoda(funcptr, np.array([pts[i,0],pts[i,1]]),
                                          t_eval,rtol=rtol,atol=atol,data=params)
             flowmap[i,:] = flowmap_tmp[-1,:]
-    
+
     return flowmap
 
 
@@ -91,7 +91,7 @@ def flowmap_n(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
         array containing times the flowmap is returned at.
 
     """
-    	
+
     npts = len(pts)
     flowmap = np.zeros((npts,n,2),float64)
     t_eval = params[0]*np.linspace(t0,t0+T,n)
@@ -105,7 +105,7 @@ def flowmap_n(funcptr,t0,T,pts,params,method='dop853',n=2,rtol=1e-6,atol=1e-8):
             flowmap_tmp,success = lsoda(funcptr, np.array([pts[i,0],pts[i,1]]),
                                          t_eval,rtol=rtol,atol=atol,data=params)
             flowmap[i,:,:] = flowmap_tmp
-    
+
     return flowmap, params[0]*t_eval
 
 
@@ -160,7 +160,7 @@ def flowmap_grid_2D(funcptr,t0,T,x,y,params,method='dop853',rtol=1e-6,atol=1e-8)
                 flowmap_tmp,success = lsoda(funcptr, np.array([x[i],y[j]]),
                                             t_eval,rtol=rtol,atol=atol,data=params)
                 flowmap[i,j,:] = flowmap_tmp[-1,:]
-    
+
     return flowmap
 
 
@@ -213,7 +213,7 @@ def flowmap_grid_ND(funcptr,t0,T,IC_flat,ndims,params,method='dop853',rtol=1e-6,
             flowmap_tmp,success = lsoda(funcptr, IC_flat[k*ndims:(k+1)*ndims],
                                         t_eval,rtol=rtol,atol=atol,data=params)
             flowmap[k,:] = flowmap_tmp[-1,:]
-    
+
     return flowmap
 
 
@@ -276,7 +276,7 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                 for i in prange(nx):
                     if i == 0 or i == nx-1:
                         for j in range(ny):
-                            flowmap_tmp,success = dop853(funcptr, 
+                            flowmap_tmp,success = dop853(funcptr,
                                                          np.array([x[i], y[j]])+
                                                          aux_grid[-1,:],t_eval,
                                                           rtol=rtol,atol=atol,data=params)
@@ -284,14 +284,14 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                     else:
                         for j in range(ny):
                              if j == 0 or j == ny-1:
-                                 flowmap_tmp,success = dop853(funcptr, 
+                                 flowmap_tmp,success = dop853(funcptr,
                                                               np.array([x[i], y[j]])+
                                                               aux_grid[-1,:],t_eval,
                                                               rtol=rtol,atol=atol,data=params)
                                  flowmap_aux[i,j,-1,:] = flowmap_tmp[-1,:]
                              else:
                                  for k in range(n_aux):
-                                     flowmap_tmp,success = dop853(funcptr, 
+                                     flowmap_tmp,success = dop853(funcptr,
                                                                   np.array([x[i], y[j]])+
                                                                   aux_grid[k,:],t_eval,
                                                                   rtol=rtol,atol=atol,data=params)
@@ -300,7 +300,7 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                  for i in prange(1,nx-1):
                      for j in prange(1,ny-1):
                         for k in range(n_aux):
-                            flowmap_tmp,success = dop853(funcptr, 
+                            flowmap_tmp,success = dop853(funcptr,
                                                          np.array([x[i], y[j]])+
                                                          aux_grid[k,:],t_eval,
                                                          rtol=rtol,atol=atol,data=params)
@@ -310,7 +310,7 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                 for i in prange(nx):
                     if i == 0 or i == nx-1:
                         for j in range(ny):
-                            flowmap_tmp,success = lsoda(funcptr, 
+                            flowmap_tmp,success = lsoda(funcptr,
                                                         np.array([x[i], y[j]])+
                                                         aux_grid[-1,:],t_eval,
                                                         rtol=rtol,atol=atol,data=params)
@@ -339,13 +339,13 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
                                                         aux_grid[k,:], t_eval,
                                                         rtol=rtol,atol=atol,data=params)
                             flowmap_aux[i,j,k,:] = flowmap_tmp[-1,:]
-                     
-       
+
+
     else:
         n_aux = 4
         aux_grid = np.array([[h,0.],[-h,0.],[0.,h],[0.,-h]])
         flowmap_aux = np.zeros((nx,ny,n_aux,2),float64)
-        if compute_edge == True:
+        if compute_edge:
             xrange = np.array([0,nx],int32)
             yrange = np.array([0,ny],int32)
         else:
@@ -355,7 +355,7 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
             for i in prange(xrange[0],xrange[1]):
                 for j in range(yrange[0],yrange[1]):
                     for k in range(n_aux):
-                        flowmap_tmp,success = dop853(funcptr, 
+                        flowmap_tmp,success = dop853(funcptr,
                                                      np.array([x[i], y[j]])+aux_grid[k,:],
                                                      t_eval,
                                                      rtol=rtol,atol=atol,data=params)
@@ -364,12 +364,12 @@ def flowmap_aux_grid_2D(funcptr,t0,T,x,y,params,h=1e-5,eig_main=True,compute_edg
             for i in prange(xrange[0],xrange[1]):
                 for j in range(yrange[0],yrange[1]):
                     for k in range(n_aux):
-                        flowmap_tmp,success = lsoda(funcptr, 
+                        flowmap_tmp,success = lsoda(funcptr,
                                                     np.array([x[i], y[j]])+aux_grid[k,:],
                                                     t_eval,
                                                     rtol=rtol,atol=atol,data=params)
                         flowmap_aux[i,j,k,:] = flowmap_tmp[-1,:]
-    
+
     return flowmap_aux
 
 
@@ -379,7 +379,7 @@ def flowmap_n_grid_2D(funcptr,t0,T,x,y,params,n=50,method='dop853',rtol=1e-6,ato
     Computes the flow map of the ode defined by funcptr where funcptr is a
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by x,y. t0 denotes initial time and T denotes
-    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).    
+    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).
 
     Parameters
     ----------
@@ -429,7 +429,7 @@ def flowmap_n_grid_2D(funcptr,t0,T,x,y,params,n=50,method='dop853',rtol=1e-6,ato
                 flowmap_tmp,success = lsoda(funcptr, np.array([x[i], y[j]]),
                                              t_eval,rtol=rtol,atol=atol,data=params)
                 flowmap[i,j,:,:] = flowmap_tmp
-    
+
     return flowmap, params[0]*t_eval
 
 
@@ -442,7 +442,7 @@ def flowmap_n_grid_ND(funcptr,t0,T,IC_flat,ndims,params,n=50,method='dop853',rto
     computed over the grid defined by IC_flat where IC_flat has shape
     (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time,
     flowmap is returned at n times in [t0,t0+T] (inclusive).
-    
+
 
     Parameters
     ----------
@@ -466,7 +466,7 @@ def flowmap_n_grid_ND(funcptr,t0,T,IC_flat,ndims,params,n=50,method='dop853',rto
         relative tolerance for ode solver. The default is 1e-6.
     atol : float, optional
         absolute tolerance for ode solver. The default is 1e-8.
-        
+
     Returns
     -------
     flowmap : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,n,ndims)
@@ -489,7 +489,7 @@ def flowmap_n_grid_ND(funcptr,t0,T,IC_flat,ndims,params,n=50,method='dop853',rto
             flowmap_tmp,success = lsoda(funcptr, IC_flat[k*ndims:(k+1)*ndims],
                                           t_eval ,rtol=rtol,atol=atol,data=params)
             flowmap[k,:,:] = flowmap_tmp
-    
+
     return flowmap, params[0]*t_eval
 
 
@@ -518,15 +518,15 @@ def flowmap_composition(flowmaps,grid,nT):
     pts = np.column_stack((flowmaps[0,:,:,0].ravel(),flowmaps[0,:,:,1].ravel()))
     for k in range(1,nT-1):
         fx = eval_linear(grid,flowmaps[k,:,:,0],pts,xto.CONSTANT)
-        fy = eval_linear(grid,flowmaps[k,:,:,1],pts,xto.CONSTANT)        
+        fy = eval_linear(grid,flowmaps[k,:,:,1],pts,xto.CONSTANT)
         pts = np.column_stack((fx,fy))
-    
+
     composed_flowmap[:,:,0] = eval_linear(grid,flowmaps[-1,:,:,0],pts,xto.CONSTANT).reshape(nx,ny)
     composed_flowmap[:,:,1] = eval_linear(grid,flowmaps[-1,:,:,1],pts,xto.CONSTANT).reshape(nx,ny)
-    
+
     return composed_flowmap
-        
-        
+
+
 
 def flowmap_composition_initial(funcptr,t0,T,h,x,y,grid,params,**kwargs):
     """
@@ -543,7 +543,7 @@ def flowmap_composition_initial(funcptr,t0,T,h,x,y,grid,params,**kwargs):
         overall integration time.
     h : float
         integration time for each flowmap composition. T/h should be an integer or
-        the results will be incorrect.        
+        the results will be incorrect.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
     y : np.ndarray, shape = (ny,)
@@ -565,14 +565,14 @@ def flowmap_composition_initial(funcptr,t0,T,h,x,y,grid,params,**kwargs):
         number of points making up integration span
 
     """
-    
+
     nT = abs(round(T/h))
     flowmaps = np.zeros((nT,grid[0][2],grid[1][2],2),np.float64)
     for k in range(nT):
         flowmaps[k,:,:,:] = flowmap_grid_2D(funcptr,t0,h,x,y,params,**kwargs)
         t0 += h
     flowmap0 = flowmap_composition(flowmaps,grid, nT)
-    
+
     return flowmap0, flowmaps, nT
 
 
@@ -593,7 +593,7 @@ def flowmap_composition_step(flowmaps,funcptr,t0,h,nT,x,y,grid,params,**kwargs):
         integration time for each flowmap composition. T/h should be an integer or
         the results will be incorrect.
     nT : int
-        number of intermediate flowmaps.        
+        number of intermediate flowmaps.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
     y : np.ndarray, shape = (ny,)
@@ -613,9 +613,9 @@ def flowmap_composition_step(flowmaps,funcptr,t0,h,nT,x,y,grid,params,**kwargs):
         flowmaps for each (k+1)*t0 to (k+1)*t0+h for k in {1,...,nT}.
 
     """
-    
+
     flowmaps[:-1,:,:,:] = flowmaps[1:,:,:,:]
     flowmaps[-1,:,:,:] = flowmap_grid_2D(funcptr,t0,h,x,y,params,**kwargs)
     flowmap_k = flowmap_composition(flowmaps, grid, nT)
-    
+
     return flowmap_k, flowmaps

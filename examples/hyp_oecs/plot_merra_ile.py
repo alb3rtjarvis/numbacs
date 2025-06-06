@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 MERRA iLE
 =========
@@ -19,9 +18,9 @@ from numbacs.diagnostics import ile_2D_func
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # iLE computation, set time, and retrieve jit-callable function for velocity data.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.
@@ -54,7 +53,7 @@ vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical = 1)
 
 # set time at which iLE will be computed
 day = 20
-t0_date = np.datetime64("2020-06-{:02d}".format(day))
+t0_date = np.datetime64(f"2020-06-{day:02d}")
 t0 = t[np.nonzero(dates == t0_date)[0][0]]
 # %%
 # iLE

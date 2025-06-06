@@ -19,9 +19,9 @@ from numbacs.diagnostics import ile_2D_func
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # iLE computation, set time, and retrieve jit-callable function for velocity data.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Double gyre time series
 =======================
@@ -18,10 +17,9 @@ from numbacs.flows import get_predefined_flow
 from numbacs.diagnostics import ftle_grid_2D
 import matplotlib.pyplot as plt
 import time
-from math import copysign
 import numba
 from numba import njit, prange
-     
+
 # %%
 # Get flow
 # --------------
@@ -50,12 +48,12 @@ tspan = np.arange(t0, t0 + n*h, h)
 wu_t = time.perf_counter()
 flowmap_wu = flowmap_grid_2D(funcptr,t0,T,x,y,params)
 wu_t = time.perf_counter() - wu_t
-print("Flowmap with warm-up took {:.5f} seconds".format(wu_t))
+print(f"Flowmap with warm-up took {wu_t:.5f} seconds")
 
 wu_t = time.perf_counter()
 ftle_wu = ftle_grid_2D(flowmap_wu,T,dx,dy)
 wu_t = time.perf_counter() - wu_t
-print("FTLE with warm-up took {:.5f} seconds".format(wu_t))
+print(f"FTLE with warm-up took {wu_t:.5f} seconds")
 
 # %%
 # Flowmap composition
@@ -87,13 +85,13 @@ for k in range(1,n):
     ftlec[k,:,:] = ftle_grid_2D(flowmap_k,T,dx,dy)
     fkf = time.perf_counter()
     ftt += fkf - fks
-    
-print("Flowmap and FTLE computation (composed flowmap) took {:.5f} seconds".format(ctt+ftt))
-print("Average time for flowmap and FTLE was {:.5f} seconds".format((ctt+ftt)/n))
-print("Average time for flowmap was {:.5f} seconds".format(ctt/n))
-print("Average time for FTLE was {:.5f} seconds".format(ftt/n))
-print("\nInitial flowmap integration and composition took {:.5f} seconds".format(c0))
-print("Average time for flowmap composition was {:.5f} seconds".format((ctt-c0)/(n-1)))
+
+print(f"Flowmap and FTLE computation (composed flowmap) took {ctt+ftt:.5f} seconds")
+print(f"Average time for flowmap and FTLE was {(ctt+ftt)/n:.5f} seconds")
+print(f"Average time for flowmap was {ctt/n:.5f} seconds")
+print(f"Average time for FTLE was {ftt/n:.5f} seconds")
+print(f"\nInitial flowmap integration and composition took {c0:.5f} seconds")
+print(f"Average time for flowmap composition was {(ctt-c0)/(n-1):.5f} seconds")
 
 cfmtt = ctt+ftt
 cfmat = ((ctt-c0) + (ftt-f0))/(n-1)
@@ -116,16 +114,16 @@ for k in range(n):
     kf = time.perf_counter()
     kt = kf-ks
     tt += kt
-    
+
     fks = time.perf_counter()
     ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
     fkf = time.perf_counter()
     ftt += fkf - fks
-    
-print("Flowmap and FTLE computation (parallel in space) took {:.5f}".format(tt+ftt))
-print("Average time for flowmap and FTLE was {:.5f} seconds".format((tt+ftt)/n))
-print("Average time for flowmap was {:.5f} seconds".format(tt/n))
-print("Average time for FTLE was {:.5f} seconds".format(ftt/n))
+
+print(f"Flowmap and FTLE computation (parallel in space) took {tt+ftt:.5f}")
+print(f"Average time for flowmap and FTLE was {(tt+ftt)/n:.5f} seconds")
+print(f"Average time for flowmap was {tt/n:.5f} seconds")
+print(f"Average time for FTLE was {ftt/n:.5f} seconds")
 
 fmtt = tt+ftt
 fmat = (tt+ftt)/n
@@ -175,14 +173,14 @@ def ftle_tspan(funcptr,tspan,T,x,y,params):
         t0 = tspan[k]
         flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
         ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
-        
+
     return ftle
 
 pts = time.perf_counter()
 ftlep = ftle_tspan(funcptr, tspan, T, x, y, params)
 ptt = time.perf_counter() - pts
-print("Flowmap and FTLE computation (parallel in time) took {:.5f} seconds".format(ptt))
-print("Average time for flowmap and FTLE was {:.5f} seconds".format(ptt/n))
+print(f"Flowmap and FTLE computation (parallel in time) took {ptt:.5f} seconds")
+print(f"Average time for flowmap and FTLE was {ptt/n:.5f} seconds")
 
 pfmtt = ptt
 pfmat = ptt/n
@@ -197,7 +195,7 @@ data = [[round(fmtt,d1),round(fmtt/fmtt,d2),round(fmat/fmat,d2)],
         [round(pfmtt,d1),round(fmtt/pfmtt,d2),round(fmat/pfmat,d2)],
         [round(cfmtt,d1),round(fmtt/cfmtt,d2),round(fmat/cfmat,d2)]]
 
-times = ["total time (n={})".format(n),"x speedup","x speedup (per step)"]
+times = [f"total time (n={n})","x speedup","x speedup (per step)"]
 methods = ["standard","parallel time","composition"]
 
 format_row = "{:>25}"*(len(data[0]) + 1)
@@ -206,7 +204,7 @@ print(format_row.format("", *times))
 
 for name, vals in zip(methods,data):
     print(format_row.format(name,*vals))
-    
+
 # %%
 # Plot FTLE from different flowmap methods
 # ----------------------------------------
@@ -278,7 +276,7 @@ for k in range(n):
     fc = fc[fc>0]
     mae[k] = MAE(f,fc)
     smape[k] = sMAPE(f,fc)
-    
+
 fig,ax1 = plt.subplots(figsize = (8,6))
 
 color = 'tab:red'

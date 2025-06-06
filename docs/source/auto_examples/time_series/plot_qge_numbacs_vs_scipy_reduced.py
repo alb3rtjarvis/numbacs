@@ -74,10 +74,10 @@ ui = RegularGridInterpolator((t,x,y), u, method= 'linear', bounds_error=False, f
 vi = RegularGridInterpolator((t,x,y), v, method= 'linear', bounds_error=False, fill_value=0.0)
 
 def odeint_fun(yy,tt):
-    
+
     pt = np.array([tt,yy[0],yy[1]])
-    
-    return ui(pt)[0],vi(pt)[0]   
+
+    return ui(pt)[0],vi(pt)[0]
 
 
 # %%
@@ -94,30 +94,30 @@ def scipy_odeint_flowmap_par(t0,y0):
     tspan = np.array([t0,t0+T])
     sol = odeint(odeint_fun, y0, tspan, rtol=1e-6, atol=1e-8)
     flowmap = sol[-1,:]
-        
-    return flowmap  
+
+    return flowmap
 
 def numpy_ftle_par(fm,inds):
-    
+
     i,j = inds
     absT = abs(T)
     dxdx = (fm[i+1,j,0] - fm[i-1,j,0])/(2*dx)
     dxdy = (fm[i,j+1,0] - fm[i,j-1,0])/(2*dy)
     dydx = (fm[i+1,j,1] - fm[i-1,j,1])/(2*dx)
     dydy = (fm[i,j+1,1] - fm[i,j-1,1])/(2*dy)
-    
+
     off_diagonal = dxdx*dxdy + dydx*dydy
     C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                    [off_diagonal, dxdy**2 + dydy**2]])
-    
+
     max_eig = np.linalg.eigvalsh(C)[-1]
     if max_eig > 1:
         ftle = 1/(2*absT)*log(max_eig)
-    else: 
+    else:
         ftle = 0
 
     return ftle
-                
+
 # %%
 # Compute SciPy/Numpy flow map, FTLE
 # ----------------------------------
@@ -153,7 +153,7 @@ for k,t0 in enumerate(t0span):
     res = np.array(pl.map(func,Y0)).reshape(nx,ny,2)
     kf = time.perf_counter()
     sfmtt += kf - ks
-    
+
     fks = time.perf_counter()
     func2 = partial(numpy_ftle_par,res)
     sftle[k,:,:] = np.array(pl.map(func2, inds)).reshape(nx-2,ny-2)
@@ -202,12 +202,12 @@ for k, t0 in enumerate(t0span[1:]):
     flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
     kf = time.perf_counter()
     fmtt += kf-ks
-    
+
     fks = time.perf_counter()
     ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
     fkf = time.perf_counter()
     ftt += fkf-fks
-    
+
 print("NumbaCS flowmap and FTLE took "
       + "{:.5f} for {:1d} iterates".format(fmtt+ftt,n))
 print("Mean time for flowmap and FTLE -- {:.5f} seconds (w/ warmup)".format((fmtt+ftt)/n))
@@ -229,7 +229,7 @@ print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/o warmup)".format((ftt-wu
 # would increase as *n* grows larger. The third column ignores the warm-up time
 # and quantifies the speed-up as *n* goes to infinity and the warm-up time becomes
 # negligible. This represents the theoretical speed-up.
- 
+
 
 stt = sfmtt + sftt
 ntt = fmtt + ftt
@@ -253,7 +253,7 @@ for name, vals in zip(methods,data):
     print(format_row.format(name,*vals))
 
 # %%
-# 
+#
 #
 # .. note::
 #

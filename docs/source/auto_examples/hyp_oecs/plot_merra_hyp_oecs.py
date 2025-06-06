@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # iLE computation, set time, and retrieve jit-callable function for velocity data.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.
@@ -87,8 +87,8 @@ oecs = hyperbolic_oecs(s2,eigvecs,lonf,latf,r,h,steps,maxlen,minval,n=n)
 # %%
 # Plot all OECS
 # -------------
-# Plot the OECS overlaid on iLE. 
-# 
+# Plot the OECS overlaid on iLE.
+#
 # .. note::
 #    Cartopy is a useful package for geophysical plotting but it is not
 #    a dependency so we use matplotlib here.
@@ -99,13 +99,13 @@ ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,
            linewidths=0,zorder=1)
 ax.contourf(lonf,latf,s2.T,levels=np.linspace(0,np.percentile(s2,99.5),51),
             extend='both',zorder=0)
- 
+
 for k in range(len(oecs)):
     ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
     ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
 ax.set_xlim([lonf[0],lonf[-1]])
 ax.set_ylim([latf[0],latf[-1]])
-ax.set_aspect('equal')  
+ax.set_aspect('equal')
 plt.show()
 # %%
 # Advect OECS
@@ -127,20 +127,20 @@ adv_circ = []
 adv_rep = []
 adv_att = []
 
-# advect the top 3 (in strength) OECS 
+# advect the top 3 (in strength) OECS
 for k in range(len(oecs[:3])):
     circ1 = gen_filled_circ(r-3.5,nc,c=oecs[k][2])
     adv_circ.append(flowmap_n(funcptr, t0, T, circ1, np.array([1.0]), n = nT)[0])
     adv_rep.append(flowmap_n(funcptr, t0, T, oecs[k][0], np.array([1.0]), n = nT)[0])
     adv_att.append(flowmap_n(funcptr, t0, T, oecs[k][1], np.array([1.0]), n = nT)[0])
-    
+
 # %%
 # Plot advected OECS
 # ------------------
 # Plot advected OECS at 0, 8, 16, and 24 hours after t0.
 fig,axs = plt.subplots(nrows=2,ncols=2,sharex=True,sharey=True,dpi=200)
 axs = axs.flat
-nax = len(axs) 
+nax = len(axs)
 for i in range(nax):
     axs[i].scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',
                    edgecolors=None,linewidths=0,zorder=1)
@@ -154,5 +154,5 @@ for i in range(nax):
         axs[i].scatter(adv_circ[k][:,kt,0],adv_circ[k][:,kt,1],0.5,'g',zorder=0)
     axs[i].set_xlim([lonf[0],lonf[-1]+10])
     axs[i].set_ylim([latf[0],latf[-1]])
-    axs[i].set_aspect('equal')    
+    axs[i].set_aspect('equal')
 plt.show()

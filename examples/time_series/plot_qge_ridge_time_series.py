@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Quasi-geostrophic FTLE ridges time series
 =========================================
@@ -101,9 +100,9 @@ wu_r = time.perf_counter() - wu_r
 rtt += wu_r
 ridges.append(ridge_curves)
 
-print("Flowmap with warm-up took {:.5f} seconds".format(wu_fm))
-print("Cauchy green eigenvalues/vectors with warm-up took {:.5f} seconds".format(wu_c))
-print("FTLE ridges with warm-up took {:.5f} seconds".format(wu_r))
+print(f"Flowmap with warm-up took {wu_fm:.5f} seconds")
+print(f"Cauchy green eigenvalues/vectors with warm-up took {wu_c:.5f} seconds")
+print(f"FTLE ridges with warm-up took {wu_r:.5f} seconds")
 
 # %%
 # Ridge time series
@@ -116,7 +115,7 @@ for k in range(1,n):
     flowmap = flowmap_grid_2D(funcptr, t0span[k], T, x, y, params)
     fkf = time.perf_counter()
     fmtt += fkf - fks
-    
+
     # compute eigenvalues/vectors of Cauchy Green tensor
     cks = time.perf_counter()
     eigvals,eigvecs = C_eig_2D(flowmap, dx, dy)
@@ -132,7 +131,7 @@ for k in range(1,n):
 
     # smooth ftle field, usually a good idea for numerical velocity field
     ftle_c = gaussian_filter(ftle_k,sigma,mode='nearest')
-    
+
     # identify ridge points, link points in each ridge in an ordered manner,
     # connect close enough ridges
     rks = time.perf_counter()
@@ -145,22 +144,22 @@ for k in range(1,n):
 ftf = time.perf_counter()
 ftt = ftf - ft0
 #%%
-print("Full run for FTLE ridges (with warmup)" 
-      + " took {:.5f} seconds for {} iterates".format(fmtt+ctt+rtt,n))
-print("Average time for flowmap, CG, and ridges" 
-      + " (with warmup) was {:.5f} seconds".format((fmtt+ctt+rtt)/n))
-print("Average time for flowmap, CG, and ridges" 
-      + " (without warmup) was {:.5f} seconds".format((fmtt+ctt+rtt-wu_fm-wu_c-wu_r)/(n-1)))
-print("First call to flowmap_grid_2D -- {:.5f} seconds (warmup)".format(wu_fm))
-print("Mean time for flowmap_grid_2D -- " 
-      + "{:.5f} seconds (w/o warmup)".format((fmtt-wu_fm)/(n-1)))
-print("First call to C_eig_2D -- {:.5f} seconds (warmup)".format(wu_c))
-print("Mean time for C_eig_2D -- " 
-      + "{:.5f} seconds (w/o warmup)".format((ctt-wu_c)/(n-1)))
-print("First call to ftle_ordered_ridges -- {:.5f} seconds (warmup)".format(wu_r))
-print("Mean time for ftle_ordered_ridges -- " 
-      + "{:.5f} seconds (w/o warmup)".format((rtt-wu_r)/(n-1)))
-    
+print("Full run for FTLE ridges (with warmup)"
+      + f" took {fmtt+ctt+rtt:.5f} seconds for {n} iterates")
+print("Average time for flowmap, CG, and ridges"
+      + f" (with warmup) was {(fmtt+ctt+rtt)/n:.5f} seconds")
+print("Average time for flowmap, CG, and ridges"
+      + f" (without warmup) was {(fmtt+ctt+rtt-wu_fm-wu_c-wu_r)/(n-1):.5f} seconds")
+print(f"First call to flowmap_grid_2D -- {wu_fm:.5f} seconds (warmup)")
+print("Mean time for flowmap_grid_2D -- "
+      + f"{(fmtt-wu_fm)/(n-1):.5f} seconds (w/o warmup)")
+print(f"First call to C_eig_2D -- {wu_c:.5f} seconds (warmup)")
+print("Mean time for C_eig_2D -- "
+      + f"{(ctt-wu_c)/(n-1):.5f} seconds (w/o warmup)")
+print(f"First call to ftle_ordered_ridges -- {wu_r:.5f} seconds (warmup)")
+print("Mean time for ftle_ordered_ridges -- "
+      + f"{(rtt-wu_r)/(n-1):.5f} seconds (w/o warmup)")
+
 # %%
 # Plot
 # ----

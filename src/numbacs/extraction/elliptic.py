@@ -1,4 +1,4 @@
-import numpy as np                               
+import numpy as np
 from ..utils import max_in_radius, shoelace, pts_in_poly, arclength
 from contourpy import contour_generator
 from scipy.spatial import ConvexHull
@@ -48,23 +48,23 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
         list containing rotationally coherent vortices and corresponding vortex centers.
 
     """
-    
-    
+
+
     dx = x[1]-x[0]
     dy = y[1]-y[0]
     if min_val == -1.0:
         min_val = np.percentile(lavd,80)
-    
+
     max_vals, max_inds = max_in_radius(lavd.copy(),r,dx,dy,min_val = min_val)
-        
+
     if start_level == 0.0:
         start_level = np.percentile(lavd,70)
-    
+
     if end_level == 0.0:
         end_level = max(max_vals)
-        
+
     clevels = np.linspace(start_level,end_level,nlevs)
-    
+
     rem_max_pts = np.column_stack((x[max_inds[:,0]],y[max_inds[:,1]]))
     nrem = len(rem_max_pts)
     rcv = []
@@ -87,7 +87,7 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
                                 rem_max_pts = rem_max_pts[mask,:]
                                 nrem = len(rem_max_pts)
                                 if nrem == 0:
-                                    
+
                                     return rcv
     else:
         for k in range(nlevs):
@@ -106,9 +106,9 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
                             rem_max_pts = rem_max_pts[mask,:]
                             nrem = len(rem_max_pts)
                             if nrem == 0:
-                                
-                                return rcv                                
-                        
-                            
-                            
+
+                                return rcv
+
+
+
     return rcv

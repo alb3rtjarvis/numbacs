@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 NumbaCS vs SciPy/NumPy -- QGE
 =============================
@@ -13,8 +12,7 @@ a pure SciPy/NumPy implementation for the QGE.
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from scipy.integrate import odeint, solve_ivp
-import matplotlib.pyplot as plt
+from scipy.integrate import odeint
 from numbacs.integration import flowmap_grid_2D
 from numbacs.flows import get_interp_arrays_2D, get_flow_2D
 from numbacs.diagnostics import ftle_grid_2D
@@ -74,10 +72,10 @@ ui = RegularGridInterpolator((t,x,y), u, method= 'linear', bounds_error=False, f
 vi = RegularGridInterpolator((t,x,y), v, method= 'linear', bounds_error=False, fill_value=0.0)
 
 def odeint_fun(yy,tt):
-    
+
     pt = np.array([tt,yy[0],yy[1]])
-    
-    return ui(pt)[0],vi(pt)[0]   
+
+    return ui(pt)[0],vi(pt)[0]
 
 
 # %%
@@ -94,30 +92,30 @@ def scipy_odeint_flowmap_par(t0,y0):
     tspan = np.array([t0,t0+T])
     sol = odeint(odeint_fun, y0, tspan, rtol=1e-6, atol=1e-8)
     flowmap = sol[-1,:]
-        
-    return flowmap  
+
+    return flowmap
 
 def numpy_ftle_par(fm,inds):
-    
+
     i,j = inds
     absT = abs(T)
     dxdx = (fm[i+1,j,0] - fm[i-1,j,0])/(2*dx)
     dxdy = (fm[i,j+1,0] - fm[i,j-1,0])/(2*dy)
     dydx = (fm[i+1,j,1] - fm[i-1,j,1])/(2*dx)
     dydy = (fm[i,j+1,1] - fm[i,j-1,1])/(2*dy)
-    
+
     off_diagonal = dxdx*dxdy + dydx*dydy
     C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                    [off_diagonal, dxdy**2 + dydy**2]])
-    
+
     max_eig = np.linalg.eigvalsh(C)[-1]
     if max_eig > 1:
         ftle = 1/(2*absT)*log(max_eig)
-    else: 
+    else:
         ftle = 0
 
     return ftle
-                
+
 # %%
 # Compute SciPy/Numpy flow map, FTLE
 # ----------------------------------
@@ -153,7 +151,7 @@ for k,t0 in enumerate(t0span):
     res = np.array(pl.map(func,Y0)).reshape(nx,ny,2)
     kf = time.perf_counter()
     sfmtt += kf - ks
-    
+
     fks = time.perf_counter()
     func2 = partial(numpy_ftle_par,res)
     sftle[k,:,:] = np.array(pl.map(func2, inds)).reshape(nx-2,ny-2)
@@ -164,13 +162,13 @@ pl.close()
 pl.terminate()
 
 print("SciPy/NumPy flowmap and FTLE took "
-      + "{:.5f} seconds for {} iterates".format(sfmtt + sftt, n))
+      + f"{sfmtt + sftt:.5f} seconds for {n} iterates")
 print("Mean time for SciPy/NumPy flowmap and FTLE -- "
-      + "{:.5f} seconds\n".format((sfmtt + sftt)/n))
-print("Scipy flowmap took {:.5} seconds for {:1d} iterates".format(sfmtt,n))
-print("Mean time for Scipy flowmap -- {:.5} seconds\n".format(sfmtt/n))
-print("NumPy ftle took {:.5} seconds for {:1d} iterates".format(sftt,n))
-print("Mean time for NumPy ftle -- {:.5} seconds\n".format(sftt/n))
+      + f"{(sfmtt + sftt)/n:.5f} seconds\n")
+print(f"Scipy flowmap took {sfmtt:.5} seconds for {n:1d} iterates")
+print(f"Mean time for Scipy flowmap -- {sfmtt/n:.5} seconds\n")
+print(f"NumPy ftle took {sftt:.5} seconds for {n:1d} iterates")
+print(f"Mean time for NumPy ftle -- {sftt/n:.5} seconds\n")
 
 # %%
 # Compute NumbaCS flow map, FTLE
@@ -185,12 +183,12 @@ ftle = np.zeros((n,nx,ny),np.float64)
 wfm = time.perf_counter()
 flowmap_wu = flowmap_grid_2D(funcptr,t0,T,x,y,params)
 wu_fm = time.perf_counter() - wfm
-print("Flowmap with warm-up took {:.5f} seconds".format(wu_fm))
+print(f"Flowmap with warm-up took {wu_fm:.5f} seconds")
 
 wf = time.perf_counter()
 ftle[0,:,:] = ftle_grid_2D(flowmap_wu,T,dx,dy)
 wu_f = time.perf_counter() - wf
-print("FTLE with warm-up took {:.5f} seconds".format(wu_f))
+print(f"FTLE with warm-up took {wu_f:.5f} seconds")
 
 # initialize runtime counters
 fmtt = wu_fm
@@ -202,24 +200,24 @@ for k, t0 in enumerate(t0span[1:]):
     flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
     kf = time.perf_counter()
     fmtt += kf-ks
-    
+
     fks = time.perf_counter()
     ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
     fkf = time.perf_counter()
     ftt += fkf-fks
-    
+
 print("NumbaCS flowmap and FTLE took "
-      + "{:.5f} for {:1d} iterates".format(fmtt+ftt,n))
-print("Mean time for flowmap and FTLE -- {:.5f} seconds (w/ warmup)".format((fmtt+ftt)/n))
+      + f"{fmtt+ftt:.5f} for {n:1d} iterates")
+print(f"Mean time for flowmap and FTLE -- {(fmtt+ftt)/n:.5f} seconds (w/ warmup)")
 print("Mean time for flowmap and FTLE -- "
-      + "{:.5f} seconds (w/o warmup)\n".format((fmtt-wu_fm+ftt-wu_f)/(n-1)))
-print("NumbaCS flowmap_grid_2D took {:.5f} seconds for {:1d} iterates".format(fmtt,n))
-print("Mean time for flowmap_grid_2D -- {:.5f} seconds (w/ warmup)".format(fmtt/n))
+      + f"{(fmtt-wu_fm+ftt-wu_f)/(n-1):.5f} seconds (w/o warmup)\n")
+print(f"NumbaCS flowmap_grid_2D took {fmtt:.5f} seconds for {n:1d} iterates")
+print(f"Mean time for flowmap_grid_2D -- {fmtt/n:.5f} seconds (w/ warmup)")
 print("Mean time for flowmap_grid_2D -- "
-      + "{:.5f} seconds (w/o warmup)\n".format((fmtt-wu_fm)/(n-1)))
-print("NumbaCS ftle_grid_2D took {:.5f} seconds for {:1d} iterates".format(ftt,n))
-print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/ warmup)".format(ftt/n))
-print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/o warmup)".format((ftt-wu_f)/(n-1)))
+      + f"{(fmtt-wu_fm)/(n-1):.5f} seconds (w/o warmup)\n")
+print(f"NumbaCS ftle_grid_2D took {ftt:.5f} seconds for {n:1d} iterates")
+print(f"Mean time for ftle_grid_2D -- {ftt/n:.5f} seconds (w/ warmup)")
+print(f"Mean time for ftle_grid_2D -- {(ftt-wu_f)/(n-1):.5f} seconds (w/o warmup)")
 
 # %%
 # Compare timings
@@ -229,7 +227,7 @@ print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/o warmup)".format((ftt-wu
 # would increase as *n* grows larger. The third column ignores the warm-up time
 # and quantifies the speed-up as *n* goes to infinity and the warm-up time becomes
 # negligible. This represents the theoretical speed-up.
- 
+
 
 stt = sfmtt + sftt
 ntt = fmtt + ftt
@@ -242,7 +240,7 @@ d2 = 2
 data = [[round(stt,d1),'--','--'],
         [round(ntt,d1),round(stt/ntt,d2),round(stpi/ntpi,d2)]]
 
-times = ["total time (n={})".format(n),"speedup","speedup (n->inf)"]
+times = [f"total time (n={n})","speedup","speedup (n->inf)"]
 methods = ["SciPy/NumPy","NumbaCS"]
 
 format_row = "{:>25}"*(len(data[0]) + 1)
@@ -253,7 +251,7 @@ for name, vals in zip(methods,data):
     print(format_row.format(name,*vals))
 
 # %%
-# 
+#
 #
 # .. note::
 #

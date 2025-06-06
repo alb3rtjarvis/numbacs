@@ -36,17 +36,17 @@ def ftle_grid_2D(flowmap,T,dx,dy):
             dxdy = (flowmap[i,j+1,0] - flowmap[i,j-1,0])/(2*dy)
             dydx = (flowmap[i+1,j,1] - flowmap[i-1,j,1])/(2*dx)
             dydy = (flowmap[i,j+1,1] - flowmap[i,j-1,1])/(2*dy)
-            
+
             off_diagonal = dxdx*dxdy + dydx*dydy
             C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                            [off_diagonal, dxdy**2 + dydy**2]])
-            
+
             max_eig = np.linalg.eigvalsh(C)[-1]
             if max_eig > 1:
                 ftle[i,j] = 1/(2*absT)*log(max_eig)
-            else: 
+            else:
                 ftle[i,j] = 0
-            
+
     return ftle
 
 
@@ -82,12 +82,12 @@ def C_tensor_2D(flowmap_aux,dx,dy,h=1e-5):
             dxdy_aux = (flowmap_aux[i,j,2,0] - flowmap_aux[i,j,3,0])/(2*h)
             dydx_aux = (flowmap_aux[i,j,0,1] - flowmap_aux[i,j,1,1])/(2*h)
             dydy_aux = (flowmap_aux[i,j,2,1] - flowmap_aux[i,j,3,1])/(2*h)
-            
-            C[i,j,:] = np.array([dxdx_aux**2 + dydx_aux**2, 
-                               dxdx_aux*dxdy_aux + dydx_aux*dydy_aux, 
+
+            C[i,j,:] = np.array([dxdx_aux**2 + dydx_aux**2,
+                               dxdx_aux*dxdy_aux + dydx_aux*dydy_aux,
                                dxdy_aux**2 + dydy_aux**2])
-            
-                
+
+
     return C
 
 
@@ -129,29 +129,29 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
                 dxdy_aux = (flowmap_aux[i,j,2,0] - flowmap_aux[i,j,3,0])/(2*h)
                 dydx_aux = (flowmap_aux[i,j,0,1] - flowmap_aux[i,j,1,1])/(2*h)
                 dydy_aux = (flowmap_aux[i,j,2,1] - flowmap_aux[i,j,3,1])/(2*h)
-                
+
                 dxdx_main = (flowmap_aux[i+1,j,-1,0] - flowmap_aux[i-1,j,-1,0])/(2*dx)
                 dxdy_main = (flowmap_aux[i,j+1,-1,0] - flowmap_aux[i,j-1,-1,0])/(2*dy)
                 dydx_main = (flowmap_aux[i+1,j,-1,1] - flowmap_aux[i-1,j,-1,1])/(2*dx)
                 dydy_main = (flowmap_aux[i,j+1,-1,1] - flowmap_aux[i,j-1,-1,1])/(2*dy)
-                
+
                 off_diagonal_aux = dxdx_aux*dxdy_aux + dydx_aux*dydy_aux
-                C_aux = np.array([[dxdx_aux**2 + dydx_aux**2, 
+                C_aux = np.array([[dxdx_aux**2 + dydx_aux**2,
                                    off_diagonal_aux],
-                                  [off_diagonal_aux, 
+                                  [off_diagonal_aux,
                                    dxdy_aux**2 + dydy_aux**2]])
-                
+
                 off_diagonal_main = dxdx_main*dxdy_main + dydx_main*dydy_main
-                C_main = np.array([[dxdx_main**2 + dydx_main**2, 
+                C_main = np.array([[dxdx_main**2 + dydx_main**2,
                                     off_diagonal_main],
-                                   [off_diagonal_main, 
+                                   [off_diagonal_main,
                                     dxdy_main**2 + dydy_main**2]])
-                
+
                 _,evecs_tmp = np.linalg.eigh(C_aux)
                 evals_tmp = np.linalg.eigvalsh(C_main)
                 eigvals[i,j,:] = evals_tmp
                 eigvecs[i,j,:,:] = evecs_tmp
-                
+
     else:
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
@@ -159,15 +159,15 @@ def C_eig_aux_2D(flowmap_aux,dx,dy,h=1e-5,eig_main=True):
                 dxdy = (flowmap_aux[i,j,2,0] - flowmap_aux[i,j,3,0])/(2*h)
                 dydx = (flowmap_aux[i,j,0,1] - flowmap_aux[i,j,1,1])/(2*h)
                 dydy = (flowmap_aux[i,j,2,1] - flowmap_aux[i,j,3,1])/(2*h)
-               
+
                 off_diagonal = dxdx*dxdy + dydx*dydy
                 C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                                [off_diagonal, dxdy**2 + dydy**2]])
-                
+
                 evals_tmp,evecs_tmp = np.linalg.eigh(C)
                 eigvals[i,j,:] = evals_tmp
-                eigvecs[i,j,:,:] = evecs_tmp  
-            
+                eigvecs[i,j,:,:] = evecs_tmp
+
     return eigvals,eigvecs
 
 
@@ -204,15 +204,15 @@ def C_eig_2D(flowmap,dx,dy):
             dxdy = (flowmap[i,j+1,0] - flowmap[i,j-1,0])/(2*dy)
             dydx = (flowmap[i+1,j,1] - flowmap[i-1,j,1])/(2*dx)
             dydy = (flowmap[i,j+1,1] - flowmap[i,j-1,1])/(2*dy)
-            
+
             off_diagonal = dxdx*dxdy + dydx*dydy
             C = np.array([[dxdx**2 + dydx**2, off_diagonal],
                            [off_diagonal, dxdy**2 + dydy**2]])
-            
+
             evals_tmp,evecs_tmp = np.linalg.eigh(C)
             eigvals[i,j,:] = evals_tmp          # largest eigenvalue first
-            eigvecs[i,j,:,:] = evecs_tmp   
-            
+            eigvecs[i,j,:,:] = evecs_tmp
+
     return eigvals,eigvecs
 
 
@@ -220,7 +220,7 @@ def ftle_from_eig(eigval_max,T):
     """
     Compute FTLE field from eigval_max where eigval_max is eigenvalue of Cauchy-Green tensor
     computed using integration time T.
-    
+
     Parameters
     ----------
     eigval_max : np.ndarray, shape = (nx,ny)
@@ -237,7 +237,7 @@ def ftle_from_eig(eigval_max,T):
 
     ftle = np.zeros(eigval_max.shape)
     ftle[np.nonzero(eigval_max>1)] = np.log(eigval_max[np.nonzero(eigval_max>1)])/(2*abs(T))
-    
+
     return ftle
 
 
@@ -247,7 +247,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
     Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
     defined by xrav,yrav for an integration time T and trajectories are returned at times given by
     tspan. vort_interp is an interpolant function of vorticity over (at least) that time window.
-    
+
     Parameters
     ----------
     flowmap_n : np.ndarray, shape = (nx,ny,n,2)
@@ -268,7 +268,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
     period_x : float
         value for period in x-direction, if not periodic, set equal to 0.0. The default is 0.0.
     period_y : float
-        value for period in y-direction, if not periodic, set equal to 0.0. The default is 0.0.       
+        value for period in y-direction, if not periodic, set equal to 0.0. The default is 0.0.
 
     Returns
     -------
@@ -284,7 +284,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
         gpts = np.column_stack((tspan[k]*np.ones(npts),xrav,yrav))
         vort_k = vort_interp(gpts)
         vort_avg[k] = np.mean(vort_k)
-        
+
     lavd = np.zeros((nx,ny),float64)
     dt = abs(tspan[1] - tspan[0])
     if period_x + period_y == 0.0:
@@ -322,7 +322,7 @@ def lavd_grid_2D(flowmap_n,tspan,T,vort_interp,xrav,yrav,period_x=0.0,period_y=0
                 vort_traj = vort_interp(pts)
                 integrand = np.abs(vort_traj - vort_avg)
                 lavd[i,j] = composite_simpsons(integrand,dt)
-            
+
     return lavd
 
 @njit(parallel=True)
@@ -363,22 +363,22 @@ def ftle_grid_ND(flowmap,IC,T,dX):
             elif ind == grid_shape[ii]-1:
                 dXdir[ii] = -1
             else:
-                dXdir[ii] = 0  
-        Df = np.zeros((ndims,ndims),float64)                   
+                dXdir[ii] = 0
+        Df = np.zeros((ndims,ndims),float64)
         for i in range(ndims):
             for j in range(ndims):
                 Df[i,j] = finite_diff_ND(flowmap[:,i],inds,dX[j],j,grid_shape,dXdir[j])
-                
-        
+
+
         C = np.dot(Df.T,Df)
         max_eig = np.linalg.eigvalsh(C)[-1]
         if max_eig > 1:
             ftle[k] = 1/(2*absT)*log(max_eig)
-        else: 
+        else:
             ftle[k] = 0
-            
+
     return ftle
-    
+
 
 @njit(parallel=True)
 def ile_2D_func(vel,x,y,t0=None,h=1e-3):
@@ -414,12 +414,12 @@ def ile_2D_func(vel,x,y,t0=None,h=1e-3):
         dy_vec = np.array([0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
-                    
+
                 pt = np.array([x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
-                
+
                 grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
                 S = 0.5*(grad_vel + grad_vel.T)
                 ile[i,j] = np.linalg.eigvalsh(S)[-1]
@@ -428,16 +428,16 @@ def ile_2D_func(vel,x,y,t0=None,h=1e-3):
         dy_vec = np.array([0.0,0.0,h],float64)
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
-                    
+
                 pt = np.array([t0,x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
-                
+
                 grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
                 S = 0.5*(grad_vel + grad_vel.T)
-                ile[i,j] = np.linalg.eigvalsh(S)[-1]        
-            
+                ile[i,j] = np.linalg.eigvalsh(S)[-1]
+
     return ile
 
 @njit(parallel=True)
@@ -456,7 +456,7 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
         array containing y-values.
     t0: float or None, optional
         time value at which to evaluate if v1,v2 interpolants depend on time, if they do not
-        depend on time, set to None. The default is None.        
+        depend on time, set to None. The default is None.
     h : float, optional
         step size to be used in finite differencing. The default is 1e-2.
 
@@ -478,7 +478,7 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
                 pt = np.array([x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
                 grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
@@ -492,16 +492,16 @@ def S_eig_2D_func(vel,x,y,t0=None,h=1e-3):
         for i in prange(1,nx-1):
             for j in range(1,ny-1):
                 pt = np.array([t0,x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
                 grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
                 S = 0.5*(grad_vel + grad_vel.T)
                 evals_tmp,evecs_tmp = np.linalg.eigh(S)
                 eigvals[i,j,:] = evals_tmp
-                eigvecs[i,j,:,:] = evecs_tmp    
-                 
-            
+                eigvecs[i,j,:,:] = evecs_tmp
+
+
     return eigvals,eigvecs
 
 
@@ -523,7 +523,7 @@ def S_2D_func(vel,x,y,t0=None,h=1e-3):
         array containing y-values.
     t0: float or None, optional
         time value at which to evaluate if v1,v2 interpolants depend on time, if they do not
-        depend on time, set to None. The default is None.        
+        depend on time, set to None. The default is None.
     h : float, optional
         step size to be used in finite differencing. The default is 1e-3.
 
@@ -542,7 +542,7 @@ def S_2D_func(vel,x,y,t0=None,h=1e-3):
         for i in prange(nx):
             for j in range(ny):
                 pt = np.array([x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
                 S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
@@ -552,12 +552,12 @@ def S_2D_func(vel,x,y,t0=None,h=1e-3):
         for i in prange(nx):
             for j in range(ny):
                 pt = np.array([t0,x[i],y[j]],float64)
-                
+
                 dudx,dvdx = (vel(pt + dx_vec) - vel(pt - dx_vec))/(2*h)
                 dudy,dvdy = (vel(pt + dy_vec) - vel(pt - dy_vec))/(2*h)
-                S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])        
-             
-            
+                S[i,j,:] = np.array([dudx,0.5*(dudy + dvdx),dvdy])
+
+
     return S
 
 @njit(parallel=True)
@@ -587,7 +587,7 @@ def ile_2D_data(u,v,dx,dy):
     ile = np.zeros((nx,ny))
     for i in prange(1,nx-1):
         for j in range(1,ny-1):
-                
+
             dudx = (u[i+1,j] - u[i-1,j])/(2*dx)
             dudy = (u[i,j+1] - u[i,j-1])/(2*dy)
             dvdx = (v[i+1,j] - v[i-1,j])/(2*dx)
@@ -595,7 +595,7 @@ def ile_2D_data(u,v,dx,dy):
             grad_vel = np.array([[dudx,dudy],[dvdx,dvdy]])
             S = 0.5*(grad_vel + grad_vel.T)
             ile[i,j] = np.linalg.eigvalsh(S)[-1]
-            
+
     return ile
 
 @njit(parallel=True)
@@ -638,9 +638,9 @@ def S_eig_2D_data(u,v,dx,dy):
             S = 0.5*(grad_vel + grad_vel.T)
             evals_tmp,evecs_tmp = np.linalg.eigh(S)
             eigvals[i,j,:] = evals_tmp
-            eigvecs[i,j,:,:] = evecs_tmp 
- 
-            
+            eigvecs[i,j,:,:] = evecs_tmp
+
+
     return eigvals,eigvecs
 
 
@@ -662,6 +662,6 @@ def ivd_grid_2D(vort,vort_avg):
         array containing values of ivd.
 
     """
-    
+
     ivd = np.abs(vort - vort_avg)
     return ivd

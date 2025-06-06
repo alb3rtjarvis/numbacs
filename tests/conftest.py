@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pickle
 from numbacs.flows import get_predefined_callable
-import os 
+import os
 from os.path import join
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -11,7 +11,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 def coords_dg():
     x = np.linspace(0,2,21)
     y = np.linspace(0,1,11)
-    
+
     return x,y
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def vel_data():
 
 @pytest.fixture
 def flow_callable():
-    
+
     return get_predefined_callable('double_gyre', return_domain=False)
 
 @pytest.fixture
@@ -158,7 +158,7 @@ def elliptic_lcs_data():
 def elliptic_oecs_data():
     with open(join(dir_path,"testing_data/ellipoecs.pkl"), 'rb') as f:
         elliptic_oecs = pickle.load(f)
-    return elliptic_oecs 
+    return elliptic_oecs
 
 
 

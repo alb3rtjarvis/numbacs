@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 MERRA-2 FTLE ridges
 ===================
@@ -23,9 +22,9 @@ from scipy.ndimage import gaussian_filter
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # FTLE computation and integration span. Create interpolant and retrieve flow.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.
@@ -53,7 +52,7 @@ latf = np.arange(-5,45+dy,dy)
 
 # set integration span and integration direction
 day = 16
-t0_date = np.datetime64("2020-06-{:02d}".format(day))
+t0_date = np.datetime64(f"2020-06-{day:02d}")
 t0 = t[np.nonzero(dates == t0_date)[0][0]]
 T = -72.0
 params = np.array([copysign(1,T)])
