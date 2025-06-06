@@ -4,9 +4,19 @@ from contourpy import contour_generator
 from scipy.spatial import ConvexHull
 
 
-
-def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-3,
-              min_val=-1.0,nlevs=20,start_level=0.0,end_level=0.0,min_len=0.0):
+def rotcohvrt(
+    lavd,
+    x,
+    y,
+    r,
+    convexity_method="convex_hull",
+    convexity_deficiency=5e-3,
+    min_val=-1.0,
+    nlevs=20,
+    start_level=0.0,
+    end_level=0.0,
+    min_len=0.0,
+):
     """
     Compute rotationally coherent vortices which are (approximately) convex closed
     contours of the lavd (or ivd) field.
@@ -49,66 +59,61 @@ def rotcohvrt(lavd,x,y,r,convexity_method='convex_hull',convexity_deficiency=5e-
 
     """
 
-
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
     if min_val == -1.0:
-        min_val = np.percentile(lavd,80)
+        min_val = np.percentile(lavd, 80)
 
-    max_vals, max_inds = max_in_radius(lavd.copy(),r,dx,dy,min_val = min_val)
+    max_vals, max_inds = max_in_radius(lavd.copy(), r, dx, dy, min_val=min_val)
 
     if start_level == 0.0:
-        start_level = np.percentile(lavd,70)
+        start_level = np.percentile(lavd, 70)
 
     if end_level == 0.0:
         end_level = max(max_vals)
 
-    clevels = np.linspace(start_level,end_level,nlevs)
+    clevels = np.linspace(start_level, end_level, nlevs)
 
-    rem_max_pts = np.column_stack((x[max_inds[:,0]],y[max_inds[:,1]]))
+    rem_max_pts = np.column_stack((x[max_inds[:, 0]], y[max_inds[:, 1]]))
     nrem = len(rem_max_pts)
     rcv = []
-    c = contour_generator(x=x,y=y,z=lavd.T)
+    c = contour_generator(x=x, y=y, z=lavd.T)
     if min_len:
         for k in range(nlevs):
             ck = c.lines(clevels[k])
             for contour in ck:
-                if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
+                if contour[0, 0] == contour[-1, 0] and contour[0, 1] == contour[-1, 1]:
                     if arclength(contour) > min_len:
-                        ind = pts_in_poly(contour,rem_max_pts)
+                        ind = pts_in_poly(contour, rem_max_pts)
                         if ind >= 0:
                             hull = ConvexHull(contour)
-                            ch = contour[np.hstack((hull.vertices,hull.vertices[0])),:]
+                            ch = contour[np.hstack((hull.vertices, hull.vertices[0])), :]
                             area = shoelace(contour)
-                            if (hull.volume - area)/area < convexity_deficiency:
-                                rcv.append([ch,rem_max_pts[ind,:]])
-                                mask = np.ones(nrem,np.bool_)
+                            if (hull.volume - area) / area < convexity_deficiency:
+                                rcv.append([ch, rem_max_pts[ind, :]])
+                                mask = np.ones(nrem, np.bool_)
                                 mask[ind] = False
-                                rem_max_pts = rem_max_pts[mask,:]
+                                rem_max_pts = rem_max_pts[mask, :]
                                 nrem = len(rem_max_pts)
                                 if nrem == 0:
-
                                     return rcv
     else:
         for k in range(nlevs):
             ck = c.lines(clevels[k])
             for contour in ck:
-                if contour[0,0] == contour[-1,0] and contour[0,1] == contour[-1,1]:
-                    ind = pts_in_poly(contour,rem_max_pts)
+                if contour[0, 0] == contour[-1, 0] and contour[0, 1] == contour[-1, 1]:
+                    ind = pts_in_poly(contour, rem_max_pts)
                     if ind >= 0:
                         hull = ConvexHull(contour)
-                        ch = contour[np.hstack((hull.vertices,hull.vertices[0])),:]
+                        ch = contour[np.hstack((hull.vertices, hull.vertices[0])), :]
                         area = shoelace(contour)
-                        if (hull.volume - area)/area < convexity_deficiency:
-                            rcv.append([ch,rem_max_pts[ind,:]])
-                            mask = np.ones(nrem,np.bool_)
+                        if (hull.volume - area) / area < convexity_deficiency:
+                            rcv.append([ch, rem_max_pts[ind, :]])
+                            mask = np.ones(nrem, np.bool_)
                             mask[ind] = False
-                            rem_max_pts = rem_max_pts[mask,:]
+                            rem_max_pts = rem_max_pts[mask, :]
                             nrem = len(rem_max_pts)
                             if nrem == 0:
-
                                 return rcv
-
-
 
     return rcv

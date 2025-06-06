@@ -79,7 +79,7 @@ exclude = [
     ".bzr", ".direnv", ".eggs", ".git", ".hg", ".mypy_cache", ".nox",
     ".pants.d", ".ruff_cache", ".svn", ".tox", ".venv", "__pypackages__",
     "_build", "buck-out", "build", "dist", "node_modules", "venv",
-    "docs/source/conf.py", "docs/source/auto_examples"
+    "docs/source/conf.py", "docs/source/auto_examples", "tests"
 ]
 
 [tool.ruff.lint]
@@ -106,7 +106,6 @@ ignore = [
     "D205", # 1 blank line required between summary line and description
     "D203", # Conflicts with D211: "1 blank line required before class docstring"
     "D401", # First line of docstring should be in impreative mood
-    "S101", # "Use of assert detected" - this is fine and expected in test files
     "F401", # "Unused" import
     "E741", # Ambiguous variable
     "E501", # Line too long -- formatter will fix

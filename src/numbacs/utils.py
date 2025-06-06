@@ -4,8 +4,9 @@ import numba
 from math import floor, pi, cos, sin
 from scipy.interpolate import splprep, splev
 
+
 @njit
-def unravel_index(index,shape):
+def unravel_index(index, shape):
     """
     Numba currently does not implement np.unravel_index so we create an implementation
     here for the specific case where order='C' (row-major).
@@ -25,10 +26,10 @@ def unravel_index(index,shape):
     """
 
     shape = np.flip(shape)
-    arr_ind = np.zeros(len(shape),numba.int64)
+    arr_ind = np.zeros(len(shape), numba.int64)
     ind = index
-    for i in range(len(shape)-1):
-        div_mod = divmod(ind,shape[i])
+    for i in range(len(shape) - 1):
+        div_mod = divmod(ind, shape[i])
         arr_ind[i] = div_mod[1]
         ind = div_mod[0]
 
@@ -38,7 +39,7 @@ def unravel_index(index,shape):
 
 
 @njit
-def ravel_index(inds,shape):
+def ravel_index(inds, shape):
     """
     Finds raveled index corresponding to grid index given by inds from array with
     shape=shape where shape must be a np.ndarray.
@@ -58,14 +59,14 @@ def ravel_index(inds,shape):
     """
 
     r_ind = inds[-1]
-    for i,ind in enumerate(inds[:-1]):
-        r_ind+=ind*np.prod(shape[i+1:])
+    for i, ind in enumerate(inds[:-1]):
+        r_ind += ind * np.prod(shape[i + 1 :])
 
     return r_ind
 
 
 @njit
-def finite_diff_2D(f,i,j,h,axis,direction='c'):
+def finite_diff_2D(f, i, j, h, axis, direction="c"):
     """
     Compute 2nd order partial finite difference in the array f @ [i,j] along axis=axis
     and using a directional difference scheme defined by direction.
@@ -93,30 +94,30 @@ def finite_diff_2D(f,i,j,h,axis,direction='c'):
 
     """
 
-    if axis==0:
-        if direction == 'c':
-            df = (f[i+1,j] - f[i-1,j])/(2*h)
-        elif direction == 'b':
-            df = (3*f[i,j] - 4*f[i-1,j] + f[i-2,j])/(2*h)
-        elif direction == 'f':
-            df = (-f[i+2,j] + 4*f[i+1,j] - 3*f[i,j])/(2*h)
+    if axis == 0:
+        if direction == "c":
+            df = (f[i + 1, j] - f[i - 1, j]) / (2 * h)
+        elif direction == "b":
+            df = (3 * f[i, j] - 4 * f[i - 1, j] + f[i - 2, j]) / (2 * h)
+        elif direction == "f":
+            df = (-f[i + 2, j] + 4 * f[i + 1, j] - 3 * f[i, j]) / (2 * h)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )
-    if axis==1:
-        if direction == 'c':
-            df = (f[i,j+1] - f[i,j-1])/(2*h)
-        elif direction == 'b':
-            df = (3*f[i,j] - 4*f[i,j-1] + f[i,j-2])/(2*h)
-        elif direction == 'f':
-            df = (-f[i,j+2] + 4*f[i,j+1] - 3*f[i,j])/(2*h)
+            print("Valid difference directions are 'c', 'b', and 'f'")
+    if axis == 1:
+        if direction == "c":
+            df = (f[i, j + 1] - f[i, j - 1]) / (2 * h)
+        elif direction == "b":
+            df = (3 * f[i, j] - 4 * f[i, j - 1] + f[i, j - 2]) / (2 * h)
+        elif direction == "f":
+            df = (-f[i, j + 2] + 4 * f[i, j + 1] - 3 * f[i, j]) / (2 * h)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )
+            print("Valid difference directions are 'c', 'b', and 'f'")
 
     return df
 
 
 @njit
-def finite_diff_ND(f,ind,h,axis,shape,direction=0):
+def finite_diff_ND(f, ind, h, axis, shape, direction=0):
     """
     Compute 2nd order partial finite difference in the array f @ [ind] where f is an
     (n_1*n_2*...*n_ndims) array. Axis=axis determines the axis the finite differencing
@@ -146,64 +147,65 @@ def finite_diff_ND(f,ind,h,axis,shape,direction=0):
 
     """
 
-    di = np.zeros(len(ind),numba.int64)
+    di = np.zeros(len(ind), numba.int64)
     di[axis] = 1
     if direction == 0:
-        i_p1 = ravel_index(ind+di,shape)
-        i_m1 = ravel_index(ind-di,shape)
-        df = (f[i_p1] - f[i_m1])/(2*h)
+        i_p1 = ravel_index(ind + di, shape)
+        i_m1 = ravel_index(ind - di, shape)
+        df = (f[i_p1] - f[i_m1]) / (2 * h)
     elif direction == -1:
-        i = ravel_index(ind,shape)
-        i_m1 = ravel_index(ind-di,shape)
-        i_m2 = ravel_index(ind-2*di,shape)
-        df = (3*f[i] - 4*f[i_m1] + f[i_m2])/(2*h)
+        i = ravel_index(ind, shape)
+        i_m1 = ravel_index(ind - di, shape)
+        i_m2 = ravel_index(ind - 2 * di, shape)
+        df = (3 * f[i] - 4 * f[i_m1] + f[i_m2]) / (2 * h)
     elif direction == 1:
-        i = ravel_index(ind,shape)
-        i_p1 = ravel_index(ind+di,shape)
-        i_p2 = ravel_index(ind+2*di,shape)
-        df = (-f[i_p2] + 4*f[i_p1] - 3*f[i])/(2*h)
+        i = ravel_index(ind, shape)
+        i_p1 = ravel_index(ind + di, shape)
+        i_p2 = ravel_index(ind + 2 * di, shape)
+        df = (-f[i_p2] + 4 * f[i_p1] - 3 * f[i]) / (2 * h)
     else:
-        print("Valid difference directions are 0: centered, -1: backward, and 1: forward" )
+        print("Valid difference directions are 0: centered, -1: backward, and 1: forward")
 
     return df
 
 
 @njit
-def finite_diff_2D_2nd(f,i,j,h,axis,direction='c'):
+def finite_diff_2D_2nd(f, i, j, h, axis, direction="c"):
     """
     Compute 2nd order partial finite difference in the array f @ [i,j] along axis=axis and using a
     directional difference scheme defined by direction for the second derivative. axis=2 is for the
     mixed partial finite difference.
     """
-    if axis==0:
-        if direction == 'c':
-            df = (f[i+1,j] - 2*f[i,j] + f[i-1,j])/(h**2)
-        elif direction == 'b':
-            df = (2*f[i,j] - 5*f[i-1,j] + 4*f[i-2,j] - f[i-3,j])/(h**3)
-        elif direction == 'f':
-            df = (2*f[i,j] - 5*f[i+1,j] + 4*f[i+2,j] - f[i+3,j])/(h**3)
+    if axis == 0:
+        if direction == "c":
+            df = (f[i + 1, j] - 2 * f[i, j] + f[i - 1, j]) / (h**2)
+        elif direction == "b":
+            df = (2 * f[i, j] - 5 * f[i - 1, j] + 4 * f[i - 2, j] - f[i - 3, j]) / (h**3)
+        elif direction == "f":
+            df = (2 * f[i, j] - 5 * f[i + 1, j] + 4 * f[i + 2, j] - f[i + 3, j]) / (h**3)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )
-    if axis==1:
-        if direction == 'c':
-            df = (f[i,j+1] - 2*f[i,j] + f[i,j-1])/(h**2)
-        elif direction == 'b':
-            df = (2*f[i,j] - 5*f[i,j-1] + 4*f[i,j-2] - f[i,j-3])/(h**3)
-        elif direction == 'f':
-            df = (2*f[i,j] - 5*f[i,j+1] + 4*f[i,j+2] - f[i,j+3])/(h**3)
+            print("Valid difference directions are 'c', 'b', and 'f'")
+    if axis == 1:
+        if direction == "c":
+            df = (f[i, j + 1] - 2 * f[i, j] + f[i, j - 1]) / (h**2)
+        elif direction == "b":
+            df = (2 * f[i, j] - 5 * f[i, j - 1] + 4 * f[i, j - 2] - f[i, j - 3]) / (h**3)
+        elif direction == "f":
+            df = (2 * f[i, j] - 5 * f[i, j + 1] + 4 * f[i, j + 2] - f[i, j + 3]) / (h**3)
         else:
-            print("Valid difference directions are 'c', 'b', and 'f'" )
-    if axis==2:
-        if direction == 'c':
-            df = (f[i+1,j+1] - f[i+1,j-1] - f[i-1,j+1] + f[i-1,j-1])/(4*h**2)
+            print("Valid difference directions are 'c', 'b', and 'f'")
+    if axis == 2:
+        if direction == "c":
+            df = (f[i + 1, j + 1] - f[i + 1, j - 1] - f[i - 1, j + 1] + f[i - 1, j - 1]) / (
+                4 * h**2
+            )
         else:
-            print("Valid difference directions are 'c' for mixed derivative" )
+            print("Valid difference directions are 'c' for mixed derivative")
     return df
 
 
-
 @njit(parallel=True)
-def curl_vel(u,v,dx,dy):
+def curl_vel(u, v, dx, dy):
     """
     Compute curl of vector field defined by u and v.
 
@@ -224,20 +226,20 @@ def curl_vel(u,v,dx,dy):
         array containing values of curl of vector field defined by u and v.
 
     """
-    nx,ny = u.shape
-    curl = np.zeros((nx,ny),numba.float64)
-    for i in range(1,nx-1):
-        for j in range(1,ny-1):
-            dfydx = (v[i+1,j] - v[i-1,j])/(2*dx)
-            dfxdy = (u[i,j+1] - u[i,j-1])/(2*dy)
+    nx, ny = u.shape
+    curl = np.zeros((nx, ny), numba.float64)
+    for i in range(1, nx - 1):
+        for j in range(1, ny - 1):
+            dfydx = (v[i + 1, j] - v[i - 1, j]) / (2 * dx)
+            dfxdy = (u[i, j + 1] - u[i, j - 1]) / (2 * dy)
 
-            curl[i,j] = dfydx - dfxdy
+            curl[i, j] = dfydx - dfxdy
 
     return curl
 
 
 @njit(parallel=True)
-def curl_vel_tspan(u,v,dx,dy):
+def curl_vel_tspan(u, v, dx, dy):
     """
     Compute curl of vector field defined by u and v over some timespan.
 
@@ -258,21 +260,21 @@ def curl_vel_tspan(u,v,dx,dy):
         array containing values of curl of vector field defined by u and v.
 
     """
-    nt,nx,ny = u.shape
-    curl = np.zeros((nt,nx,ny),numba.float64)
+    nt, nx, ny = u.shape
+    curl = np.zeros((nt, nx, ny), numba.float64)
     for k in prange(nt):
-        for i in range(1,nx-1):
-            for j in range(1,ny-1):
-                dfydx = (v[k,i+1,j] - v[k,i-1,j])/(2*dx)
-                dfxdy = (u[k,i,j+1] - u[k,i,j-1])/(2*dy)
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                dfydx = (v[k, i + 1, j] - v[k, i - 1, j]) / (2 * dx)
+                dfxdy = (u[k, i, j + 1] - u[k, i, j - 1]) / (2 * dy)
 
-                curl[k,i,j] = dfydx - dfxdy
+                curl[k, i, j] = dfydx - dfxdy
 
     return curl
 
 
 @njit(parallel=True)
-def curl_func(fnc,x,y,h=1e-3):
+def curl_func(fnc, x, y, h=1e-3):
     """
     Compute curl over x,y of vector field defined by fnc.
 
@@ -296,23 +298,23 @@ def curl_func(fnc,x,y,h=1e-3):
 
     nx = len(x)
     ny = len(y)
-    curlf = np.zeros((nx,ny),numba.float64)
-    dx_vec = np.array([h,0.0],numba.float64)
-    dy_vec = np.array([0.0,h],numba.float64)
+    curlf = np.zeros((nx, ny), numba.float64)
+    dx_vec = np.array([h, 0.0], numba.float64)
+    dy_vec = np.array([0.0, h], numba.float64)
     for i in prange(nx):
         for j in range(ny):
-            pt = np.array([x[i],y[j]])
+            pt = np.array([x[i], y[j]])
 
-            dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
-            dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
+            dfydx = (fnc(pt + dx_vec)[1] - fnc(pt - dx_vec)[1]) / (2 * h)
+            dfxdy = (fnc(pt + dy_vec)[0] - fnc(pt - dy_vec)[0]) / (2 * h)
 
-            curlf[i,j] = dfydx - dfxdy
+            curlf[i, j] = dfydx - dfxdy
 
     return curlf
 
 
 @njit(parallel=True)
-def curl_func_tspan(fnc,t,x,y,h=1e-3):
+def curl_func_tspan(fnc, t, x, y, h=1e-3):
     """
     Compute curl over x,y of vector field defined by func over times t.
 
@@ -336,24 +338,24 @@ def curl_func_tspan(fnc,t,x,y,h=1e-3):
     nt = len(t)
     nx = len(x)
     ny = len(y)
-    curlf = np.zeros((nt,nx,ny),numba.float64)
-    dx_vec = np.array([0.0,h,0.0],numba.float64)
-    dy_vec = np.array([0.0,0.0,h],numba.float64)
+    curlf = np.zeros((nt, nx, ny), numba.float64)
+    dx_vec = np.array([0.0, h, 0.0], numba.float64)
+    dy_vec = np.array([0.0, 0.0, h], numba.float64)
     for k in prange(nt):
         for i in range(nx):
             for j in range(ny):
-                pt = np.array([t[k],x[i],y[j]])
+                pt = np.array([t[k], x[i], y[j]])
 
-                dfydx = (fnc(pt+dx_vec)[1] - fnc(pt-dx_vec)[1])/(2*h)
-                dfxdy = (fnc(pt+dy_vec)[0] - fnc(pt-dy_vec)[0])/(2*h)
+                dfydx = (fnc(pt + dx_vec)[1] - fnc(pt - dx_vec)[1]) / (2 * h)
+                dfxdy = (fnc(pt + dy_vec)[0] - fnc(pt - dy_vec)[0]) / (2 * h)
 
-                curlf[k,i,j] = dfydx - dfxdy
+                curlf[k, i, j] = dfydx - dfxdy
 
     return curlf
 
 
 @njit
-def composite_simpsons(f,h):
+def composite_simpsons(f, h):
     """
     Composite Simpson's 1/3 rule to compute integral of f between endpoitns of pts with
     regular spacing given by h.
@@ -371,36 +373,36 @@ def composite_simpsons(f,h):
         value of integral.
 
     """
-    n = len(f)-1
-    if n%2 == 0:
+    n = len(f) - 1
+    if n % 2 == 0:
         val = f[0]
         val += f[n]
-        for k in range(1,n):
-            if k%2 != 0:
-                val += 4*f[k]
+        for k in range(1, n):
+            if k % 2 != 0:
+                val += 4 * f[k]
             else:
-                val += 2*f[k]
+                val += 2 * f[k]
 
-        val *= h/3
+        val *= h / 3
 
     else:
         n -= 1
         val = f[0]
         val += f[-2]
-        for k in range(1,n):
-            if k%2 != 0:
-                val += 4*f[k]
+        for k in range(1, n):
+            if k % 2 != 0:
+                val += 4 * f[k]
             else:
-                val += 2*f[k]
+                val += 2 * f[k]
 
-        val *= h/3
-        val += (5*h/12)*f[-1] + (2*h/3)*f[-2] - (h/12)*f[-3]
+        val *= h / 3
+        val += (5 * h / 12) * f[-1] + (2 * h / 3) * f[-2] - (h / 12) * f[-3]
 
     return val
 
 
 @njit
-def composite_simpsons_38_irregular(f,h):
+def composite_simpsons_38_irregular(f, h):
     """
     Composite Simpson's 3/8 rule to compute integral of f between endpoitns of pts with
     irregular spacing given by h which is an np.ndarray.
@@ -421,27 +423,33 @@ def composite_simpsons_38_irregular(f,h):
 
     n = len(h)
     val = 0
-    for k in range(int(n/2)):
-        h0 = h[2*k]
-        h1 = h[2*k+1]
-        val += (1/6)*(h0+h1)*(f[2*k]*(2-h1/h0) +
-                              f[2*k+1]*((h0+h1)**2)/(h0*h1) +
-                              f[2*k+2]*(2-h0/h1))
+    for k in range(int(n / 2)):
+        h0 = h[2 * k]
+        h1 = h[2 * k + 1]
+        val += (
+            (1 / 6)
+            * (h0 + h1)
+            * (
+                f[2 * k] * (2 - h1 / h0)
+                + f[2 * k + 1] * ((h0 + h1) ** 2) / (h0 * h1)
+                + f[2 * k + 2] * (2 - h0 / h1)
+            )
+        )
 
-    if n%2 == 1:
-        h1 = h[n-1]
-        h2 = h[n-2]
-        alph = (2*h1**2 + 3*h1*h2)/(6*(h2 + h1))
-        beta = (h1**2 + 3*h1*h2)/(6*h2)
-        eta = (h1**3)/(6*h2*(h2 + h1))
+    if n % 2 == 1:
+        h1 = h[n - 1]
+        h2 = h[n - 2]
+        alph = (2 * h1**2 + 3 * h1 * h2) / (6 * (h2 + h1))
+        beta = (h1**2 + 3 * h1 * h2) / (6 * h2)
+        eta = (h1**3) / (6 * h2 * (h2 + h1))
 
-        val += alph*f[-1] + beta*f[-2] - eta*f[-3]
+        val += alph * f[-1] + beta * f[-2] - eta * f[-3]
 
     return val
 
 
 @njit
-def dist_2d(p1,p2):
+def dist_2d(p1, p2):
     """
     Compute 2D Euclidean distance between p1 and p2.
 
@@ -459,11 +467,11 @@ def dist_2d(p1,p2):
 
     """
 
-    return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
+    return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
 
 @njit
-def dist_tol(point,arr,tol):
+def dist_tol(point, arr, tol):
     """
     Check if pt is within tolerance of any point in arr.
 
@@ -482,15 +490,15 @@ def dist_tol(point,arr,tol):
         truth value determining if point is within tol of any point in arr.
 
     """
-    k=0
-    dist = np.zeros(len(arr),numba.float64)
+    k = 0
+    dist = np.zeros(len(arr), numba.float64)
     near = False
     for pt in arr:
-        dist[k] = dist_2d(pt,point)
+        dist[k] = dist_2d(pt, point)
         if dist[k] < tol:
             near = True
             break
-        k+=1
+        k += 1
     return near
 
 
@@ -512,23 +520,22 @@ def shoelace(polygon):
     """
 
     n = polygon.shape[0]
-    x0 = polygon[0,0]
-    y1 = polygon[1,1]
-    area = x0*y1
-    for k in range(1,n-1):
-        x1 = polygon[k,0]
-        y2 = polygon[k+1,1]
-        y0 = polygon[k-1,1]
-        area += x1*(y2 - y0)
+    x0 = polygon[0, 0]
+    y1 = polygon[1, 1]
+    area = x0 * y1
+    for k in range(1, n - 1):
+        x1 = polygon[k, 0]
+        y2 = polygon[k + 1, 1]
+        y0 = polygon[k - 1, 1]
+        area += x1 * (y2 - y0)
 
-    area = abs(0.5*(area - polygon[n-1,0]*polygon[n-2,1]))
+    area = abs(0.5 * (area - polygon[n - 1, 0] * polygon[n - 2, 1]))
 
     return area
 
 
-
 @njit
-def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
+def max_in_radius(arr, r, dx, dy, n=-1, min_val=0.0):
     """
     Finds n local maxima values in arr such that each max is a local maximum within radius r where
     spacing in arr is given by dx,dy. If all local maxima are desired, set n = -1. Should pass a
@@ -558,40 +565,44 @@ def max_in_radius(arr,r,dx,dy,n=-1,min_val=0.0):
 
     """
 
-    nx,ny = arr.shape
-    ix = floor(r/dx)
-    iy = floor(r/dy)
-    arr_shape = np.array([nx,ny])
+    nx, ny = arr.shape
+    ix = floor(r / dx)
+    iy = floor(r / dy)
+    arr_shape = np.array([nx, ny])
     if n == -1:
-        max_inds = np.zeros((int(nx*ny/2),2),numba.int32)
-        max_vals = np.zeros(int(nx*ny/2),numba.float64)
-        k=0
+        max_inds = np.zeros((int(nx * ny / 2), 2), numba.int32)
+        max_vals = np.zeros(int(nx * ny / 2), numba.float64)
+        k = 0
         while np.max(arr) > min_val:
             max_ind = np.argmax(arr)
-            max_inds[k,:] = unravel_index(max_ind,arr_shape)
-            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
-            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
-            arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
-                max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
-            k+=1
+            max_inds[k, :] = unravel_index(max_ind, arr_shape)
+            max_vals[k] = arr[max_inds[k, 0], max_inds[k, 1]]
+            max_vals[k] = arr[max_inds[k, 0], max_inds[k, 1]]
+            arr[
+                max(0, max_inds[k, 0] - ix) : min(nx, max_inds[k, 0] + ix),
+                max(0, max_inds[k, 1] - iy) : min(ny, max_inds[k, 1] + iy),
+            ] = 0
+            k += 1
 
     else:
-        max_inds = np.zeros((n,2),numba.int32)
-        max_vals = np.zeros(n,numba.float64)
+        max_inds = np.zeros((n, 2), numba.int32)
+        max_vals = np.zeros(n, numba.float64)
         k = 0
         while np.max(arr) > min_val and k < n:
             max_ind = np.argmax(arr)
-            max_inds[k,:] = unravel_index(max_ind,arr_shape)
-            max_vals[k] = arr[max_inds[k,0],max_inds[k,1]]
-            arr[max(0,max_inds[k,0]-ix):min(nx,max_inds[k,0]+ix),
-                max(0,max_inds[k,1]-iy):min(ny,max_inds[k,1]+iy)] = 0
-            k+=1
+            max_inds[k, :] = unravel_index(max_ind, arr_shape)
+            max_vals[k] = arr[max_inds[k, 0], max_inds[k, 1]]
+            arr[
+                max(0, max_inds[k, 0] - ix) : min(nx, max_inds[k, 0] + ix),
+                max(0, max_inds[k, 1] - iy) : min(ny, max_inds[k, 1] + iy),
+            ] = 0
+            k += 1
 
-    return max_vals[:k], max_inds[:k,:]
+    return max_vals[:k], max_inds[:k, :]
 
 
 @njit
-def gen_circ(r,c,n,xlims=None,ylims=None):
+def gen_circ(r, c, n, xlims=None, ylims=None):
     """
     Generate n points on a circle with radius r and center c.
 
@@ -617,31 +628,30 @@ def gen_circ(r,c,n,xlims=None,ylims=None):
 
     """
 
-    theta = np.linspace(0,2*pi,n)
-    pts = np.zeros((n,2),np.float64)
+    theta = np.linspace(0, 2 * pi, n)
+    pts = np.zeros((n, 2), np.float64)
     cx = c[0]
     cy = c[1]
     for k in prange(n):
-        pts[k,0] = r*cos(theta[k]) + cx
-        pts[k,1] = r*sin(theta[k]) + cy
+        pts[k, 0] = r * cos(theta[k]) + cx
+        pts[k, 1] = r * sin(theta[k]) + cy
 
     if xlims is not None:
-        xm = pts[:,0] < xlims[0]
-        xM = pts[:,0] > xlims[1]
-        maskx = ~np.logical_or(xm,xM)
-        pts = pts[maskx,:]
+        xm = pts[:, 0] < xlims[0]
+        xM = pts[:, 0] > xlims[1]
+        maskx = ~np.logical_or(xm, xM)
+        pts = pts[maskx, :]
     if ylims is not None:
-        ym = pts[:,0] < ylims[0]
-        yM = pts[:,0] > ylims[1]
-        masky = ~np.logical_or(ym,yM)
-        pts = pts[masky,:]
+        ym = pts[:, 0] < ylims[0]
+        yM = pts[:, 0] > ylims[1]
+        masky = ~np.logical_or(ym, yM)
+        pts = pts[masky, :]
 
     return pts
 
 
-
 @njit
-def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
+def gen_filled_circ(r, n, alpha=3.0, c=np.array([0.0, 0.0]), xlims=None, ylims=None):
     """
     Generate points filling a circle with radius r and center c. Uses the sunflower
     seed arangement.
@@ -669,40 +679,40 @@ def gen_filled_circ(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
         array containing points which fill the circle.
 
     """
-    phi = 0.5*(1 + 5**0.5)
-    cd = 1/(phi**2)
-    ar = round(alpha*n**0.5)
-    x = np.zeros(n,np.float64)
-    y = np.zeros(n,np.float64)
-    for k in range(1,n+1):
-        theta = 2*pi*k*cd
+    phi = 0.5 * (1 + 5**0.5)
+    cd = 1 / (phi**2)
+    ar = round(alpha * n**0.5)
+    x = np.zeros(n, np.float64)
+    y = np.zeros(n, np.float64)
+    for k in range(1, n + 1):
+        theta = 2 * pi * k * cd
         if k > n - ar:
             radius = r
         else:
-            radius = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
+            radius = r * ((k - 0.5) ** 0.5) / (n - (ar + 1) / 2) ** 0.5
 
-        x[k-1] = radius*cos(theta) + c[0]
-        y[k-1] = radius*sin(theta) + c[1]
+        x[k - 1] = radius * cos(theta) + c[0]
+        y[k - 1] = radius * sin(theta) + c[1]
 
     if xlims is not None:
         xm = x < xlims[0]
         xM = x > xlims[1]
-        maskx = ~np.logical_or(xm,xM)
+        maskx = ~np.logical_or(xm, xM)
         x = x[maskx]
         y = y[maskx]
     if ylims is not None:
         ym = y < ylims[0]
         yM = y > ylims[1]
-        masky = ~np.logical_or(ym,yM)
+        masky = ~np.logical_or(ym, yM)
         x = x[masky]
         y = y[masky]
 
-    pts = np.column_stack((x,y))
+    pts = np.column_stack((x, y))
     return pts
 
 
 @njit
-def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=None):
+def gen_filled_circ_radius(r, n, alpha=3.0, c=np.array([0.0, 0.0]), xlims=None, ylims=None):
     """
     Generate points filling a circle with radius r and center c. Uses the sunflower
     seed arangement. Also returns radius of each point from center c.
@@ -732,40 +742,39 @@ def gen_filled_circ_radius(r,n,alpha=3.0,c=np.array([0.0,0.0]),xlims=None,ylims=
         array containing radius of each point from center c.
 
     """
-    phi = 0.5*(1 + 5**0.5)
-    cd = 1/(phi**2)
-    ar = round(alpha*n**0.5)
-    x = np.zeros(n,np.float64)
-    y = np.zeros(n,np.float64)
-    radius = np.zeros(n,np.float64)
-    for k in range(1,n+1):
-        theta = 2*pi*k*cd
+    phi = 0.5 * (1 + 5**0.5)
+    cd = 1 / (phi**2)
+    ar = round(alpha * n**0.5)
+    x = np.zeros(n, np.float64)
+    y = np.zeros(n, np.float64)
+    radius = np.zeros(n, np.float64)
+    for k in range(1, n + 1):
+        theta = 2 * pi * k * cd
         if k > n - ar:
-            radius[k-1] = r
+            radius[k - 1] = r
         else:
-            radius[k-1] = r*((k - 0.5)**0.5)/(n - (ar + 1)/2)**0.5
+            radius[k - 1] = r * ((k - 0.5) ** 0.5) / (n - (ar + 1) / 2) ** 0.5
 
-        x[k-1] = radius[k-1]*cos(theta) + c[0]
-        y[k-1] = radius[k-1]*sin(theta) + c[1]
+        x[k - 1] = radius[k - 1] * cos(theta) + c[0]
+        y[k - 1] = radius[k - 1] * sin(theta) + c[1]
 
     if xlims is not None:
         xm = x < xlims[0]
         xM = x > xlims[1]
-        maskx = ~np.logical_or(xm,xM)
+        maskx = ~np.logical_or(xm, xM)
         x = x[maskx]
         y = y[maskx]
         radius = radius[maskx]
     if ylims is not None:
         ym = y < ylims[0]
         yM = y > ylims[1]
-        masky = ~np.logical_or(ym,yM)
+        masky = ~np.logical_or(ym, yM)
         x = x[masky]
         y = y[masky]
         radius = radius[masky]
 
-    pts = np.column_stack((x,y))
+    pts = np.column_stack((x, y))
     return pts, radius
-
 
 
 @njit
@@ -786,13 +795,12 @@ def arclength(pts):
     """
     npts = len(pts)
     arclength_ = 0
-    for k in prange(npts-1):
-        p0 = pts[k,:]
-        p1 = pts[k+1,:]
-        arclength_ += ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
+    for k in prange(npts - 1):
+        p0 = pts[k, :]
+        p1 = pts[k + 1, :]
+        arclength_ += ((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2) ** 0.5
 
     return arclength_
-
 
 
 @njit
@@ -812,17 +820,17 @@ def arclength_along_arc(pts):
 
     """
     npts = len(pts)
-    arclength_ = np.zeros(npts,numba.float64)
+    arclength_ = np.zeros(npts, numba.float64)
     arclength_[0] = 0.0
-    for k in range(1,npts):
-        p0 = pts[k-1,:]
-        p1 = pts[k,:]
-        arclength_[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5 + arclength_[k-1]
+    for k in range(1, npts):
+        p0 = pts[k - 1, :]
+        p1 = pts[k, :]
+        arclength_[k] = ((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2) ** 0.5 + arclength_[k - 1]
 
     return arclength_
 
 
-def interp_curve(curve,n,s=0,k=3,per=0):
+def interp_curve(curve, n, s=0, k=3, per=0):
     """
     Return n interpolated values of curve.
 
@@ -848,15 +856,15 @@ def interp_curve(curve,n,s=0,k=3,per=0):
 
     """
 
-    tck, u = splprep([curve[:,0], curve[:,1]], k=k, s=s, per=per)
+    tck, u = splprep([curve[:, 0], curve[:, 1]], k=k, s=s, per=per)
     xi, yi = splev(np.linspace(0, 1, n), tck)
 
-    curvei = np.column_stack((xi,yi))
+    curvei = np.column_stack((xi, yi))
     return curvei
 
 
 @njit
-def wn_pt_in_poly(polygon,point):
+def wn_pt_in_poly(polygon, point):
     """
     Winding number algorithm to determine if point is inside polygon. Based off of
     java implementation - https://observablehq.com/@jrus/winding-number - by Jacob Rus.
@@ -878,23 +886,24 @@ def wn_pt_in_poly(polygon,point):
     ptx = point[0]
     pty = point[1]
     wn = 0
-    dx1 = polygon[0,0] - ptx
-    dy1 = polygon[0,1] - pty
+    dx1 = polygon[0, 0] - ptx
+    dy1 = polygon[0, 1] - pty
     below1 = dy1 <= 0
-    for k in range(1,n):
+    for k in range(1, n):
         dx0 = dx1
         dy0 = dy1
         below0 = below1
-        dx1 = polygon[k,0] - ptx
-        dy1 = polygon[k,1] - pty
+        dx1 = polygon[k, 0] - ptx
+        dy1 = polygon[k, 1] - pty
         below1 = dy1 <= 0
-        is_left = dx0*dy1 - dx1*dy0 > 0
+        is_left = dx0 * dy1 - dx1 * dy0 > 0
         wn += (below0 & (below1 ^ 1) & is_left) - (below1 & (below0 ^ 1) & ~is_left)
 
     return wn
 
+
 @njit
-def pts_in_poly(polygon,pts):
+def pts_in_poly(polygon, pts):
     """
     Checks if any point from pts is inside polygon. If a point is, the index of the
     first point found inside polygon is returned. Else, -1 is returned.
@@ -915,16 +924,16 @@ def pts_in_poly(polygon,pts):
     """
 
     for k in range(len(pts)):
-        pt = pts[k,:]
+        pt = pts[k, :]
 
-        if wn_pt_in_poly(polygon,pt):
+        if wn_pt_in_poly(polygon, pt):
             return k
 
     return -1
 
 
 @njit
-def pts_in_poly_mask(polygon,pts):
+def pts_in_poly_mask(polygon, pts):
     """
     Checks which points from pts are inside polygon. Returns a boolean mask
     corresponding to points inside polygon.
@@ -943,9 +952,9 @@ def pts_in_poly_mask(polygon,pts):
 
     """
     npts = len(pts)
-    mask = np.zeros((npts,),np.bool_)
+    mask = np.zeros((npts,), np.bool_)
     for k in range(npts):
-        mask[k] = wn_pt_in_poly(polygon,pts[k,:])
+        mask[k] = wn_pt_in_poly(polygon, pts[k, :])
 
     return mask
 
@@ -972,32 +981,32 @@ def cart_prod(vecs):
 
     nvecs = len(vecs)
     dtype = vecs[0].dtype
-    shape = np.zeros(nvecs,np.int32)
+    shape = np.zeros(nvecs, np.int32)
     for k in range(nvecs):
         shape[k] = len(vecs[k])
     npts = np.prod(shape)
-    prod = np.zeros((npts,nvecs),dtype)
+    prod = np.zeros((npts, nvecs), dtype)
 
     if nvecs > 2:
-        for k in prange(nvecs-1):
+        for k in prange(nvecs - 1):
             cl = np.prod(shape[-1:k:-1])
             arr = vecs[k]
             shapek = shape[k]
             for j in range(shapek):
-                prod[j*cl:(j+1)*cl,k] = arr[j]
+                prod[j * cl : (j + 1) * cl, k] = arr[j]
 
-            full_len = shapek*cl
-            for i in range(np.prod(shape[:k])-1):
-                prod[(i+1)*full_len:(i+2)*full_len,k] = prod[:full_len,k]
+            full_len = shapek * cl
+            for i in range(np.prod(shape[:k]) - 1):
+                prod[(i + 1) * full_len : (i + 2) * full_len, k] = prod[:full_len, k]
     else:
         cl = shape[1]
         arr = vecs[0]
         for j in prange(shape[0]):
-            prod[j*cl:(j+1)*cl,0] = arr[j]
+            prod[j * cl : (j + 1) * cl, 0] = arr[j]
 
     nlast = shape[-1]
     arr = vecs[-1]
     for j in prange(np.prod(shape[:-1])):
-        prod[j*nlast:(j+1)*nlast,-1] = arr
+        prod[j * nlast : (j + 1) * nlast, -1] = arr
 
     return prod

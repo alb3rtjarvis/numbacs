@@ -5,8 +5,9 @@ from interpolation.splines import UCGrid, prefilter, eval_spline, eval_linear
 from interpolation.splines import extrap_options as xto
 from math import copysign
 
+
 @njit
-def _reorient_eigvec(pt,x,y,eigvec):
+def _reorient_eigvec(pt, x, y, eigvec):
     """
     Interpolates eigvec at point pt, where eigvec is defined over np.meshgrid(x,y),
     with possible orientation discontinuity.
@@ -32,34 +33,38 @@ def _reorient_eigvec(pt,x,y,eigvec):
     # Find which grid box point lies in
     indx = np.searchsorted(x, pt[0])
     indy = np.searchsorted(y, pt[1])
-    inds = np.array([[indx-1,indy-1],[indx-1,indy],[indx,indy-1],[indx,indy]],int32)
-    grid_eigvecs = np.zeros((4,2),float64)
-    grid_eigvec_x = np.zeros((2,2),float64)
-    grid_eigvec_y = np.zeros((2,2),float64)
+    inds = np.array([[indx - 1, indy - 1], [indx - 1, indy], [indx, indy - 1], [indx, indy]], int32)
+    grid_eigvecs = np.zeros((4, 2), float64)
+    grid_eigvec_x = np.zeros((2, 2), float64)
+    grid_eigvec_y = np.zeros((2, 2), float64)
 
     # Orient eigenvectors
     for k in range(4):
-        grid_eigvecs[k,:] = eigvec[inds[k,0],inds[k,1],:]
+        grid_eigvecs[k, :] = eigvec[inds[k, 0], inds[k, 1], :]
         if k > 0:
-            grid_eigvecs[k,:] = copysign(1,np.dot(grid_eigvecs[k-1,:],
-                                                  grid_eigvecs[k,:]))*grid_eigvecs[k,:]
-        i,j = divmod(k,2)
-        grid_eigvec_x[i,j] = grid_eigvecs[k,0]
-        grid_eigvec_y[i,j] = grid_eigvecs[k,1]
+            grid_eigvecs[k, :] = (
+                copysign(1, np.dot(grid_eigvecs[k - 1, :], grid_eigvecs[k, :])) * grid_eigvecs[k, :]
+            )
+        i, j = divmod(k, 2)
+        grid_eigvec_x[i, j] = grid_eigvecs[k, 0]
+        grid_eigvec_y[i, j] = grid_eigvecs[k, 1]
 
-
-    grid_eigvecs = grid_eigvecs.reshape(2,2,2)
-    grid = ((x[indx-1],x[indx],2),(y[indy-1],y[indy],2))
+    grid_eigvecs = grid_eigvecs.reshape(2, 2, 2)
+    grid = ((x[indx - 1], x[indx], 2), (y[indy - 1], y[indy], 2))
 
     # Linear interpolant for eigenvectors based on grid box
-    eigvec_interp = np.array([eval_linear(grid,grid_eigvec_x,pt,xto.CONSTANT),
-                              eval_linear(grid,grid_eigvec_y,pt,xto.CONSTANT)],float64)
-    return  eigvec_interp
-
+    eigvec_interp = np.array(
+        [
+            eval_linear(grid, grid_eigvec_x, pt, xto.CONSTANT),
+            eval_linear(grid, grid_eigvec_y, pt, xto.CONSTANT),
+        ],
+        float64,
+    )
+    return eigvec_interp
 
 
 @njit
-def _alpha(pt,eigval_max):
+def _alpha(pt, eigval_max):
     """
     Compute alpha to be used in tensorline computation at point pt using eigval_max which is an
     interpolant function.
@@ -78,11 +83,12 @@ def _alpha(pt,eigval_max):
 
     """
 
-    a = ((eigval_max(pt) - 1/eigval_max(pt))/(eigval_max(pt) + 1/eigval_max(pt)))**2
+    a = ((eigval_max(pt) - 1 / eigval_max(pt)) / (eigval_max(pt) + 1 / eigval_max(pt))) ** 2
     return a
 
+
 @njit
-def _in_domain(pt,domain):
+def _in_domain(pt, domain):
     """
     Check if point pt is in domain where domain is rectangular region.
 
@@ -100,14 +106,19 @@ def _in_domain(pt,domain):
 
     """
 
-
-    if pt[0] <= domain[0,0] or pt[0] >= domain[0,1] or pt[1] <= domain[1,0] or pt[1] >= domain[1,1]:
+    if (
+        pt[0] <= domain[0, 0]
+        or pt[0] >= domain[0, 1]
+        or pt[1] <= domain[1, 0]
+        or pt[1] >= domain[1, 1]
+    ):
         return False
     else:
         return True
 
+
 @njit
-def _in_region(pt,xvals,yvals,arr):
+def _in_region(pt, xvals, yvals, arr):
     """
     Determines if pt is in a region defined over a meshgrid defined by xvals,yvals where arr is a
     boolean array which defines the region.
@@ -132,9 +143,11 @@ def _in_region(pt,xvals,yvals,arr):
 
     indx1 = np.searchsorted(xvals, pt[0])
     indy1 = np.searchsorted(yvals, pt[1])
-    inds = np.array([[indx1-1,indy1-1],[indx1-1,indy1],[indx1,indy1-1],[indx1,indy1]],int32)
+    inds = np.array(
+        [[indx1 - 1, indy1 - 1], [indx1 - 1, indy1], [indx1, indy1 - 1], [indx1, indy1]], int32
+    )
     for k in range(4):
-        near = arr[inds[k,0],inds[k,1]]
+        near = arr[inds[k, 0], inds[k, 1]]
         if near == 1:
             break
 
@@ -142,7 +155,7 @@ def _in_region(pt,xvals,yvals,arr):
 
 
 @njit
-def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
+def rk4_tensorlines(eigval_max, eigvec_min, xvals, yvals, ic_ind, h, steps, U0, lf):
     """
     Compute tensorlines in eigvec_min field originially defined over xvals,yvals.
 
@@ -174,88 +187,89 @@ def rk4_tensorlines(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,U0,lf):
 
     """
 
-    domain = np.array([[xvals[0],xvals[-1]],[yvals[0],yvals[-1]]])    # for _in_domain
-    for direction in np.array([1,-1],np.int32):
-        init_direction = direction                  # initialize integration direction
-        L=0                                         # initialize failure length
-        y = np.zeros((steps+1,2),float64)
-        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],float64) # set initial condition
-        init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
-        a1 = _alpha(y[0,:],eigval_max)              # initial alpha
+    domain = np.array([[xvals[0], xvals[-1]], [yvals[0], yvals[-1]]])  # for _in_domain
+    for direction in np.array([1, -1], np.int32):
+        init_direction = direction  # initialize integration direction
+        L = 0  # initialize failure length
+        y = np.zeros((steps + 1, 2), float64)
+        y[0, :] = np.array([xvals[ic_ind[0]], yvals[ic_ind[1]]], float64)  # set initial condition
+        init_vec = eigvec_min[ic_ind[0], ic_ind[1], :]  # set initial vector
+        a1 = _alpha(y[0, :], eigval_max)  # initial alpha
         i = 0
         remove_inds = 0
-        while L<lf and i<steps:
+        while L < lf and i < steps:
             # rk4 to integrate tensorlines from eigvec_min field
-            k1 = init_vec*a1
+            k1 = init_vec * a1
             if init_direction == -1:
                 k1 = -k1
-            yk2 = y[i,:]+0.5*h*k1
-            a2 = _alpha(yk2,eigval_max)
-            k2 = _reorient_eigvec(yk2,xvals,yvals,eigvec_min)*a2   # reorient and scale eigenvector
-            if np.dot(k1,k2) < 0:                           # make sure direction is continuous
+            yk2 = y[i, :] + 0.5 * h * k1
+            a2 = _alpha(yk2, eigval_max)
+            k2 = (
+                _reorient_eigvec(yk2, xvals, yvals, eigvec_min) * a2
+            )  # reorient and scale eigenvector
+            if np.dot(k1, k2) < 0:  # make sure direction is continuous
                 k2 = -k2
-            yk3 = y[i,:]+0.5*h*k2
-            a3 = _alpha(yk3,eigval_max)
-            k3 = _reorient_eigvec(yk3,xvals,yvals,eigvec_min)*a3
-            if np.dot(k2,k3) < 0:
+            yk3 = y[i, :] + 0.5 * h * k2
+            a3 = _alpha(yk3, eigval_max)
+            k3 = _reorient_eigvec(yk3, xvals, yvals, eigvec_min) * a3
+            if np.dot(k2, k3) < 0:
                 k3 = -k3
-            yk4 = y[i,:]+h*k3
-            a4 = _alpha(yk4,eigval_max)
-            k4 = _reorient_eigvec(yk4,xvals,yvals,eigvec_min)*a4
-            if np.dot(k3,k4) < 0:
+            yk4 = y[i, :] + h * k3
+            a4 = _alpha(yk4, eigval_max)
+            k4 = _reorient_eigvec(yk4, xvals, yvals, eigvec_min) * a4
+            if np.dot(k3, k4) < 0:
                 k4 = -k4
-            y[i+1,:] = y[i,:] + (h/6)*(k1 + 2*k2 + 2*k3 + k4)   # rk4 step
+            y[i + 1, :] = y[i, :] + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)  # rk4 step
 
             # check if point is in domain and not stuck on boundary or fixed point
-            if not _in_domain(y[i+1,:],domain) or np.all(np.isclose(y[i,:],y[i+1,:])):
+            if not _in_domain(y[i + 1, :], domain) or np.all(np.isclose(y[i, :], y[i + 1, :])):
                 break
 
             if i > 1:
-                r0 = y[i,:] - y[i-1,:]
-                r1 = y[i+1,:] - y[i,:]
-                if np.dot(r0,r1) >= 0:
+                r0 = y[i, :] - y[i - 1, :]
+                r1 = y[i + 1, :] - y[i, :]
+                if np.dot(r0, r1) >= 0:
                     # set updated init_vector and init_direction
-                    init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                    init_direction = copysign(1,np.dot(k4,init_vec))
-                    a1 = _alpha(y[i+1,:],eigval_max)
+                    init_vec = _reorient_eigvec(y[i + 1, :], xvals, yvals, eigvec_min)
+                    init_direction = copysign(1, np.dot(k4, init_vec))
+                    a1 = _alpha(y[i + 1, :], eigval_max)
 
                     # check if point is in U0 region meeting necessary LCS criteria
-                    if _in_region(y[i+1,:],xvals,yvals,U0):
-                        L = 0.
+                    if _in_region(y[i + 1, :], xvals, yvals, U0):
+                        L = 0.0
                         remove_inds = 0
                     else:
-                        L += dist_2d(y[i+1,:],y[i,:])
+                        L += dist_2d(y[i + 1, :], y[i, :])
                         remove_inds += 1
-                    i+=1
+                    i += 1
                 else:
                     break
             else:
                 # set updated init_vector and init_direction
-                init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                init_direction = copysign(1,np.dot(k4,init_vec))
+                init_vec = _reorient_eigvec(y[i + 1, :], xvals, yvals, eigvec_min)
+                init_direction = copysign(1, np.dot(k4, init_vec))
 
-                a1 = _alpha(y[i+1,:],eigval_max)
-                if _in_region(y[i+1,:],xvals,yvals,U0):
-                    L = 0.
+                a1 = _alpha(y[i + 1, :], eigval_max)
+                if _in_region(y[i + 1, :], xvals, yvals, U0):
+                    L = 0.0
                     remove_inds = 0
                 else:
-                    L = L + dist_2d(y[i+1,:],y[i,:])
+                    L = L + dist_2d(y[i + 1, :], y[i, :])
                     remove_inds += 1
-                i+=1
+                i += 1
 
         i -= remove_inds
         if direction == 1:
-            d1lcs = np.flipud(y[:i+1,:])    # direction 1 candidite lcs
+            d1lcs = np.flipud(y[: i + 1, :])  # direction 1 candidite lcs
         else:
-            d2lcs = y[1:i+1,:]              # direction -1 candidate lcs
+            d2lcs = y[1 : i + 1, :]  # direction -1 candidate lcs
 
-    tensorline = np.concatenate((d1lcs,d2lcs),axis=0) # concatenate both canditate lcs
+    tensorline = np.concatenate((d1lcs, d2lcs), axis=0)  # concatenate both canditate lcs
     return tensorline
 
 
-
 @njit
-def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen,minval):
+def rk4_tensorlines_oecs(eigval_max, eigvec_min, xvals, yvals, ic_ind, h, steps, maxlen, minval):
     """
     Compute tensorlines in eigvec_min field originially defined over xvals,yvals.
 
@@ -285,78 +299,77 @@ def rk4_tensorlines_oecs(eigval_max,eigvec_min,xvals,yvals,ic_ind,h,steps,maxlen
 
     """
 
-    domain = np.array([[xvals[0],xvals[-1]],[yvals[0],yvals[-1]]])    # for _in_domain
-    for direction in np.array([1,-1],np.int32):
-        init_direction = direction                  # initialize integration direction
-        L=0                                         # initialize failure length
-        y = np.zeros((steps+1,2),float64)
-        y[0,:] = np.array([xvals[ic_ind[0]],yvals[ic_ind[1]]],float64) # set initial condition
-        init_vec = np.zeros(2,float64)
-        init_vec[0] = eigvec_min[ic_ind[0],ic_ind[1],0]
-        init_vec[1] = eigvec_min[ic_ind[0],ic_ind[1],1]
+    domain = np.array([[xvals[0], xvals[-1]], [yvals[0], yvals[-1]]])  # for _in_domain
+    for direction in np.array([1, -1], np.int32):
+        init_direction = direction  # initialize integration direction
+        L = 0  # initialize failure length
+        y = np.zeros((steps + 1, 2), float64)
+        y[0, :] = np.array([xvals[ic_ind[0]], yvals[ic_ind[1]]], float64)  # set initial condition
+        init_vec = np.zeros(2, float64)
+        init_vec[0] = eigvec_min[ic_ind[0], ic_ind[1], 0]
+        init_vec[1] = eigvec_min[ic_ind[0], ic_ind[1], 1]
         # init_vec = eigvec_min[ic_ind[0],ic_ind[1],:]    # set initial vector
-        s0 = eigval_max(y[0,:])                             # initial eigval
+        s0 = eigval_max(y[0, :])  # initial eigval
         i = 0
         remove_inds = 0
         monotone_flag = False
-        while L<maxlen and i<steps:
+        while L < maxlen and i < steps:
             # rk4 to integrate tensorlines from eigvec_min field
             k1 = init_vec
             if init_direction == -1:
                 k1 = -k1
-            yk2 = y[i,:]+0.5*h*k1
-            k2 = _reorient_eigvec(yk2,xvals,yvals,eigvec_min)   # reorient and scale eigenvector
-            if np.dot(k1,k2) < 0:                           # make sure direction is continuous
+            yk2 = y[i, :] + 0.5 * h * k1
+            k2 = _reorient_eigvec(yk2, xvals, yvals, eigvec_min)  # reorient and scale eigenvector
+            if np.dot(k1, k2) < 0:  # make sure direction is continuous
                 k2 = -k2
-            yk3 = y[i,:]+0.5*h*k2
-            k3 = _reorient_eigvec(yk3,xvals,yvals,eigvec_min)
-            if np.dot(k2,k3) < 0:
+            yk3 = y[i, :] + 0.5 * h * k2
+            k3 = _reorient_eigvec(yk3, xvals, yvals, eigvec_min)
+            if np.dot(k2, k3) < 0:
                 k3 = -k3
-            yk4 = y[i,:]+h*k3
-            k4 = _reorient_eigvec(yk4,xvals,yvals,eigvec_min)
-            if np.dot(k3,k4) < 0:
+            yk4 = y[i, :] + h * k3
+            k4 = _reorient_eigvec(yk4, xvals, yvals, eigvec_min)
+            if np.dot(k3, k4) < 0:
                 k4 = -k4
-            y[i+1,:] = y[i,:] + (h/6)*(k1 + 2*k2 + 2*k3 + k4)   # rk4 step
-            L+=h
-            s1 = eigval_max(y[i+1,:])
+            y[i + 1, :] = y[i, :] + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)  # rk4 step
+            L += h
+            s1 = eigval_max(y[i + 1, :])
             # check if point is in domain and not stuck on boundary or fixed point
             if s1 < minval:
                 break
-            if not _in_domain(y[i+1,:],domain):
+            if not _in_domain(y[i + 1, :], domain):
                 break
             if s1 > s0:
-                remove_inds+=1
+                remove_inds += 1
                 monotone_flag = True
                 break
             s0 = s1
             if i > 1:
-                r0 = y[i,:] - y[i-1,:]
-                r1 = y[i+1,:] - y[i,:]
-                if np.dot(r0,r1) >= 0:
+                r0 = y[i, :] - y[i - 1, :]
+                r1 = y[i + 1, :] - y[i, :]
+                if np.dot(r0, r1) >= 0:
                     # set updated init_vector and init_direction
-                    init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                    init_direction = copysign(1,np.dot(k4,init_vec))
-                    i+=1
+                    init_vec = _reorient_eigvec(y[i + 1, :], xvals, yvals, eigvec_min)
+                    init_direction = copysign(1, np.dot(k4, init_vec))
+                    i += 1
                 else:
                     break
             else:
                 # set updated init_vector and init_direction
-                init_vec = _reorient_eigvec(y[i+1,:],xvals,yvals,eigvec_min)
-                init_direction = copysign(1,np.dot(k4,init_vec))
-                i+=1
+                init_vec = _reorient_eigvec(y[i + 1, :], xvals, yvals, eigvec_min)
+                init_direction = copysign(1, np.dot(k4, init_vec))
+                i += 1
 
         i -= remove_inds
         if i < 10 and monotone_flag:
             return None
 
         if direction == 1:
-            d1oecs = np.flipud(y[:i+1,:])    # direction 1 candidite oecs
+            d1oecs = np.flipud(y[: i + 1, :])  # direction 1 candidite oecs
         else:
-            d2oecs = y[1:i+1,:]              # direction -1 candidate oecs
+            d2oecs = y[1 : i + 1, :]  # direction -1 candidate oecs
 
-    tensorline = np.concatenate((d1oecs,d2oecs),axis=0) # concatenate both canditate oecs
+    tensorline = np.concatenate((d1oecs, d2oecs), axis=0)  # concatenate both canditate oecs
     return tensorline
-
 
 
 @njit(parallel=True)
@@ -376,17 +389,17 @@ def _arclength_arr(pts):
 
     """
     npts = len(pts)
-    arclength = np.zeros(npts-1,float64)
-    for k in prange(npts-1):
-        p0 = pts[k,:]
-        p1 = pts[k+1,:]
-        arclength[k] = ((p1[0] - p0[0])**2 + (p1[1] - p0[1])**2)**0.5
+    arclength = np.zeros(npts - 1, float64)
+    for k in prange(npts - 1):
+        p0 = pts[k, :]
+        p1 = pts[k + 1, :]
+        arclength[k] = ((p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2) ** 0.5
 
     return arclength
 
 
 @njit
-def _pts_in_dist_ind(pt,arr,tol,attach_ind=-1):
+def _pts_in_dist_ind(pt, arr, tol, attach_ind=-1):
     """
     Find all points in arr which are within a distance tolerance of pt.
 
@@ -407,18 +420,18 @@ def _pts_in_dist_ind(pt,arr,tol,attach_ind=-1):
         indices near pt from arr.
 
     """
-    inds = np.zeros((arr.shape[0]+1,2),int32)
+    inds = np.zeros((arr.shape[0] + 1, 2), int32)
     for k in range(arr.shape[0]):
-        if dist_2d(pt, arr[k,1:]) < tol:
-            inds[k,:] = np.array([int(arr[k,0]),1],int32)
+        if dist_2d(pt, arr[k, 1:]) < tol:
+            inds[k, :] = np.array([int(arr[k, 0]), 1], int32)
     if attach_ind != -1:
-        inds[k+1,:] = np.array([attach_ind,1],int32)
+        inds[k + 1, :] = np.array([attach_ind, 1], int32)
 
-    return np.unique(inds[inds[:,1]==1,0])
+    return np.unique(inds[inds[:, 1] == 1, 0])
 
 
 @njit
-def _hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
+def _hyp_lcs(tensorlines, lambda_avg, vlines, hlines, dist_tol=1e-1):
     """
     Compute hyperbolic LCS tensorlines from 'rk4_tensorlines', compare nearby tensorlines
     to see which candidatelcs curves are the most attracting/repelling.
@@ -443,110 +456,119 @@ def _hyp_lcs(tensorlines,lambda_avg,vlines,hlines,dist_tol=1e-1):
 
     """
 
-
-    nt = int(tensorlines.shape[-1]/2)       # number of tensorlines
-    max_intersects=10                       # maximum times we look at tensorline intersection
-    keep_inds = -1*np.ones(nt,np.int32)    # prealocate array for inds to keep
+    nt = int(tensorlines.shape[-1] / 2)  # number of tensorlines
+    max_intersects = 10  # maximum times we look at tensorline intersection
+    keep_inds = -1 * np.ones(nt, np.int32)  # prealocate array for inds to keep
     # keep_inds_bool = np.zeros(nt,bool_)
     # keep_inds = np.arange(0,nt,int32)
     jj = 0
     for vl in vlines:
-        v_intersect = np.zeros((nt*max_intersects,3),float64) # prealocate
-        ii=0        # initialize counter for storing intersection points
+        v_intersect = np.zeros((nt * max_intersects, 3), float64)  # prealocate
+        ii = 0  # initialize counter for storing intersection points
         for k in range(nt):
-            len_ind = int(tensorlines[-1,2*k])   # ind len of tensorline k
-            tensorline_tmp = tensorlines[:len_ind,2*k:2*k+2]    # tmp tensorline
-            vcross = tensorline_tmp[:,0]>vl     # boolean finding crossings of vline
-            vcross_ind = np.argwhere(~vcross == np.roll(vcross,-1))     # find inds of crossings
+            len_ind = int(tensorlines[-1, 2 * k])  # ind len of tensorline k
+            tensorline_tmp = tensorlines[:len_ind, 2 * k : 2 * k + 2]  # tmp tensorline
+            vcross = tensorline_tmp[:, 0] > vl  # boolean finding crossings of vline
+            vcross_ind = np.argwhere(~vcross == np.roll(vcross, -1))  # find inds of crossings
             if vcross_ind.size == 0:
-                continue                        # continue if no crosses
-            if vcross_ind[-1] == len_ind-1:
-                vcross_ind = vcross_ind[:-1]    # remove last if endpoint
-            for i,ind in enumerate(vcross_ind):
-                ind = ind[0]    # need to squeeze array
+                continue  # continue if no crosses
+            if vcross_ind[-1] == len_ind - 1:
+                vcross_ind = vcross_ind[:-1]  # remove last if endpoint
+            for i, ind in enumerate(vcross_ind):
+                ind = ind[0]  # need to squeeze array
                 # find which index is closest to vline
-                vcross_ind_tmp = ind + np.argmin(np.array([abs(tensorline_tmp[ind,1]-vl),
-                                                          abs(tensorline_tmp[ind+1,1]-vl)]))
+                vcross_ind_tmp = ind + np.argmin(
+                    np.array(
+                        [abs(tensorline_tmp[ind, 1] - vl), abs(tensorline_tmp[ind + 1, 1] - vl)]
+                    )
+                )
 
                 # store intersection point of kth tensorline and index
-                v_intersect[ii+i,:] = np.array([k,tensorline_tmp[vcross_ind_tmp,0],
-                                                  tensorline_tmp[vcross_ind_tmp,1]])
-            ii += i+1   # increment counter by number of intersections of kth tensorline with vl
+                v_intersect[ii + i, :] = np.array(
+                    [k, tensorline_tmp[vcross_ind_tmp, 0], tensorline_tmp[vcross_ind_tmp, 1]]
+                )
+            ii += i + 1  # increment counter by number of intersections of kth tensorline with vl
 
         # iterate through intersection points of hl
-        v_intersect = v_intersect[:ii,:]
+        v_intersect = v_intersect[:ii, :]
         for k in range(ii):
-            t_ind = int(v_intersect[k,0])   # tensorline index corresponding to intersection
-            ot_inds = v_intersect[:,0] != t_ind     # find all other tensorlines intersecting vl
+            t_ind = int(v_intersect[k, 0])  # tensorline index corresponding to intersection
+            ot_inds = v_intersect[:, 0] != t_ind  # find all other tensorlines intersecting vl
             # find which of ot_inds are within dist_tol of t_ind
-            nearby_inds = _pts_in_dist_ind(v_intersect[k,1:],v_intersect[ot_inds,:],
-                                       dist_tol,attach_ind=t_ind)
+            nearby_inds = _pts_in_dist_ind(
+                v_intersect[k, 1:], v_intersect[ot_inds, :], dist_tol, attach_ind=t_ind
+            )
 
             # if only t_ind, continue
             if nearby_inds.size < 2:
                 if t_ind not in keep_inds:
                     keep_inds[jj] = t_ind
-                    jj+=1
+                    jj += 1
                 continue
-            max_ind = nearby_inds[np.argmax(lambda_avg[nearby_inds])] # max l_avg from nearby_inds
+            max_ind = nearby_inds[np.argmax(lambda_avg[nearby_inds])]  # max l_avg from nearby_inds
 
             # if we are already keeping max_inds, continue so we don't double count
             if max_ind in keep_inds:
                 continue
-            keep_inds[jj] = max_ind                         # keep the max
-            jj+=1
+            keep_inds[jj] = max_ind  # keep the max
+            jj += 1
     for hl in hlines:
-        h_intersect = np.zeros((nt*max_intersects,3),float64) # prealocate
-        ii = 0      # initialize counter for storing intersection points
+        h_intersect = np.zeros((nt * max_intersects, 3), float64)  # prealocate
+        ii = 0  # initialize counter for storing intersection points
         for k in range(nt):
-            len_ind = int(tensorlines[-1,2*k])  # ind len of tensorline k
-            tensorline_tmp = tensorlines[:len_ind,2*k:2*k+2]    # tmp tensorline
-            hcross = tensorline_tmp[:,1]>hl     # boolean finding crossings of hline
-            hcross_ind = np.argwhere(~hcross == np.roll(hcross,-1)) # find inds of crossings
+            len_ind = int(tensorlines[-1, 2 * k])  # ind len of tensorline k
+            tensorline_tmp = tensorlines[:len_ind, 2 * k : 2 * k + 2]  # tmp tensorline
+            hcross = tensorline_tmp[:, 1] > hl  # boolean finding crossings of hline
+            hcross_ind = np.argwhere(~hcross == np.roll(hcross, -1))  # find inds of crossings
             if hcross_ind.size == 0:
-                continue                        # continue if no crosses
-            if hcross_ind[-1] == len_ind-1:
-                hcross_ind = hcross_ind[:-1]    # remove last if endpoint
-            for i,ind in enumerate(hcross_ind):
-                ind = ind[0]                    # need to squeeze array
+                continue  # continue if no crosses
+            if hcross_ind[-1] == len_ind - 1:
+                hcross_ind = hcross_ind[:-1]  # remove last if endpoint
+            for i, ind in enumerate(hcross_ind):
+                ind = ind[0]  # need to squeeze array
                 # find which index is closest to hline
-                hcross_ind_tmp = ind + np.argmin(np.array([abs(tensorline_tmp[ind,1]-hl),
-                                                          abs(tensorline_tmp[ind+1,1]-hl)]))
+                hcross_ind_tmp = ind + np.argmin(
+                    np.array(
+                        [abs(tensorline_tmp[ind, 1] - hl), abs(tensorline_tmp[ind + 1, 1] - hl)]
+                    )
+                )
 
                 # store intersection point of kth tensorline and index
-                h_intersect[ii+i,:] = np.array([k,tensorline_tmp[hcross_ind_tmp,0],
-                                                  tensorline_tmp[hcross_ind_tmp,1]])
-            ii += i+1   # increment counter by number of intersections of kth tensorline with hl
+                h_intersect[ii + i, :] = np.array(
+                    [k, tensorline_tmp[hcross_ind_tmp, 0], tensorline_tmp[hcross_ind_tmp, 1]]
+                )
+            ii += i + 1  # increment counter by number of intersections of kth tensorline with hl
 
         # iterate through intersection points of hl
-        h_intersect = h_intersect[:ii,:]
+        h_intersect = h_intersect[:ii, :]
         for k in range(ii):
-            t_ind = int(h_intersect[k,0])   # tensorline index corresponding to intersection
-            ot_inds = h_intersect[:,0] != t_ind     # find all other tensorlines intersecting hl
+            t_ind = int(h_intersect[k, 0])  # tensorline index corresponding to intersection
+            ot_inds = h_intersect[:, 0] != t_ind  # find all other tensorlines intersecting hl
 
             # find which of ot_inds are within dist_tol of t_ind
-            nearby_inds = _pts_in_dist_ind(h_intersect[k,1:],h_intersect[ot_inds,:],
-                                       dist_tol,attach_ind=t_ind)
+            nearby_inds = _pts_in_dist_ind(
+                h_intersect[k, 1:], h_intersect[ot_inds, :], dist_tol, attach_ind=t_ind
+            )
 
             # if only t_ind, continue
             if nearby_inds.size < 2:
                 if t_ind not in keep_inds:
                     keep_inds[jj] = t_ind
-                    jj+=1
+                    jj += 1
                 continue
-            max_ind = nearby_inds[np.argmax(lambda_avg[nearby_inds])] # max l_avg from nearby_inds
+            max_ind = nearby_inds[np.argmax(lambda_avg[nearby_inds])]  # max l_avg from nearby_inds
 
             # if we are already keeping max_inds, continue so we don't double count
             if max_ind in keep_inds:
                 continue
-            keep_inds[jj] = max_ind                         # keep the max
-            jj+=1
+            keep_inds[jj] = max_ind  # keep the max
+            jj += 1
 
     return keep_inds[:jj]
 
 
 @njit(parallel=True)
-def _lcs_region(eigval_max,eigvec_max,dx,dy,percentile=0):
+def _lcs_region(eigval_max, eigvec_max, dx, dy, percentile=0):
     """
     Compute LCS region.
 
@@ -572,33 +594,36 @@ def _lcs_region(eigval_max,eigvec_max,dx,dy,percentile=0):
     if percentile == 0:
         eigval_min_val = 1
     else:
-        eigval_min_val = np.percentile(eigval_max,percentile)
-    nx,ny = eigval_max.shape
-    lcs_reg = np.zeros((nx,ny),int32)
-    for i in prange(2,nx-2):
-        for j in range(2,ny-2):
-            if eigval_max[i,j] <= eigval_min_val:
+        eigval_min_val = np.percentile(eigval_max, percentile)
+    nx, ny = eigval_max.shape
+    lcs_reg = np.zeros((nx, ny), int32)
+    for i in prange(2, nx - 2):
+        for j in range(2, ny - 2):
+            if eigval_max[i, j] <= eigval_min_val:
                 continue
 
-            fxx = (eigval_max[i+1,j] - 2*eigval_max[i,j] + eigval_max[i-1,j])/(dx**2)
-            fyy = (eigval_max[i,j+1] - 2*eigval_max[i,j] + eigval_max[i,j-1])/(dy**2)
-            fxy = (eigval_max[i+1,j+1] - eigval_max[i+1,j-1] -
-                   eigval_max[i-1,j+1] + eigval_max[i-1,j-1])/(4*dx*dy)
+            fxx = (eigval_max[i + 1, j] - 2 * eigval_max[i, j] + eigval_max[i - 1, j]) / (dx**2)
+            fyy = (eigval_max[i, j + 1] - 2 * eigval_max[i, j] + eigval_max[i, j - 1]) / (dy**2)
+            fxy = (
+                eigval_max[i + 1, j + 1]
+                - eigval_max[i + 1, j - 1]
+                - eigval_max[i - 1, j + 1]
+                + eigval_max[i - 1, j - 1]
+            ) / (4 * dx * dy)
 
-            eigvec_max0 = eigvec_max[i,j,:]
-            ex,ey = eigvec_max0
+            eigvec_max0 = eigvec_max[i, j, :]
+            ex, ey = eigvec_max0
 
-            region_criteria = ex*(fxx*ex + fxy*ey) + ey*(fxy*ex + fyy*ey)
+            region_criteria = ex * (fxx * ex + fxy * ey) + ey * (fxy * ex + fyy * ey)
 
             if region_criteria <= 0:
-                lcs_reg[i,j] = 1
-
+                lcs_reg[i, j] = 1
 
     return lcs_reg
 
 
 @njit
-def _endpoint_distances_lcs(pt,arr,dist_tol):
+def _endpoint_distances_lcs(pt, arr, dist_tol):
     """
     Computes distances between pt and all other points in arr,
     tangent vectors between pt and all other points are computed
@@ -623,17 +648,30 @@ def _endpoint_distances_lcs(pt,arr,dist_tol):
     """
 
     len_arr = arr.shape[0]
-    dist = np.zeros(len_arr,float64)
-    tol_bool = np.zeros(len_arr,bool_)
+    dist = np.zeros(len_arr, float64)
+    tol_bool = np.zeros(len_arr, bool_)
     for k in prange(len_arr):
-        dist[k] = ((arr[k,0]-pt[0])**2 + (arr[k,1]-pt[1])**2)**0.5
+        dist[k] = ((arr[k, 0] - pt[0]) ** 2 + (arr[k, 1] - pt[1]) ** 2) ** 0.5
         if dist[k] < dist_tol:
             tol_bool[k] = 1
     return dist, tol_bool
 
 
-def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,percentile=0,
-                 interp_method='linear'):
+def _compute_lcs(
+    eigval_max,
+    eigvecs,
+    x,
+    y,
+    h,
+    steps,
+    lf,
+    lmin,
+    r,
+    nmax,
+    lambda_avg_min,
+    percentile=0,
+    interp_method="linear",
+):
     """
     Compute hyperbolic LCS using eigval_max and eigvecs obtained from Cauchy Green
     tensor.
@@ -681,57 +719,81 @@ def _compute_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,lambda_avg_min,pe
 
     """
 
+    nx, ny = len(x), len(y)
+    dx, dy = abs(x[1] - x[0]), abs(y[1] - y[0])
+    eigval_max_nb = eigval_max[1:-1, 1:-1]
 
-    nx,ny = len(x),len(y)
-    dx,dy = abs(x[1] - x[0]), abs(y[1] - y[0])
-    eigval_max_nb = eigval_max[1:-1,1:-1]
+    max_vals, max_inds = max_in_radius(eigval_max.copy(), r, dx, dy, n=nmax)
 
-    max_vals,max_inds = max_in_radius(eigval_max.copy(),r,dx,dy,n=nmax)
+    grid = UCGrid((x[1], x[-2], nx - 2), (y[1], y[-2], ny - 2))
+    if interp_method == "linear":
 
-    grid = UCGrid((x[1],x[-2],nx-2),(y[1],y[-2],ny-2))
-    if interp_method == 'linear':
         @njit
         def eigval_max_spline(point):
-            return eval_linear(grid,eigval_max_nb,point,xto.LINEAR)
-    elif interp_method == 'cubic':
-        C_eval = prefilter(grid,eigval_max_nb,out=None,k=3)
+            return eval_linear(grid, eigval_max_nb, point, xto.LINEAR)
+    elif interp_method == "cubic":
+        C_eval = prefilter(grid, eigval_max_nb, out=None, k=3)
+
         @njit
         def eigval_max_spline(point):
-            return eval_spline(grid,C_eval,point,out=None,k=3,diff="None",extrap_mode="linear")
+            return eval_spline(
+                grid, C_eval, point, out=None, k=3, diff="None", extrap_mode="linear"
+            )
 
-    U0 = _lcs_region(eigval_max,eigvecs[:,:,:,1],dx,dy,percentile=percentile)
+    U0 = _lcs_region(eigval_max, eigvecs[:, :, :, 1], dx, dy, percentile=percentile)
     nic = len(max_inds)
-    lcs_arr = np.zeros((2*steps+2,2*nic),np.float64)
-    lambda_avg = np.zeros(nic,np.float64)
-    arclength = np.zeros(nic,np.float64)
-    endpoints = np.zeros((2*nic,3),np.float64)
+    lcs_arr = np.zeros((2 * steps + 2, 2 * nic), np.float64)
+    lambda_avg = np.zeros(nic, np.float64)
+    arclength = np.zeros(nic, np.float64)
+    endpoints = np.zeros((2 * nic, 3), np.float64)
     k = 0
     for ic_ind in max_inds:
-        clcs = rk4_tensorlines(eigval_max_spline,eigvecs[:,:,:,0],x,y,ic_ind,h,steps,U0,lf)
+        clcs = rk4_tensorlines(
+            eigval_max_spline, eigvecs[:, :, :, 0], x, y, ic_ind, h, steps, U0, lf
+        )
         arclength_arr = _arclength_arr(clcs)
         arclength_tmp = arclength_arr.sum()
         clcs_lambda = eigval_max_spline(clcs)
         if arclength_tmp >= lmin:
-            lambda_avg_tmp = composite_simpsons_38_irregular(clcs_lambda,arclength_arr)/arclength_tmp
+            lambda_avg_tmp = (
+                composite_simpsons_38_irregular(clcs_lambda, arclength_arr) / arclength_tmp
+            )
             if lambda_avg_tmp >= lambda_avg_min:
                 lambda_avg[k] = lambda_avg_tmp
-                endpoints[2*k,:] = np.array([clcs[0,0],clcs[0,1],k])
-                endpoints[2*k+1,:] = np.array([clcs[-1,0],clcs[-1,1],k])
+                endpoints[2 * k, :] = np.array([clcs[0, 0], clcs[0, 1], k])
+                endpoints[2 * k + 1, :] = np.array([clcs[-1, 0], clcs[-1, 1], k])
                 llen = len(clcs)
-                lcs_arr[:llen,2*k:2*k+2] = clcs
-                lcs_arr[-1,2*k] = llen
+                lcs_arr[:llen, 2 * k : 2 * k + 2] = clcs
+                lcs_arr[-1, 2 * k] = llen
                 arclength[k] = arclength_tmp
-                k+=1
+                k += 1
         del clcs
     lambda_avg = lambda_avg[:k]
-    lcs_arr = lcs_arr[:,:2*k]
+    lcs_arr = lcs_arr[:, : 2 * k]
     arclength = arclength[:k]
-    endpoints = endpoints[:2*k,:]
+    endpoints = endpoints[: 2 * k, :]
 
     return lcs_arr, lambda_avg, arclength, endpoints
 
-def hyperbolic_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines,
-                lambda_avg_min=0,percentile=0,ep_dist_tol=0.0,arclen_flag=False):
+
+def hyperbolic_lcs(
+    eigval_max,
+    eigvecs,
+    x,
+    y,
+    h,
+    steps,
+    lf,
+    lmin,
+    r,
+    nmax,
+    dist_tol,
+    nlines,
+    lambda_avg_min=0,
+    percentile=0,
+    ep_dist_tol=0.0,
+    arclen_flag=False,
+):
     """
     Wrapper for _compute_lcs which also performs comparison of close enough LCS
     and returns most attracting/repelling LCS in a list.
@@ -786,59 +848,70 @@ def hyperbolic_lcs(eigval_max,eigvecs,x,y,h,steps,lf,lmin,r,nmax,dist_tol,nlines
 
     """
     lcs = []
-    lcs_arr_, lambda_avg_, arclength_, endpoints_ = _compute_lcs(eigval_max,eigvecs,x,y,h,steps,
-                                                                 lf,lmin,r,nmax,lambda_avg_min,
-                                                                 percentile=percentile)
+    lcs_arr_, lambda_avg_, arclength_, endpoints_ = _compute_lcs(
+        eigval_max,
+        eigvecs,
+        x,
+        y,
+        h,
+        steps,
+        lf,
+        lmin,
+        r,
+        nmax,
+        lambda_avg_min,
+        percentile=percentile,
+    )
 
     if arclen_flag:
-        lambda_avg_ = lambda_avg_*arclength_
+        lambda_avg_ = lambda_avg_ * arclength_
     if ep_dist_tol > 0:
         nt = len(lambda_avg_)
-        prefilter_bool = np.zeros(nt,np.bool_)
-        prefilter_inds  = np.arange(0,2*nt).reshape(nt,2)
+        prefilter_bool = np.zeros(nt, np.bool_)
+        prefilter_inds = np.arange(0, 2 * nt).reshape(nt, 2)
         while endpoints_.size > 0:
-            ep = endpoints_[0,:-1]
-            ep_ind = round(endpoints_[0,2])
-            ep_dist, d_bool = _endpoint_distances_lcs(ep,endpoints_,ep_dist_tol)
-            near_inds = np.round(endpoints_[d_bool,2]).astype(np.int32)
+            ep = endpoints_[0, :-1]
+            ep_ind = round(endpoints_[0, 2])
+            ep_dist, d_bool = _endpoint_distances_lcs(ep, endpoints_, ep_dist_tol)
+            near_inds = np.round(endpoints_[d_bool, 2]).astype(np.int32)
             max_ind = np.argmax(lambda_avg_[near_inds])
             prefilter_bool[near_inds[max_ind]] = True
             if len(near_inds) == 1:
-                endpoints_ = endpoints_[1:,:]
+                endpoints_ = endpoints_[1:, :]
                 continue
-            del_inds = np.isin(endpoints_[:,2],np.delete(near_inds,max_ind))
+            del_inds = np.isin(endpoints_[:, 2], np.delete(near_inds, max_ind))
             if max_ind == ep_ind:
-                endpoints_ = endpoints_[~del_inds,:][1:,:]
+                endpoints_ = endpoints_[~del_inds, :][1:, :]
             else:
-                endpoints_ = endpoints_[~del_inds,:]
+                endpoints_ = endpoints_[~del_inds, :]
 
-        new_inds_2d = prefilter_inds[prefilter_bool,:].ravel()
-        lcs_arr_ = lcs_arr_[:,new_inds_2d]
+        new_inds_2d = prefilter_inds[prefilter_bool, :].ravel()
+        lcs_arr_ = lcs_arr_[:, new_inds_2d]
         lambda_avg_ = lambda_avg_[prefilter_bool]
     if dist_tol > 0:
         xlen = x[-1] - x[0]
         ylen = y[-1] - y[0]
         if xlen - ylen >= 0:
             nlinesx = nlines
-            nlinesy = int(nlines*ylen/xlen)
+            nlinesy = int(nlines * ylen / xlen)
         else:
-            nlinesx = int(nlines*xlen/ylen)
+            nlinesx = int(nlines * xlen / ylen)
             nlinesy = nlines
 
-        vlines = np.linspace(x[2],x[-3],nlinesx)
-        hlines = np.linspace(y[2],y[-3],nlinesy)
-        lcs_keep_inds = _hyp_lcs(lcs_arr_,lambda_avg_,vlines,hlines,dist_tol)
+        vlines = np.linspace(x[2], x[-3], nlinesx)
+        hlines = np.linspace(y[2], y[-3], nlinesy)
+        lcs_keep_inds = _hyp_lcs(lcs_arr_, lambda_avg_, vlines, hlines, dist_tol)
     else:
-        lcs_keep_inds = np.arange(0,len(lambda_avg_))
+        lcs_keep_inds = np.arange(0, len(lambda_avg_))
     for ind in lcs_keep_inds:
-        lcs_ilen = int(lcs_arr_[-1,2*ind])
-        lcs.append(lcs_arr_[:lcs_ilen,2*ind:2*ind+2])
+        lcs_ilen = int(lcs_arr_[-1, 2 * ind])
+        lcs.append(lcs_arr_[:lcs_ilen, 2 * ind : 2 * ind + 2])
 
     return lcs
 
 
 @njit
-def _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,ic_inds,h,steps,maxlen,minval):
+def _hyperbolic_oecs(eigval_max_interp, eigvecs, x, y, ic_inds, h, steps, maxlen, minval):
     """
     Compute hyperbolic oecs from using eigval_max_interp and eigvecs from
     Eulerian rate of strain tensor.
@@ -876,35 +949,37 @@ def _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,ic_inds,h,steps,maxlen,minval
 
     """
 
-    eigvec_min = eigvecs[:,:,:,0]
-    eigvec_max = eigvecs[:,:,:,1]
+    eigvec_min = eigvecs[:, :, :, 0]
+    eigvec_max = eigvecs[:, :, :, 1]
     ni = ic_inds.shape[0]
-    oecs_fwd = np.zeros((ni,2*steps+1,2),float64)
-    oecs_bwd = np.zeros((ni,2*steps+1,2),float64)
-    centers = np.zeros((ni,2),float64)
-    keep_inds = np.zeros(ni,np.bool_)
+    oecs_fwd = np.zeros((ni, 2 * steps + 1, 2), float64)
+    oecs_bwd = np.zeros((ni, 2 * steps + 1, 2), float64)
+    centers = np.zeros((ni, 2), float64)
+    keep_inds = np.zeros(ni, np.bool_)
     for k in prange(ni):
-        ic = ic_inds[k,:]
-        oecs_fwd_tmp = rk4_tensorlines_oecs(eigval_max_interp,eigvec_min,x,y,ic,h,steps,
-                                            maxlen,minval)
+        ic = ic_inds[k, :]
+        oecs_fwd_tmp = rk4_tensorlines_oecs(
+            eigval_max_interp, eigvec_min, x, y, ic, h, steps, maxlen, minval
+        )
         if oecs_fwd_tmp is not None:
             tmplen = oecs_fwd_tmp.shape[0]
-            oecs_fwd[k,:tmplen,:] = oecs_fwd_tmp
-            oecs_fwd[k,-1,0] = tmplen
+            oecs_fwd[k, :tmplen, :] = oecs_fwd_tmp
+            oecs_fwd[k, -1, 0] = tmplen
 
-            oecs_bwd_tmp = rk4_tensorlines_oecs(eigval_max_interp,eigvec_max,x,y,ic,h,steps,
-                                                maxlen,minval)
+            oecs_bwd_tmp = rk4_tensorlines_oecs(
+                eigval_max_interp, eigvec_max, x, y, ic, h, steps, maxlen, minval
+            )
             if oecs_bwd_tmp is not None:
                 keep_inds[k] = True
                 tmplen = oecs_bwd_tmp.shape[0]
-                oecs_bwd[k,:tmplen,:] = oecs_bwd_tmp
-                oecs_bwd[k,-1,0] = tmplen
-                centers[k,:] = np.array([x[ic[0]],y[ic[1]]])
+                oecs_bwd[k, :tmplen, :] = oecs_bwd_tmp
+                oecs_bwd[k, -1, 0] = tmplen
+                centers[k, :] = np.array([x[ic[0]], y[ic[1]]])
 
-    return oecs_fwd[keep_inds,:,:], oecs_bwd[keep_inds,:,:], centers[keep_inds,:]
+    return oecs_fwd[keep_inds, :, :], oecs_bwd[keep_inds, :, :], centers[keep_inds, :]
 
 
-def hyperbolic_oecs(eigval_max,eigvecs,x,y,r,h,steps,maxlen,minval,n=-1):
+def hyperbolic_oecs(eigval_max, eigvecs, x, y, r, h, steps, maxlen, minval, n=-1):
     """
     Wrapper for _hyperbolic_oecs that returns list of oecs saddles.
 
@@ -940,24 +1015,26 @@ def hyperbolic_oecs(eigval_max,eigvecs,x,y,r,h,steps,maxlen,minval,n=-1):
 
     oecs_saddles = []
 
-    nx,ny = eigval_max.shape
+    nx, ny = eigval_max.shape
     dx = x[1] - x[0]
     dy = y[1] - y[0]
-    _, ic_inds = max_in_radius(eigval_max.copy(),r,dx,dy,n=n)
+    _, ic_inds = max_in_radius(eigval_max.copy(), r, dx, dy, n=n)
 
-    grid = UCGrid((x[0],x[-1],nx),(y[0],y[-1],ny))
+    grid = UCGrid((x[0], x[-1], nx), (y[0], y[-1], ny))
+
     @njit
     def eigval_max_interp(point):
-        return eval_linear(grid,eigval_max,point,xto.LINEAR)
+        return eval_linear(grid, eigval_max, point, xto.LINEAR)
 
-    oecs_fwd, oecs_bwd, centers = _hyperbolic_oecs(eigval_max_interp,eigvecs,x,y,
-                                          ic_inds,h,steps,maxlen,minval)
+    oecs_fwd, oecs_bwd, centers = _hyperbolic_oecs(
+        eigval_max_interp, eigvecs, x, y, ic_inds, h, steps, maxlen, minval
+    )
 
     for k in range(oecs_fwd.shape[0]):
-        oecs_len = int(oecs_fwd[k,-1,0])
-        oecs_fwd_tmp = oecs_fwd[k,:oecs_len,:]
-        oecs_len = int(oecs_bwd[k,-1,0])
-        oecs_bwd_tmp = oecs_bwd[k,:oecs_len,:]
-        oecs_saddles.append([oecs_fwd_tmp,oecs_bwd_tmp,centers[k,:]])
+        oecs_len = int(oecs_fwd[k, -1, 0])
+        oecs_fwd_tmp = oecs_fwd[k, :oecs_len, :]
+        oecs_len = int(oecs_bwd[k, -1, 0])
+        oecs_bwd_tmp = oecs_bwd[k, :oecs_len, :]
+        oecs_saddles.append([oecs_fwd_tmp, oecs_bwd_tmp, centers[k, :]])
 
     return oecs_saddles
