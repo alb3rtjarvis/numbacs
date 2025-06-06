@@ -28,6 +28,23 @@ dependencies = [
   "scipy"
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+lint = [
+    "ruff",
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+dev = [
+    "numbacs[test,lint,docs]",
+    "pre-commit",
+]
+
 [project.urls]
 Documentation = "https://numbacs.readthedocs.io/"
 Issues = "https://github.com/alb3rtjarvis/numbacs/issues"
@@ -43,11 +60,78 @@ exclude = [
 [tool.hatch.version]
 path = "src/numbacs/__init__.py"
 
-[tool.hatch.envs.types]
-extra-dependencies = [
-  "pytest",
-  "sphinx"
+[tool.hatch.envs.default]
+features = ["dev"]
+
+# Hatch scripts
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+cov = "pytest --cov=src/numbacs --cov-report=xml --cov-report=term-missing {args:tests}"
+lint = "ruff check src tests examples {args}"
+format = "ruff format src tests examples && ruff check --fix src tests examples {args}"
+
+# Ruff Configuration
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+select = ["E", "W", "F", "D", "C90", "TID", "UP", "S"]
+# E: Pycodestyle Errors (e.g., syntax errors)
+# W: Pycodestyle Warnings (e.g., whitespace issues)
+# F: Pyflakes (e.g., undefined variables, unused imports)
+# I: Isort (import sorting)
+# N: PEP8 Naming conventions (removed)
+# D: Pydocstyle (docstring style and correctness)
+# C90: McCabe complexity (flags overly complex functions)
+# TID: Flake8-tidy-imports (for cleaner import statements)
+# UP: Pyupgrade (suggests modern Python syntax)
+# S: Flake8-bandit (checks for common security vulnerabilities, optional)
+
+
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "D107", # Missing docstring in __init__ method
+    "D203", # Conflicts with D211: "1 blank line required before class docstring"
+    "D401", # First line of docstring should be in impreative mood
+    "S101", # "Use of assert detected" - this is fine and expected in test files
+    #"N803", # Argument name should be lowercase
+    #"N806", # Variable in function should be lowercase
 ]
+
+exclude = [
+    ".bzr", ".direnv", ".eggs", ".git", ".hg", ".mypy_cache", ".nox",
+    ".pants.d", ".ruff_cache", ".svn", ".tox", ".venv", "__pypackages__",
+    "_build", "buck-out", "build", "dist", "node_modules", "venv",
+    "docs/source/conf.py",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D100", "D101", "D102", "D103"] # Ignore various "missing docstring" errors for all test files
+"conftest.py" = ["D100", "D101", "D102", "D103"]   # Ignore missing docstrings for pytest's conftest.py
+"examples/**/*.py" = ["D100", "D101", "D102", "D103", "E402", "T201"] # For examples: ignore missing docstrings, E402 (imports not at top), T201 (print statements)
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+#[tool.ruff.lint.isort]
+#known-first-party = ["numbacs"]        # Tells isort that 'numbacs' is your own local package for correct import grouping
+#force-sort-within-sections = true    # Ensures imports like 'from x import c, a, b' are sorted to 'from x import a, b, c'
+
+# Ruff Formatter Configuration
+[tool.ruff.format]
+# Using default Ruff formatter settings (Black-compatible).
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["src/numbacs"]
+branch = true
+omit = ["tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 0
+exclude_lines = []
