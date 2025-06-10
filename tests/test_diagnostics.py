@@ -26,27 +26,30 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
 
     norms = np.linalg.norm(evecs, axis=-2)
     norms_expected = np.linalg.norm(evecs_expected, axis=-2)
-    mask = np.logical_and(norms < atol, norms_expected < atol)
+    zero_mask = np.logical_and(norms < atol, norms_expected < atol)
 
     reshaped_norms = np.expand_dims(norms, axis=2)
     reshaped_norms_expected = np.expand_dims(norms_expected, axis=2)
 
 
 
-    evecs = np.divide(
+    evecs_n = np.divide(
         evecs, reshaped_norms, out=np.zeros_like(evecs), where=reshaped_norms != 0
     )
-    evecs_expected = np.divide(
+    evecs_n_expected = np.divide(
         evecs_expected,
         reshaped_norms_expected,
         out=np.zeros_like(evecs),
         where=reshaped_norms_expected != 0
     )
 
-    dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
+    dotprod = np.einsum("...ab,...ab->...b", evecs_n, evecs_n_expected)
     parallel = np.isclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
 
-    return np.all(parallel | mask)
+    if not parallel:
+        return False, dotprod
+    else:
+        return True, np.all(parallel | zero_mask)
 
 def test_ftle_grid_2D(coords_dg, fm_data, ftle_data):
 
@@ -116,17 +119,24 @@ def test_ile_2D_func(coords_dg, flow_callable, ile_data):
 
     assert np.allclose(ile,ile_data)
 
-# def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
+def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
 
-#     x,y = coords_dg
-#     dx = x[1]
-#     t0 = 0.
-#     vel_func = flow_callable
-#     Svals_expected, Svecs_expected = S_eig_func_data
-#     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
+    x,y = coords_dg
+    dx = x[1]
+    t0 = 0.
+    vel_func = flow_callable
+    Svals_expected, Svecs_expected = S_eig_func_data
+    Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
+    is_close = evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
+    if not is_close[0]:
+        dotprod = is_close[1]
+        inds = np.argwhere(np.abs(dotprod) < 1)
+        print(f"Indices not parallel: {inds}")
+        print(f"Vectors computed: {Svecs[tuple(inds.T)]}")
+        print(f"Vectors expected: {Svecs_expected[tuple(inds.T)]}")
 
-#     assert np.allclose(Svals.astype(np.float32),Svals_expected)
-#     assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
+    assert np.allclose(Svals.astype(np.float32),Svals_expected)
+    # assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
 
