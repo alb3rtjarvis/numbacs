@@ -3,8 +3,8 @@ channels:
   - conda-forge
 dependencies:
   - python>=3.10,<3.12
-  - numpy * openblas
-  - libopenblas
+  - numpy
+  - libblas=*=*openblas
   - scipy
   - numba
   - interpolation>=2.2.6
