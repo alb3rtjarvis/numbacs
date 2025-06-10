@@ -38,9 +38,18 @@ def reconstruct_matrix(eigvals, eigvecs):
         array containing reconstructed matrices over grid.
 
     """
+    eigvals_diag = np.zeros_like(eigvecs)
+    eigvals_diag[:,:,0,0] = eigvals[:,:,0]
+    eigvals_diag[:,:,1,1] = eigvals[:,:,1]
     return np.einsum(
-        "...ik,...k,...jl->...ij", eigvecs, eigvals, eigvecs, out=np.zeros_like(eigvecs)
+        "...ij,...jk,...kl->...il",
+        eigvecs,
+        eigvals_diag,
+        np.transpose(eigvecs, (0, 1, 3, 2)),
+        out=np.zeros_like(eigvecs)
     )
+
+# def reconstruct_matrix
 
 def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     """
@@ -147,14 +156,12 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
     close_flag = np.isclose(S, S_expected)
-    if not np.all(close_flag):
-        nclose_inds = np.argwhere(~close_flag)
-        i0,j0 = (0,0)
+    nclose_inds = np.argwhere(~close_flag)
+    i0,j0 = (0,0)
+    if len(nclose_inds) > 0:
         for ind in nclose_inds[:7]:
             i,j = ind[:2]
-            if i == i0 or j == j0:
-                i0 = i
-                j0 = j
+            if i == i0 and j == j0:
                 continue
             print(f"i = {i} and j = {j} not close")
             print(f"Computed S = {S[i,j,:,:]}")
