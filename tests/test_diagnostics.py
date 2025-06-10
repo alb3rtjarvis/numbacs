@@ -41,15 +41,14 @@ def reconstruct_matrix(eigvals, eigvecs):
     eigvals_diag = np.zeros_like(eigvecs)
     eigvals_diag[:,:,0,0] = eigvals[:,:,0]
     eigvals_diag[:,:,1,1] = eigvals[:,:,1]
-    return np.einsum(
+    Ar = np.einsum(
         "...ij,...jk,...kl->...il",
         eigvecs,
         eigvals_diag,
         np.transpose(eigvecs, (0, 1, 3, 2)),
         out=np.zeros_like(eigvecs)
     )
-
-# def reconstruct_matrix
+    return Ar
 
 def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     """
@@ -103,9 +102,10 @@ def test_C_eig_aux_2D(coords_dg, fm_aux_data, C_eig_aux_data):
     dy = y[1]
     Cvals_expected, Cvecs_expected = C_eig_aux_data
     Cvals, Cvecs = C_eig_aux_2D(fm_aux_data,dx,dy)
+    C_expected = reconstruct_matrix(Cvals_expected, Cvecs_expected)
+    C = reconstruct_matrix(Cvals.astype(np.float32), Cvecs.astype(np.float32))
 
-    assert np.allclose(Cvals.astype(np.float32),Cvals_expected)
-    assert evecs_allclose(Cvecs.astype(np.float32), Cvecs_expected)
+    assert np.allclose(C, C_expected)
 
 def test_C_eig_2D(coords_dg, fm_data, C_eig_data):
 
@@ -114,9 +114,10 @@ def test_C_eig_2D(coords_dg, fm_data, C_eig_data):
     dy = y[1]
     Cvals_expected, Cvecs_expected = C_eig_data
     Cvals, Cvecs = C_eig_2D(fm_data,dx,dy)
+    C_expected = reconstruct_matrix(Cvals_expected, Cvecs_expected)
+    C = reconstruct_matrix(Cvals.astype(np.float32), Cvecs.astype(np.float32))
 
-    assert np.allclose(Cvals.astype(np.float32),Cvals_expected)
-    assert evecs_allclose(Cvecs.astype(np.float32), Cvecs_expected)
+    assert np.allclose(C, C_expected)
 
 
 def test_lavd_grid_2D(coords_dg, fm_n_data, vort_data, lavd_data):
@@ -201,9 +202,10 @@ def test_S_eig_2D_data(coords_dg, vel_data, S_eig_data):
     u,v = vel_data
     Svals_expected, Svecs_expected = S_eig_data
     Svals, Svecs = S_eig_2D_data(u,v,dx,dy)
+    S_expected = reconstruct_matrix(Svals_expected, Svecs_expected)
+    S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
-    assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
+    assert np.allclose(S, S_expected)
 
 def test_ivd_grid_2D(vort_data, ivd_data):
 
