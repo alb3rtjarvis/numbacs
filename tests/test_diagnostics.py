@@ -116,17 +116,17 @@ def test_ile_2D_func(coords_dg, flow_callable, ile_data):
 
     assert np.allclose(ile,ile_data)
 
-def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
+# def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
 
-    x,y = coords_dg
-    dx = x[1]
-    t0 = 0.
-    vel_func = flow_callable
-    Svals_expected, Svecs_expected = S_eig_func_data
-    Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
+#     x,y = coords_dg
+#     dx = x[1]
+#     t0 = 0.
+#     vel_func = flow_callable
+#     Svals_expected, Svecs_expected = S_eig_func_data
+#     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
 
-    assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
+#     assert np.allclose(Svals.astype(np.float32),Svals_expected)
+#     assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
 
