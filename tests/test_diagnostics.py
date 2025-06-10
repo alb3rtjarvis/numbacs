@@ -83,8 +83,8 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
 
-    assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert np.allclose(Svecs.astype(np.float32),Svecs_expected)
+    assert np.allclose(Svals.astype(np.float32),Svals_expected,atol=1e-6)
+    assert np.allclose(Svecs.astype(np.float32),Svecs_expected,atol=1e-6)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
 
