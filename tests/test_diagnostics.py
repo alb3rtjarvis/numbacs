@@ -31,8 +31,6 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     norms = np.expand_dims(norms, axis=2)
     norms_expected = np.expand_dims(norms_expected, axis=2)
 
-
-
     evecs_n = np.divide(evecs, norms, out=np.zeros_like(evecs), where=norms != 0)
     evecs_n_expected = np.divide(
         evecs_expected, norms_expected, out=np.zeros_like(evecs), where=norms_expected != 0
@@ -123,7 +121,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
     is_close = evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
-    if not is_close[0] or not is_close[0]:
+    if not is_close[0]:
         dotprod = is_close[1]
         zero_mask = is_close[2]
         inds = np.argwhere((np.abs(dotprod) < 1.0 - 1e-7) & (~zero_mask))
@@ -146,7 +144,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
             print(f"S computed @ ({x[i]}, {y[j]}) -- index i = {i}, j = {j}: {S}")
 
     assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert False
+    assert is_close[0]
     # assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
