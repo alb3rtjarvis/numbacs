@@ -5,6 +5,20 @@ from numbacs.diagnostics import (ftle_grid_2D, C_tensor_2D, C_eig_aux_2D, C_eig_
                                  lavd_grid_2D, ile_2D_func, S_eig_2D_func, S_2D_func,
                                  ile_2D_data, S_eig_2D_data, ivd_grid_2D)
 
+# def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
+#     """
+#     Check if eigenvector angles are close
+#     """
+
+#     norms = np.linalg.norm(evecs, axis=-2)
+#     norms_expected = np.linalg.norm(evecs_expected, axis=-2)
+#     mask = np.logical_and(norms > atol, norms_expected > atol)[:,:,0]
+#     evecs = np.divide(evecs[mask,:,:], norms[mask,np.newaxis,:])
+#     evecs_expected = np.divide(evecs_expected[mask,:,:], norms_expected[mask,np.newaxis,:])
+#     dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
+
+#     return np.allclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
+
 def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     """
     Check if eigenvector angles are close
@@ -12,12 +26,27 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
 
     norms = np.linalg.norm(evecs, axis=-2)
     norms_expected = np.linalg.norm(evecs_expected, axis=-2)
-    mask = np.logical_and(norms > atol, norms_expected > atol)[:,:,0]
-    evecs = np.divide(evecs[mask,:,:], norms[mask,np.newaxis,:])
-    evecs_expected = np.divide(evecs_expected[mask,:,:], norms_expected[mask,np.newaxis,:])
-    dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
+    mask = np.logical_and(norms < atol, norms_expected < atol)
 
-    return np.allclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
+    reshaped_norms = np.expand_dims(norms, axis=2)
+    reshaped_norms_expected = np.expand_dims(norms_expected, axis=2)
+
+
+
+    evecs = np.divide(
+        evecs, reshaped_norms, out=np.zeros_like(evecs), where=reshaped_norms != 0
+    )
+    evecs_expected = np.divide(
+        evecs_expected,
+        reshaped_norms_expected,
+        out=np.zeros_like(evecs),
+        where=reshaped_norms_expected != 0
+    )
+
+    dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
+    parallel = np.isclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
+
+    return np.all(parallel | mask)
 
 def test_ftle_grid_2D(coords_dg, fm_data, ftle_data):
 
