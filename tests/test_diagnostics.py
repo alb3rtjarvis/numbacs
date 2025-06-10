@@ -146,6 +146,15 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     S_expected = reconstruct_matrix(Svals_expected, Svecs_expected)
     S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
+    close_flag = np.isclose(S, S_expected)[..., 0, 0]
+    if not np.all(close_flag):
+        nclose_inds = np.argwhere(close_flag)
+        for ind in nclose_inds:
+            i,j = ind
+            print(f"i = {i} and j = {j} not close")
+            print(f"Computed S = {S[i,j,:,:]}")
+            print(f"Expected S = {S_expected[i,j,:,:]}")
+
     assert np.allclose(S, S_expected)
 
 
