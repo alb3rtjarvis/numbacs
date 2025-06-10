@@ -141,7 +141,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
             grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
             S = 0.5 * (grad_vel + grad_vel.T)
 
-            print(f"S computed @ ({x[i]}, {y[j]}) -- index i = {i}, j = {j}: {S}")
+            print(f"S computed @ ({x[i]}, {y[j]}), index i = {i}, j = {j}: \n {S}")
 
     assert np.allclose(Svals.astype(np.float32),Svals_expected)
     assert is_close[0]
