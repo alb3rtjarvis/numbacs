@@ -148,7 +148,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
 
     close_flag = np.isclose(S, S_expected)[..., 0, 0]
     if not np.all(close_flag):
-        nclose_inds = np.argwhere(close_flag)
+        nclose_inds = np.argwhere(~close_flag)
         for ind in nclose_inds:
             i,j = ind
             print(f"i = {i} and j = {j} not close")
