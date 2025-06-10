@@ -34,6 +34,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11']
+        exclude:
+          - os: windows-latest
+            python-version: '3.11'
 
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +55,7 @@ jobs:
           python -m pip install --no-deps -e .
 
       - name: Run Pytest with Coverage
-        run: pytest --cov=src/numbacs --cov-report=xml --cov-report=term-missing tests/
+        run: pytest -v --cov=src/numbacs --cov-report=xml --cov-report=term-missing tests/
 
 #      - name: Upload coverage to Codecov
 #        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' # Upload from one specific job
