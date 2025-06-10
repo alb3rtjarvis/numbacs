@@ -136,6 +136,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
         print(f"Vectors expected: {Svecs_expected[tuple(inds.T)]}")
 
     assert np.allclose(Svals.astype(np.float32),Svals_expected)
+    assert is_close[0]
     # assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
