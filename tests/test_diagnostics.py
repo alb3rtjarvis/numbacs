@@ -46,7 +46,7 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     dotprod = np.einsum("...ab,...ab->...b", evecs_n, evecs_n_expected)
     parallel = np.isclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
 
-    if not parallel:
+    if not np.all(parallel):
         return False, dotprod
     else:
         return True, np.all(parallel | zero_mask)
