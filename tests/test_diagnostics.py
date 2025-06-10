@@ -5,6 +5,19 @@ from numbacs.diagnostics import (ftle_grid_2D, C_tensor_2D, C_eig_aux_2D, C_eig_
                                  lavd_grid_2D, ile_2D_func, S_eig_2D_func, S_2D_func,
                                  ile_2D_data, S_eig_2D_data, ivd_grid_2D)
 
+def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
+    """
+    Check if eigenvector angles are close
+    """
+
+    norms = np.linalg.norm(evecs, axis=-2)
+    norms_expected = np.linalg.norm(evecs_expected, axis=-2)
+    mask = np.logical_and(norms > atol, norms_expected > atol)[:,:,0]
+    evecs = np.divide(evecs[mask,:,:], norms[mask,np.newaxis,:])
+    evecs_expected = np.divide(evecs_expected[mask,:,:], norms_expected[mask,np.newaxis,:])
+    dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
+
+    return np.allclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
 
 def test_ftle_grid_2D(coords_dg, fm_data, ftle_data):
 
@@ -35,7 +48,7 @@ def test_C_eig_aux_2D(coords_dg, fm_aux_data, C_eig_aux_data):
     Cvals, Cvecs = C_eig_aux_2D(fm_aux_data,dx,dy)
 
     assert np.allclose(Cvals.astype(np.float32),Cvals_expected)
-    assert np.allclose(Cvecs.astype(np.float32),Cvecs_expected)
+    assert evecs_allclose(Cvecs.astype(np.float32), Cvecs_expected)
 
 def test_C_eig_2D(coords_dg, fm_data, C_eig_data):
 
@@ -46,7 +59,7 @@ def test_C_eig_2D(coords_dg, fm_data, C_eig_data):
     Cvals, Cvecs = C_eig_2D(fm_data,dx,dy)
 
     assert np.allclose(Cvals.astype(np.float32),Cvals_expected)
-    assert np.allclose(Cvecs.astype(np.float32),Cvecs_expected)
+    assert evecs_allclose(Cvecs.astype(np.float32), Cvecs_expected)
 
 
 def test_lavd_grid_2D(coords_dg, fm_n_data, vort_data, lavd_data):
@@ -83,8 +96,8 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
 
-    assert np.allclose(Svals.astype(np.float32),Svals_expected,atol=1e-6)
-    assert np.allclose(Svecs.astype(np.float32),Svecs_expected,atol=1e-6)
+    assert np.allclose(Svals.astype(np.float32),Svals_expected)
+    assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
 
@@ -117,7 +130,7 @@ def test_S_eig_2D_data(coords_dg, vel_data, S_eig_data):
     Svals, Svecs = S_eig_2D_data(u,v,dx,dy)
 
     assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert np.allclose(Svecs.astype(np.float32),Svecs_expected)
+    assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_ivd_grid_2D(vort_data, ivd_data):
 
