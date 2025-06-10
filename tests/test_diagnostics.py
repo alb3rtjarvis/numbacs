@@ -28,19 +28,14 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     norms_expected = np.linalg.norm(evecs_expected, axis=-2)
     zero_mask = np.logical_and(norms < atol, norms_expected < atol)
 
-    reshaped_norms = np.expand_dims(norms, axis=2)
-    reshaped_norms_expected = np.expand_dims(norms_expected, axis=2)
+    norms = np.expand_dims(norms, axis=2)
+    norms_expected = np.expand_dims(norms_expected, axis=2)
 
 
 
-    evecs_n = np.divide(
-        evecs, reshaped_norms, out=np.zeros_like(evecs), where=reshaped_norms != 0
-    )
+    evecs_n = np.divide(evecs, norms, out=np.zeros_like(evecs), where=norms != 0)
     evecs_n_expected = np.divide(
-        evecs_expected,
-        reshaped_norms_expected,
-        out=np.zeros_like(evecs),
-        where=reshaped_norms_expected != 0
+        evecs_expected, norms_expected, out=np.zeros_like(evecs), where=norms_expected != 0
     )
 
     dotprod = np.einsum("...ab,...ab->...b", evecs_n, evecs_n_expected)
@@ -128,16 +123,30 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
     is_close = evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
-    if not is_close[0]:
+    if not is_close[0] or not is_close[0]:
         dotprod = is_close[1]
         zero_mask = is_close[2]
         inds = np.argwhere((np.abs(dotprod) < 1.0 - 1e-7) & (~zero_mask))
+        if len(inds) == 0:
+            inds = np.array([[19,  5,  0], [19,  5,  1]])
         print(f"Indices not parallel: {inds}")
         print(f"Vectors computed: {Svecs[tuple(inds.T)]}")
         print(f"Vectors expected: {Svecs_expected[tuple(inds.T)]}")
+        dx_vec = np.array([0.0, dx, 0.0], np.float64)
+        dy_vec = np.array([0.0, 0.0, dx], np.float64)
+        for ind in inds:
+            i,j = ind[:2]
+            pt = np.array([t0, x[i], y[j]], np.float64)
+
+            dudx, dvdx = (vel_func(pt + dx_vec) - vel_func(pt - dx_vec)) / (2 * dx)
+            dudy, dvdy = (vel_func(pt + dy_vec) - vel_func(pt - dy_vec)) / (2 * dx)
+            grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
+            S = 0.5 * (grad_vel + grad_vel.T)
+
+            print(f"S computed @ ({x[i]}, {y[j]}) -- index i = {i}, j = {j}: {S}")
 
     assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert is_close[0]
+    assert False
     # assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
