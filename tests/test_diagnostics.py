@@ -19,6 +19,29 @@ from numbacs.diagnostics import (ftle_grid_2D, C_tensor_2D, C_eig_aux_2D, C_eig_
 
 #     return np.allclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
 
+def reconstruct_matrix(eigvals, eigvecs):
+    """
+    Reconstruct matrix from spectral decomposition. Used to check that eigenvales/vectors
+    are accurate since different linalg backends can lead to large enough differences in
+    eigenvectors to fail tests.
+
+    Parameters
+    ----------
+    eigvals : np.ndarray, shape = (nx, ny, 2)
+        array of eigenvalues over grid.
+    eigvecs : np.ndarray, shape = (nx, ny, 2, 2)
+        array of eigenvectors over grid.
+
+    Returns
+    -------
+    Ar: np.ndarray, shape = (nx, ny, 2, 2)
+        array containing reconstructed matrices over grid.
+
+    """
+    return np.einsum(
+        "...ik,...k,...jl->...ij", eigvecs, eigvals, eigvecs, out=np.zeros_like(eigvecs)
+    )
+
 def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     """
     Check if eigenvector angles are close
@@ -120,32 +143,11 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     vel_func = flow_callable
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
-    is_close = evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
-    if not is_close[0]:
-        dotprod = is_close[1]
-        zero_mask = is_close[2]
-        inds = np.argwhere((np.abs(dotprod) < 1.0 - 1e-7) & (~zero_mask))
-        if len(inds) == 0:
-            inds = np.array([[19,  5,  0], [19,  5,  1]])
-        print(f"Indices not parallel: {inds}")
-        print(f"Vectors computed: {Svecs[tuple(inds.T)]}")
-        print(f"Vectors expected: {Svecs_expected[tuple(inds.T)]}")
-        dx_vec = np.array([0.0, dx, 0.0], np.float64)
-        dy_vec = np.array([0.0, 0.0, dx], np.float64)
-        for ind in inds:
-            i,j = ind[:2]
-            pt = np.array([t0, x[i], y[j]], np.float64)
+    S_expected = reconstruct_matrix(Svals_expected, Svecs_expected)
+    S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
-            dudx, dvdx = (vel_func(pt + dx_vec) - vel_func(pt - dx_vec)) / (2 * dx)
-            dudy, dvdy = (vel_func(pt + dy_vec) - vel_func(pt - dy_vec)) / (2 * dx)
-            grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
-            S = 0.5 * (grad_vel + grad_vel.T)
+    assert np.allclose(S, S_expected)
 
-            print(f"S computed @ ({x[i]}, {y[j]}), index i = {i}, j = {j}: \n {S}")
-
-    assert np.allclose(Svals.astype(np.float32),Svals_expected)
-    assert is_close[0]
-    # assert evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
 
 def test_S_2D_func(coords_dg, flow_callable, S_data):
 

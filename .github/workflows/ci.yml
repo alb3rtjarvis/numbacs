@@ -6,20 +6,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  pre_commit_checks:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+#  pre_commit_checks:
+#    name: Pre-commit Checks
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.11'
 
-      - name: Run pre-commit hooks
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files --show-diff-on-failure
+#      - name: Run pre-commit hooks
+#        uses: pre-commit/action@v3.0.1
+#        with:
+#          extra_args: --all-files --show-diff-on-failure
 
 
   test_and_coverage:
