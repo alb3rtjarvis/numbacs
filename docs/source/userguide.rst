@@ -8,7 +8,7 @@ started with NumbaCS, a user may be better served by picking an example from the
 :ref:`auto_examples/index:examples gallery` to go through and refering to this section as
 questions arise. An overview of the theory behind the methods presented here is
 covered in the :ref:`theory:theory and implementation` section.
-   
+
 
 Lagrangian
 ----------
@@ -26,8 +26,8 @@ Flows
 To begin using NumbaCS for Lagrangian methods, the user needs to define a flow
 from which coherent structures will be obtained. This is all done through the
 :mod:`numbacs.flows` module. NumbaCS provides predefined flows that the user
-can retrieve and a simple interface for generating the interpolants needed 
-for numerical velocity fields. 
+can retrieve and a simple interface for generating the interpolants needed
+for numerical velocity fields.
 
 
 Predefined flows
@@ -44,24 +44,24 @@ and "abc". To retrieve the "double_gyre" flow,
    from math import copysign
    import numpy as np
    from numbacs.flows import get_predefined_flow
-   
+
    # define integration time
    T = -10.0
    int_direction = copysign(1, T)
-   
+
    # get function pointer for 'double_gyre'
    funcptr, params, domain = get_predefined_flow('double_gyre',
    						  int_direction = int_direction
    						  return_default_params = True,
    						  return_domain = True
    						  parameter_description = True)
-   						  
+
    # set up grid with nx points in x-direction and ny in y-direction
    nx,ny = 401,201
    x = np.linspace(domain[0][0], domain[0][1], nx)
    y = np.linspace(domain[1][0], domain[1][1], ny)
 
-Predefined flows have parameters in their definition that can be modified. A 
+Predefined flows have parameters in their definition that can be modified. A
 default set of parameters can be returned by setting the keyword argument
 ``return_default_params = True`` (it is True by default). In addition,
 by setting ``parameter_description = True`` (it is False by default), a
@@ -74,17 +74,17 @@ coincides with in the definition of the ODE for each flow. For reference, the OD
 
 .. math::
    :label: dg
-   
+
    \dfrac{dx}{dt} &= -\pi A \sin(\pi f)\cos(\pi y) - \alpha x + \eta\\
    \dfrac{dy}{dt} &= \pi A \cos(\pi f)\sin(\pi y) \dfrac{df}{dx} - \alpha y + \eta\\
    f(x,t) &= \epsilon \sin(\omega t + \psi)x^2 + (1 - 2\epsilon \sin(\omega t + \psi)x).
-   
-   
+
+
 **Bickely Jet**
 
 .. math::
    :label: bickley
-   
+
    \psi(x,y,t) = U_0 L(-\tanh(y/L) + \text{sech}^2(y/L&)(A_1 \cos(k_1(x - c_1 t)\\
                                                        &+ A_2 \cos(k_2(x - c_2 t)\\
                                                        &+ A_3 \cos(k_3(x - c_3 t))
@@ -94,10 +94,10 @@ coincides with in the definition of the ODE for each flow. For reference, the OD
 
 .. math::
    :label: `abc`
-   
+
    \dfrac{dx}{dt} &= (A + \alpha\sin(t))\sin(z) + C\cos(y)\\
    \dfrac{dy}{dt} &= B\sin(x) + (A + \alpha\sin(t))\cos(z)\\
-   \dfrac{dz}{dt} &= C\sin(y) + B\cos(x)                                              
+   \dfrac{dz}{dt} &= C\sin(y) + B\cos(x)
 
 
 Numerical flows
@@ -115,7 +115,7 @@ from that function into :func:`numbacs.flows.get_flow_2D`.
    from math import copysign
    import numpy as np
    from numbacs.flows import get_interp_arrays_2D, get_flow_2D
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -123,16 +123,16 @@ from that function into :func:`numbacs.flows.get_flow_2D`.
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    # define integration time
    T = -0.05
    params = np.array([copysign(1,T)])
-   
+
    # get arrays for interpolant
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get function pointer for interpolant of qge velocity data
-   funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')  					  
+   funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
 
 This will create a cubic interpolant of the velocity field. To create a linear
 interpolant, coefficient arrays do not need to computed so there is no need to
@@ -146,7 +146,7 @@ simply calling :func:`get_flow_linear_2D`.
    import numpy as np
    from numbacs.flows import get_flow_linear_2D
    from interpolation.splines import UCGrid
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -154,16 +154,16 @@ simply calling :func:`get_flow_linear_2D`.
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    # define integration time
    T = -0.05
    params = np.array([copysign(1,T)])
-   
-   
+
+
    # set grid and get function pointer for interpolant of qge velocity data
    grid_vel = UCGrid((t[0],t[-1],nt),(x[0],x[-1],nx),(y[0],y[-1],ny))
-   funcptr = get_flow_linear_2D(grid_vel, u, v, extrap_mode='linear') 
-   
+   funcptr = get_flow_linear_2D(grid_vel, u, v, extrap_mode='linear')
+
 .. note::
 
    Due to how NumbaCS implements the ODE solver from numbalsoda, if the user
@@ -172,7 +172,7 @@ simply calling :func:`get_flow_linear_2D`.
    of ``T``). In NumbaCS, the first element of the params array (for flows)
    always contains the integration direction so to do this, the user can simply
    reassign the element, ``params[0] = -params[0]``.
-   
+
 
 User defined flows
 """"""""""""""""""
@@ -185,7 +185,7 @@ Say one wants to code up the time-dependent version of the cellular flow,
 .. math::
    \dfrac{dx}{dt} &= -A \cos(x + B \sin(\omega t))\sin(y) \\
    \dfrac{dy}{dt} &= A \sin(x + B \sin(\omega t))\cos(y).
-   
+
 To use this with NumbaCS (and interface with numbalsoda), this could be coded up
 as,
 
@@ -195,27 +195,27 @@ as,
    from numba import cfunc
    from numbalsoda import lsoda_sig
    from math import cos, sin
-   
+
    # create C callback using 'cfunc' decorator and 'lsoda_sig' signature
    @cfunc(lsoda_sig)
    def cellular_rhs(t,y,dy,p)
 	   """
 	   Defines time-dependent cellular flow to work with NumbaCS
-	   
+
 	   p[0] = int_direction, p[1] = A, p[2] = B, p[3] = omega
 	   """
 	   tt = p[0]*t
 	   dy[0] = p[0]*(-p[1]*cos(y[0] + p[2]*sin(p[3]*tt))*sin(y[1]))
 	   dy[1] = p[0]*(p[1]*sin(y[0] + p[2]*sin(p[3]*tt))*cos(y[1]))
-   
+
    # get function pointer to pass into integration functions
    funcptr = cellular_rhs.address
-   
+
 Then ``funcptr`` can be used to pass into functions from the
-:mod:`numbacs.integration` module as will be demonstrated below. 
+:mod:`numbacs.integration` module as will be demonstrated below.
 
 .. note::
-   It is important that the rhs function is in this form to work with NumbaCS 
+   It is important that the rhs function is in this form to work with NumbaCS
    (i.e., the integration direction is the first value for ``p``, both the time
    variable and the velocity in each direction are multiplied by it). The reason
    for this is that the numbalsoda ODE solvers intially did not allow for
@@ -225,7 +225,7 @@ Then ``funcptr`` can be used to pass into functions from the
    Due to the large number of calls to the ODE solver required by NumbaCS, we
    adopt this minorly inconvinient implementation in exchange for lower
    computation time.
-   
+
 
 Integration
 ^^^^^^^^^^^
@@ -260,7 +260,7 @@ in later sections. For the rest, the reader is referred to the
    from numbacs.integration import flowmap_grid_2D
    from numabcs.diagnostics import ftle_grid_2D
    import matplot.pyplot as plt
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -268,33 +268,33 @@ in later sections. For the rest, the reader is referred to the
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    dx = dx[1] - dx[0]
    dy = dy[1] - dy[0]
    dt = t[1] - t[0]
-   
+
    # define integration time
    T = 0.1
    params = np.array([copysign(1,T)])
-   
+
    # get arrays for interpolant
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get function pointer for interpolant of qge velocity data
    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
+
    # set initial time at which to perform particle integration, integrate grid
    t0 = 0.0
    flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
-   
-   
+
+
 Flow map Composition
 """"""""""""""""""""
 
 NumbaCS implements another approach to particle integration detailed in
 :ref:`theory:flow map composition` which achieves a substantial speed-up in
 exchange for a small loss of accuracy. Refer to the linked section for
-information about when this approach can be used and see 
+information about when this approach can be used and see
 :ref:`auto_examples/index:time series` for examples of computational savings for
 some specific flows. To use this approach, the user first needs to call
 :func:`numbacs.integration.flowmap_composition_initial` which implements the
@@ -317,17 +317,17 @@ flow maps is shown below.
    from math import copysign
    import numba
    from numba import njit, prange
-        
+
    # %%
    # Get flow data
    # --------------
    # Load velocity data, set up domain, set the integration span and direction, create
    # interpolant of velocity data and retrieve necessary arrays.
-   
+
    # load in qge velocity data
    u = np.load('../../../data/qge/qge_u.npy')
    v = np.load('../../../data/qge/qge_v.npy')
-   
+
    # set up domain
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
@@ -335,18 +335,18 @@ flow maps is shown below.
    t = np.linspace(0,3,nt)
    dx = x[1]-x[0]
    dy = y[1]-y[0]
-   
+
    # set integration span and integration direction
    t0 = 0.0
    T = 0.1
    params = np.array([copysign(1,T)])  # important this is an array of type float
-   
+
    # get interpolant arrays of velocity field
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get flow to be integrated
    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
+
    # %%
    # Set flowmap composition parameters
    # ----------------------------------
@@ -358,11 +358,11 @@ flow maps is shown below.
    # Flowmap composition
    # -------------------
    # Perform flowmap composition over tspan.
-   
+
    full_flowmaps = np.zeros((n,nx,ny,2),np.float64)
    flowmap0, flowmaps, nT = flowmap_composition_initial(funcptr,t0,T,h,x,y,grid,params)
    full_flowmaps[0,:,:,:] = flowmap0
-   
+
    for k in range(1,n):
        t0 = tspan[k] + T - h
        flowmap_k, flowmaps = flowmap_composition_step(flowmaps,funcptr,t0,h,nT,x,y,grid,params)
@@ -405,7 +405,7 @@ the integration time, and the x and y grid spacing.
    from numbacs.integration import flowmap_grid_2D
    from numabcs.diagnostics import ftle_grid_2D
    import matplot.pyplot as plt
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -413,36 +413,36 @@ the integration time, and the x and y grid spacing.
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    dx = dx[1] - dx[0]
    dy = dy[1] - dy[0]
    dt = t[1] - t[0]
-   
+
    # define integration time
    T = 0.1
    params = np.array([copysign(1,T)])
-   
+
    # get arrays for interpolant
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get function pointer for interpolant of qge velocity data
    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
+
    # set initial time at which to perform particle integration, integrate grid
    t0 = 0.0
    flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
-   
+
    # compute ftle over grid
    ftle = ftle_grid_2D(flowmap, T, dx, dy)
-   
+
    #plot results
    fig,ax = plt.subplots()
    ax.contourf(x,y,ftle.T,levels=100)
    ax.set_aspect('equal')
-   
+
 .. figure:: img/qge_ftle.png
    :class: with-border
-   
+
 See :ref:`auto_examples/index:ftle` for more examples.
 
 FTLE ridges
@@ -459,11 +459,11 @@ of the Cauchy-Green strain tensor. The FTLE field is then computed using
    mentioned above, but if one is only interested in the field itself and not
    the ridges, the previously mentioned approach is slightly quicker as the
    eigenvectors are not computed and the FTLE formula is applied within the
-   loop. 
-   
+   loop.
+
 Three ridge detection methods are available that provide varying levels of
 detail, though they all implement the same base underlying method detailed in
-:ref:`theory:ftle ridges`. 
+:ref:`theory:ftle ridges`.
 
 First, the :func:`numbacs.extraction.ftle_ridge_pts` function can be used to
 identify all ridge points with subpixel accuracy. These points are not
@@ -484,7 +484,7 @@ some distance tolerance and are "in-line" (i.e. the angle between the tangent at
 each endpoint and the vector connecting the endpoints are below some tolerance).
 This is useful when order matters or when one wants to compute quantities normal
 or tangent to the ridge. This is the slowest but that is not to say it is slow,
-all of these methods are quite efficient after their first function call. 
+all of these methods are quite efficient after their first function call.
 
 In all of these functions, the ``percentile`` and ``sdd_thresh`` arguments
 control which points are checked to be ridge points. Any points with a FTLE
@@ -542,11 +542,11 @@ connecting the two endpoints respectively.
 
    # copmute FTLE from max eigenvalue
    ftle = ftle_from_eig(eigval_max,T)
-   
+
    # smooth ftle field
    sigma = 1.2
    ftle = gaussian_filter(ftle,sigma,mode='nearest')
-   
+
    percentile = 50
    sdd_thresh = 10.0
    # identify ridge points
@@ -561,8 +561,8 @@ connecting the two endpoints respectively.
    ridge_curves = ftle_ridge_curves(ftle,eigvec_max,x,y,dist_tol,
                                    percentile=percentile,sdd_thresh=sdd_thresh,
                                    ep_tan_ang=ep_tan_ang,min_ridge_pts=25)
-                                   
-   # plot results                                
+
+   # plot results
    fig,axs = plt.subplots(nrows=1,ncols=3,sharey=True,dpi=300)
    axs[0].contourf(x,y,ftle.T,levels=100)
    axs[0].scatter(ridge_pts[:,0],ridge_pts[:,1],1.5,'r',marker='.',edgecolors=None,linewidths=0)
@@ -580,10 +580,10 @@ connecting the two endpoints respectively.
 
        k+=1
    axs[2].set_aspect('equal')
-   
+
 .. figure:: img/qge_ftle_ridges.png
    :class: with-border
-   
+
 See :ref:`auto_examples/index:ftle` for more examples.
 
 
@@ -593,7 +593,7 @@ Hyperbolic LCS
 To extract hyperbolic LCS via the variational theory, particle
 integration needs to be performed on an auxillary grid in addition to the main
 grid. This is done by calling the
-:func:`numbacs.integration.flowmap_aux_grid_2D` function. Following this, 
+:func:`numbacs.integration.flowmap_aux_grid_2D` function. Following this,
 :func:`numbacs.diagnostics.C_eig_aux_2D` needs to be called to return
 eigenvalues and eigenvectors of the Caughy Green strain tensor. By default,
 eigenvalues are computed from the main grid and eigenvectors are computed from
@@ -624,14 +624,14 @@ double gyre example in the :ref:`auto_examples/index:hyperbolic lcs`).
    providing more filtering, though this would filter out desirable LCS as well.
    In addition, candidate curves occasionally appear "incorrect" for certain
    flows. It is not clear whether these issues are due to the
-   NumbaCS implementation or the method struggling on specific applications. 
+   NumbaCS implementation or the method struggling on specific applications.
    It is for these reasons, coupled with the additional computational cost compared
    to FTLE ridge methods, we generally suggest to use one of the FTLE ridge
    methods as long as the user is aware of and accepts the potential false
    positives and negatives mentioned in :ref:`theory:ftle ridges`. To see some
    examples of this method producing satisfactory results, refer to the
    :ref:`auto_examples/index:hyperbolic lcs` section from the examples gallery.
-   
+
 
 .. code-block:: python
 
@@ -643,11 +643,11 @@ double gyre example in the :ref:`auto_examples/index:hyperbolic lcs`).
    from numbacs.diagnostics import C_eig_aux_2D, ftle_from_eig
    from numbacs.extraction import hyperbolic_lcs
    import matplotlib.pyplot as plt
-   
+
    # load in qge velocity data
    u = np.load('../../../data/qge/qge_u.npy')
    v = np.load('../../../data/qge/qge_v.npy')
-   
+
    # set up domain
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
@@ -655,31 +655,31 @@ double gyre example in the :ref:`auto_examples/index:hyperbolic lcs`).
    t = np.linspace(0,3,nt)
    dx = x[1]-x[0]
    dy = y[1]-y[0]
-   
+
    # set integration span and integration direction
    t0 = 0.0
    T = 0.1
    params = np.array([copysign(1,T)])  # important this is an array of type float
-   
+
    # get interpolant arrays of velocity field
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get flow to be integrated
    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
+
    # computes final position of particle trajectories over grid + auxillary grid
    # with spacing h
    h = 1e-4
    flowmap = flowmap_aux_grid_2D(funcptr, t0, T, x, y, params,h=h)
-   
+
    # compute eigenvalues/vectors of Cauchy Green tensor
    eigvals,eigvecs = C_eig_aux_2D(flowmap, dx, dy, h=h)
    eigval_max = eigvals[:,:,1]
    eigvec_max = eigvecs[:,:,:,1]
-   
+
    # copmute FTLE from max eigenvalue
    ftle = ftle_from_eig(eigval_max,T)
-   
+
    # set parameters for hyperbolic lcs extraction,
    # see function description for more details
    step_size = 1e-3
@@ -694,29 +694,29 @@ double gyre example in the :ref:`auto_examples/index:hyperbolic lcs`).
    ep_dist_tol = 0.0
    lambda_avg_min = 0
    arclen_flag = False
-   
+
    # extract hyperbolic lcs
-   lcs = hyperbolic_lcs(eigval_max, eigvecs, x, y, step_size, steps, lf, lmin, r, nmax, 
-                        dist_tol=dtol, 
+   lcs = hyperbolic_lcs(eigval_max, eigvecs, x, y, step_size, steps, lf, lmin, r, nmax,
+                        dist_tol=dtol,
                         nlines=nlines,
                         ep_dist_tol=ep_dist_tol,
                         percentile=percentile,
                         lambda_avg_min=lambda_avg_min,
                         arclen_flag=arclen_flag)
-   
-   
+
+
    # plot results
    fig,ax = plt.subplots(dpi=200)
    ax.contourf(x,y,ftle.T,levels=80)
    for l in lcs:
        ax.plot(l[:,0],l[:,1],'r',lw=1)
    ax.set_aspect('equal')
-    
+
 .. figure:: img/qge_hyplcs.png
    :class: with-border
    :scale: 75%
    :align: center
-   
+
 
 Elliptic LCS
 """"""""""""
@@ -728,14 +728,14 @@ This function will return the flow map at *n* equally spaced times in the time
 span :math:`[t_0, t_0 + T]` (inclusive) and will return the time span array
 corresponding to these times. In addition, the vorticity will need to be
 computed over the range of the flow maps and for the time span
-:math:`[t_0, t_0 + T]`. 
+:math:`[t_0, t_0 + T]`.
 
 .. note::
    While NumbaCS provides functions to compute vorticity, if dealing with a
    geophysical flow for which vorticity data is readily avaliable, it is
    recommended to use this data as it may be more accurate and will cut down
    on computational cost.
-   
+
 Vorticity can be computed from the velocity data itself (for a numerical flow)
 or from a function/interpolant of the velocity field (for either a predefined or
 numerical flow). The velocity interpolant can be created from either
@@ -746,7 +746,7 @@ vorticity directly from velocity data, call
 call :func:`numbacs.utils.curl_func_tspan`. After the vorticity is computed,
 an interpolant of it must be created which can be obtained by calling either
 :func:`numbacs.flows.get_callable_scalar` (cubic interpolant) or
-:func:`numbacs.flows.get_callable_scalar_linear` (linear interpolant). 
+:func:`numbacs.flows.get_callable_scalar_linear` (linear interpolant).
 
 Now LAVD can be computed using the :func:`numbacs.diagnostics.lavd_grid_2D`
 function. Following this, LAVD-based elliptic LCS (also known as
@@ -769,11 +769,11 @@ controls the minimum allowed length for an elliptic LCS.
    from numbacs.diagnostics import lavd_grid_2D
    from numbacs.extraction import rotcohvrt
    from numbacs.utils import curl_func_tspan
-   
+
    # load in qge velocity data
    u = np.load('../../../data/qge/qge_u.npy')
    v = np.load('../../../data/qge/qge_v.npy')
-   
+
    # set up domain
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
@@ -781,59 +781,59 @@ controls the minimum allowed length for an elliptic LCS.
    t = np.linspace(0,3,nt)
    dx = x[1]-x[0]
    dy = y[1]-y[0]
-   
+
    # set integration span and integration direction
    t0 = 0.5
    T = 0.3
    params = np.array([copysign(1,T)])  # important this is an array of type float
    n = 601
-   
+
    # get interpolant arrays of velocity field
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get flow to be integrated
    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
+
    # get callable for flow
    vel_spline = get_callable_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
-   
-   
+
+
    # integrate grid of particles and return positions at n times between
    # [t0,t0+T] (inclusive).
    flowmap, tspan = flowmap_n_grid_2D(funcptr,t0,T,x,y,params,n=n)
-   
+
    # compute vorticity and create interpolant for it
    vort = curl_func_tspan(vel_spline,tspan,x,y,h=1e-3)
    grid_domain, C_vort = get_interp_arrays_scalar(tspan, x, y, vort)
    vort_spline = get_callable_scalar(grid_domain, C_vort)
-   
+
    # need to pass raveled arrays into lavd_grid_2D
    X,Y = np.meshgrid(x,y,indexing='ij')
    xrav = X.ravel()
    yrav = Y.ravel()
-   
+
    # compute lavd
    lavd = lavd_grid_2D(flowmap, tspan, T, vort_spline, xrav, yrav)
-   
+
    # set parameters and compute lavd-based elliptic lcs
    r = 0.2
    convexity_deficiency = 1e-3
    min_len = 0.1
    elcs = rotcohvrt(lavd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=min_len)
-   
+
    # plot the elliptic LCS over the LAVD field.
    fig,ax = plt.subplots(dpi=200)
    ax.contourf(x,y,lavd.T,levels=80)
-   ax.set_aspect('equal')   
+   ax.set_aspect('equal')
    for rcv,c in elcs:
        ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
        ax.scatter(c[0],c[1],1.5)
-       
+
 .. figure:: img/qge_ellipticlcs.png
    :class: with-border
-   
+
 See :ref:`auto_examples/index:elliptic lcs` for more examples.
-  
+
 Eulerian
 --------
 
@@ -868,17 +868,17 @@ To retrieve a callable for a predefined flow, the user can call the
    from math import copysign
    import numpy as np
    from numbacs.flows import get_predefined_callable
-      
+
    # retrieve velocity func, domain, and parameter description
    # for double gyre flow.
    vel_func, domain, p_str = get_predefined_callable('double_gyre',
                                                      parameter_description=True)
-   						  
+
    # set up grid with nx points in x-direction and ny in y-direction
    nx,ny = 401,201
    x = np.linspace(domain[0][0],domain[0][1],nx)
    y = np.linspace(domain[1][0],domain[1][1],ny)
-   
+
 .. note::
 
    As mentioned in the :ref:`userguide:lagrangian` section, predefined flows
@@ -886,13 +886,13 @@ To retrieve a callable for a predefined flow, the user can call the
    be performed, ``int_direction`` is no longer the first element of the
    parameter array. By setting ``parameter_description = True``, the description
    of a parameter array for a given flow can be seen.
-   
+
 Numerical flows (callable)
 """"""""""""""""""""""""""
 
 If the user has numerical velocity data and the domain over which its defined
 is not of sufficient spatial resolution, interpolants can be created for the
-velocity components in each direction and a callable can be returned. First, 
+velocity components in each direction and a callable can be returned. First,
 the user needs to call :func:`numbacs.flows.get_interp_arrays_2D`, and then
 pass the objects returned from that function into
 :func:`numbacs.flows.get_callable_2D`.
@@ -903,7 +903,7 @@ pass the objects returned from that function into
    from math import copysign
    import numpy as np
    from numbacs.flows import get_interp_arrays_2D, get_callable_2D
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -911,12 +911,12 @@ pass the objects returned from that function into
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    # get arrays for interpolant
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get callable for interpolant of qge velocity data
-   vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical = 0, extrap_mode='linear')  					  
+   vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical = 0, extrap_mode='linear')
 
 This will create a cubic interpolant of the velocity field. To create a linear
 interpolant, coefficient arrays do not need to computed so this can be done by
@@ -929,24 +929,24 @@ calling :func:`get_callable_linear_2D`.
    import numpy as np
    from numbacs.flows import get_callable_linear_2D
    from interpolation.splines import UCGrid
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
-   t = np.linspace(0,1,nt)   
-   
+   t = np.linspace(0,1,nt)
+
    # set grid and get callable for interpolant of qge velocity data
    grid_vel = UCGrid((t[0],t[-1],nt),(x[0],x[-1],nx),(y[0],y[-1],ny))
    vel_func = get_callable_linear_2D(grid_vel, u, v, spherical = 0, extrap_mode='linear')
-   
+
 .. note::
 
    For both predefined and numerical flows, the keyword argument ``return_type``
    controls what the retrieved callable will return. To retrieve a callable
-   which can be used by the Eulerian diagnostics functions in NumbaCS, 
+   which can be used by the Eulerian diagnostics functions in NumbaCS,
    ``return_type = 'array'`` needs to be set (it is this value be default).
    The callable retrieved with this argument will only take a single point as an
    input (point = [ti, xi, yi] where point is a np.array and ti, xi, yi are the
@@ -958,14 +958,14 @@ calling :func:`get_callable_linear_2D`.
    the user to pass many points (or a single point)
    at once in an efficient manner. Be aware that this callable type will
    **not** work with the Eulerian diagnostic functions from NumbaCS.
-   
-   
+
+
 User defined flows (callable)
 """""""""""""""""""""""""""""
 
 It is simpler for the user to define a flow used for Eulerian diagnostics as it
 no longer needs to interface with numbalsoda. If one wants to code up the
-time-dependent version of the cellular flow from 
+time-dependent version of the cellular flow from
 :ref:`userguide:user defined flows`,
 
 .. math::
@@ -977,20 +977,20 @@ time-dependent version of the cellular flow from
    # necessary imports
    from numba import njit
    from math import cos, sin
-   
+
    # create jit-callable
    @njit
    def cellular(y)
 	   """
 	   Defines time-dependent cellular flow to work with NumbaCS
 	   for Eulerian diagnostics
-	   
+
 	   p[0] = A, p[1] = B, p[2] = omega
 	   """
 
 	   dx = -p[0]*cos(y[1] + p[1]*sin(p[2]*y[0]))*sin(y[2])
 	   dy = p[0]*sin(y[1] + p[1]*sin(p[2]*y[0]))*cos(y[2])
-	   
+
 	   return np.array([dx,dy],np.float64)
 
 Now ``cellular`` can be used in place of ``vel_func`` in previous examples from
@@ -1005,7 +1005,7 @@ As mentioned, Eulerian diagnostics can be computed from a function representing
 the velocity field or from numerical data on a grid. NumbaCS has functions which
 can perform the diagnostics in either case. For the first diagnostic (iLE), we
 will demonstrate both cases but only show the numerical data case for the
-remaining methods. 
+remaining methods.
 
 iLE
 """
@@ -1019,7 +1019,7 @@ the :func:`numbacs.diagnostics.ile_2D_func` function needs to be called.
    import numpy as np
    from numbacs.flows import get_interp_arrays_2D, get_callable_2D
    from numbacs.diagnostics import ile_2D_func
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -1027,17 +1027,17 @@ the :func:`numbacs.diagnostics.ile_2D_func` function needs to be called.
    x = np.linspace(0,1,nx)
    y = np.linspace(0,2,ny)
    t = np.linspace(0,1,nt)
-   
+
    # get arrays for interpolant
    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
-   
+
    # get callable for interpolant of qge velocity data
    vel_func = get_callable_2D(grid_vel, C_eval_u, C_eval_v, spherical = 0, extrap_mode='linear')
-   
+
    # compute ile over grid at t = t0
    t0 = t[15]
    ile = ile_2D_func(vel_func,x,y,t0=t0)
-   
+
 Or iLE can be computed directly from the velocity data, which will be quicker
 but potentially less accurate (in this example, the grid which the data is
 defined on is sufficiently resolved). To do this, call the
@@ -1048,7 +1048,7 @@ defined on is sufficiently resolved). To do this, call the
    # necessary imports
    import numpy as np
    from numbacs.diagnostics import ile_2D_data
-   
+
    # load in qge velocity data and define domain
    u = np.load('./data/qge/qge_u.npy')
    v = np.load('./data/qge/qge_v.npy')
@@ -1058,7 +1058,7 @@ defined on is sufficiently resolved). To do this, call the
    t = np.linspace(0,1,nt)
    dx = x[1] - x[0]
    dy = y[1] - y[0]
-      
+
    # compute ile over grid at t = t[k]
    k = 15
    ile = ile_2D_data(u[k,:,:],v[k,:,:],dx,dy)
@@ -1088,11 +1088,11 @@ conditions for generalized saddle points.
    from numbacs.diagnostics import S_eig_2D_data
    from numbacs.extraction import hyperbolic_oecs
    import matplotlib.pyplot as plt
-   
+
    # load in qge velocity data
    u = np.load('../../../data/qge/qge_u.npy')
    v = np.load('../../../data/qge/qge_v.npy')
-   
+
    # set up domain
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
@@ -1100,12 +1100,12 @@ conditions for generalized saddle points.
    t = np.linspace(0,3,nt)
    dx = x[1]-x[0]
    dy = y[1]-y[0]
-   
+
    k0 = 15
    # compute eigenvalues/vectors of Eulerian rate of strain tensor
    eigvals,eigvecs = S_eig_2D_data(u[k0,:,:],v[k0,:,:],dx,dy)
    s2 = eigvals[:,:,1]
-   
+
    # set parameters for hyperbolic_oecs function
    r = 0.2
    h = 1e-4
@@ -1113,26 +1113,26 @@ conditions for generalized saddle points.
    maxlen = 0.05
    minval = np.percentile(s2,50)
    n = 10
-   
+
    # compute hyperbolic_oecs
    oecs = hyperbolic_oecs(s2,eigvecs,x,y,r,h,steps,maxlen,minval,n=n)
-   
+
    # plot hyperbolic oecs overlaid on ile field
    fig,ax = plt.subplots(dpi=200)
    ax.contourf(x,y,s2.T,levels=np.linspace(0,np.percentile(s2,99.5),51),
                extend='both',zorder=0)
-    
+
    for k in range(len(oecs)):
        ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
        ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
    ax.set_aspect('equal')
-   
+
 .. figure:: img/qge_hypoecs.png
    :class: with-border
-   
+
 See :ref:`auto_examples/index:hyperbolic lcs` for more examples.
-   
-   
+
+
 Elliptic OECS
 """""""""""""
 
@@ -1154,11 +1154,11 @@ the :ref:`userguide:elliptic lcs` section.
    from numbacs.diagnostics import ivd_grid_2D
    from numbacs.extraction import rotcohvrt
    from numbacs.utils import curl_vel
-   
+
    # load in qge velocity data
    u = np.load('../../../data/qge/qge_u.npy')
    v = np.load('../../../data/qge/qge_v.npy')
-   
+
    # set up domain
    nt,nx,ny = u.shape
    x = np.linspace(0,1,nx)
@@ -1166,33 +1166,33 @@ the :ref:`userguide:elliptic lcs` section.
    t = np.linspace(0,3,nt)
    dx = x[1]-x[0]
    dy = y[1]-y[0]
-   
+
    # set initial time
    t0 = 0.5
    k0 = np.argwhere(t==t0)[0][0]
-   
+
    # compute vorticity and spatial mean of vorticity
    vort = curl_vel(u[k0,:,:],v[k0,:,:],dx,dy)
    vort_avg = np.mean(vort)
-   
+
    # compute ivd
    ivd = ivd_grid_2D(vort,vort_avg)
-   
+
    # set parameters and compute ivd-based elliptic oecs
    r = 0.2
    convexity_deficiency = 1e-3
    min_len = 0.25
    elcs = rotcohvrt(ivd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=min_len)
-   
+
    # plot the elliptic OECS over the IVD field.
    fig,ax = plt.subplots(dpi=200)
    ax.contourf(x,y,ivd.T,levels=80)
-   ax.set_aspect('equal')   
+   ax.set_aspect('equal')
    for rcv,c in elcs:
        ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
        ax.scatter(c[0],c[1],1.5)
-       
+
 .. figure:: auto_examples/elliptic_oecs/images/sphx_glr_plot_qge_elliptic_oecs_001.png
    :class: with-border
-   
+
 See :ref:`auto_examples/index:elliptic oecs` for more examples.

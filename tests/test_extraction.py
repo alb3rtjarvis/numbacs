@@ -88,4 +88,3 @@ def test_elliptic_lcs(coords_dg,lavd_data,elliptic_lcs_data):
 
 #     assert all([[np.allclose(oecs,oecs_d) for oecs,oecs_d in zip(foecs, foecs_d)]
 #                 for foecs,foecs_d in zip(eoecs,elliptic_oecs_data)])
-

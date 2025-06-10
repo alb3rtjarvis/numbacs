@@ -18,10 +18,10 @@ This gallery contains all the NumbaCS examples.
    extraction methods are desired. For more representative timings, see examples
    in the :ref:`auto_examples/index:time series` section.
 
-.. note::   
+.. note::
    To run any of these examples, matplotlib will need to be installed as it does
    not ship with NumbaCS. Also, to run any example which uses a numerical flow,
-   the data will need to be downloaded from the 
+   the data will need to be downloaded from the
    `Github page <https://github.com/alb3rtjarvis/numbacs/tree/main/examples/data>`_.
 
 

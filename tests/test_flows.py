@@ -423,4 +423,3 @@ def test_get_predefined_callable_abc(coords_2D,pts_2D):
 
     assert np.allclose(domain_expected,domain)
     assert np.allclose(veli_expected,veli)
-

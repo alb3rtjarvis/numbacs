@@ -83,8 +83,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-#select = ["E", "W", "F", "D", "C90", "TID", "UP", "S"]
-select = ["E","W","F","D","UP"]
+select = ["E", "W", "F", "D", "UP"]
 # E: Pycodestyle Errors (e.g., syntax errors)
 # W: Pycodestyle Warnings (e.g., whitespace issues)
 # F: Pyflakes (e.g., undefined variables, unused imports)
@@ -119,11 +118,6 @@ ignore = [
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-#[tool.ruff.lint.isort]
-#known-first-party = ["numbacs"]        # Tells isort that 'numbacs' is your own local package for correct import grouping
-#force-sort-within-sections = true    # Ensures imports like 'from x import c, a, b' are sorted to 'from x import a, b, c'
-
-# Ruff Formatter Configuration
 [tool.ruff.format]
 # Using default Ruff formatter settings (Black-compatible).
 

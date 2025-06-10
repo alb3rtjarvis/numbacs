@@ -95,4 +95,3 @@ def test_flowmap_composition_step(coords_dg, fms_ci_data, fm_cs_data, fms_cs_dat
 
     assert (np.allclose(flowmap_k.astype(np.float32), fm_cs_data)
             & np.allclose(flowmaps.astype(np.float32), fms_cs_data))
-

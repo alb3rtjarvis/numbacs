@@ -48,7 +48,7 @@ ranging from 500hPa to 800hPa.
 
 Get flow data
 --------------
-Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+Load in atmospheric velocity data, dates, and coordinates. Set domain for
 iLE computation, set time, and retrieve jit-callable function for velocity data.
 
 .. note::

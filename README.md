@@ -31,14 +31,11 @@ conda install -c conda-forge numbacs
 ```
 Pip:
 ```
-pip install numbacs
+python -m pip install numbacs
 ```
 
 **_NOTE:_** It is strongly recommended to use conda for installation
-due to some reported issues when using pip for one of the dependencies
-(see issues [#20](https://github.com/Nicholaswogan/numbalsoda/issues/20)
-and [#29](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
-numbalsoda package -- these seems to primarily affect Windows installations).
+due to some reported issues when using pip for one of the dependencies.
 
 ## Basic usage
 
@@ -58,7 +55,7 @@ T = -10.
 int_direction = copysign(1, T)
 
 # get ode to be used by 'flowmap_grid_2D'
-funcptr, params, domain = get_predefined_flow('double_gyre', int_direction=int_direction)
+funcptr, params, domain = get_predefined_flow('double_gyre', int_direction = int_direction)
 
 # set up domain
 nx,ny = 401,201
@@ -94,52 +91,50 @@ import matplotlib.pyplot as plt
 # load in atmospheric data
 dates = np.load('../data/merra_june2020/dates.npy')
 dt = (dates[1] - dates[0]).astype('timedelta64[h]').astype(int)
-t = np.arange(0, len(dates)*dt, dt, np.float64)
+t = np.arange(0,len(dates)*dt,dt,np.float64)
 lon = np.load('../data/merra_june2020/lon.npy')
 lat = np.load('../data/merra_june2020/lat.npy')
 
 # NumbaCS uses 'ij' indexing, most geophysical data uses 'xy'
 # indexing for the spatial coordintes. We need to switch axes and
 # scale by 3.6 since velocity data is in m/s and we want km/hr.
-u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1, 2)*3.6
-v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1, 2)*3.6
+u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1,2)*3.6
+v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1,2)*3.6
 nt,nx,ny = u.shape
 
 # set domain on which ftle will be computed
 dx = 0.2
 dy = 0.2
-lonf = np.arange(-100, 35+dx, dx)
-latf = np.arange(-5, 45+dy, dy)
+lonf = np.arange(-100,35+dx,dx)
+latf = np.arange(-5,45+dy,dy)
 
 # set integration span and integration direction
 day = 16
 t0_date = np.datetime64("2020-06-{:02d}".format(day))
 t0 = t[np.nonzero(dates == t0_date)[0][0]]
 T = -72.0
-params = np.array([copysign(1, T)])
+params = np.array([copysign(1,T)])
 
 # get interpolant arrays of velocity field
 grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, lon, lat, u, v)
 
 # retrieve flow and set spherical = 1 since flow is on spherical domain
-# and lon is from [-180, 180)
+# and lon is from [-180,180)
 funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
 # compute final position of particle trajectories over grid
 flowmap = flowmap_grid_2D(funcptr, t0, T, lonf, latf, params)
 
 # compute FTLE over grid
-ftle = ftle_grid_2D(flowmap, T, dx, dy)
+ftle = ftle_grid_2D(flowmap,T,dx,dy)
 
 # plot coastlines and FTLE
 coastlines = np.load('../data/merra_june2020/coastlines.npy')
 fig,ax = plt.subplots(dpi=200)
-ax.scatter(
-    coastlines[:,0], coastlines[:,1], 1, 'k', marker='.', edgecolors=None, linewidths=0
-)
-ax.contourf(lonf, latf, ftle.T, levels=80, zorder=0)
-ax.set_xlim([lonf[0], lonf[-1]])
-ax.set_ylim([latf[0], latf[-1]])
+ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,linewidths=0)
+ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
+ax.set_xlim([lonf[0],lonf[-1]])
+ax.set_ylim([latf[0],latf[-1]])
 ax.set_aspect('equal')
 plt.show()
 ```
@@ -163,10 +158,6 @@ Please make sure to update tests as appropriate. See the [Contributing guide](ht
 for more details.
 
 ## Similar software
-
-This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmarks](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
-
----
 
 [`Lagrangian`](https://lagrangian.readthedocs.io/en/latest/index.html) --
 Python package for computing FSLE, FTLE, and eigenvectors of Cauchy-Green tensor with a

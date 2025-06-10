@@ -5,7 +5,7 @@ Theory and Implementation
 This section is meant to provide an overview of the theory behind the methods
 implemented in NumbaCS and give a brief, informal description of how they are
 implemented. It is not meant to be exhaustive but simply meant to get
-the user up to speed if these methods are new to them. For more background, 
+the user up to speed if these methods are new to them. For more background,
 details, and rigorous derivations, refer to the cited papers in each section.
 Additionally, the recent book by Haller :cite:`haller_2023` provides a
 self-contained and detailed treatment of all of the methods implemented in
@@ -41,7 +41,7 @@ and objective Eulerian coherent structures (in the instantaneous case). These
 are objective (i.e. frame-invariant) influential material curves (in a 2D flow)
 or surfaces (in a 3D flow) which play a major role in organizing the contents of
 that flow over some finite time window (or time instant). These structures are
-precisely defined as will be detailed below. 
+precisely defined as will be detailed below.
 
 To define these structures, consider the
 following initial value problem, viewed as a dynamical system over some general
@@ -49,7 +49,7 @@ following initial value problem, viewed as a dynamical system over some general
 
 .. math::
    :label: ds
-   
+
    \dfrac{d}{dt}\mathbf{x} &= \mathbf{v}(\mathbf{x},t), \qquad \mathbf{x} \in U \subset \mathcal{M}, \quad t\in I \subset \mathbb{R}\\
    \mathbf{x}(t_0)  &= \mathbf{x}_0
 
@@ -58,10 +58,10 @@ Then, there exists a family of diffeomorphisms :math:`\{\mathbf{F}^t_{t_0}\}`
 
 .. math::
    :label: flowmap
-   
+
    \mathbf{F}^t_{t_0} &: I \times I \times U\rightarrow U\\
    &: \mathbf{x}(t_0;t_0,\mathbf{x}_0) \mapsto \mathbf{x}(t;t_0,\mathbf{x}_0)
-   
+
 
 in which either :math:`t>t_0` (mapping forward in time) or :math:`t<t_0`
 (mapping backwards in time).
@@ -71,12 +71,12 @@ Cauchy-Green deformation tensor in terms of the linearized flow map,
 
 .. math::
    :label: C
-   
+
    \mathbf{C}^{t_0+T}_{t_0}(\mathbf{x}_0) = (\nabla\mathbf{F}^{t_0+T}_{t_0})^{\top} \nabla\mathbf{F}^{t_0+T}_{t_0}(\mathbf{x}_0)
 
-where :math:`\nabla` represents the derivative with respect to the initial 
+where :math:`\nabla` represents the derivative with respect to the initial
 position :math:`\mathbf{x}_0` (i.e. the gradient) and :math:`T=t-t_0` is the
-flow map duration or so-called integration time (which could be positive or 
+flow map duration or so-called integration time (which could be positive or
 negative). The matrix :math:`\mathbf{C}^{t_0+T}_{t_0}(\mathbf{x}_0)` is
 symmetric and positive-definite with real eigenvalues :math:`\lambda_i` and
 corresponding orthonormal eigenvectors :math:`\mathbf{\xi}_i` with :math:`i \in
@@ -84,30 +84,30 @@ corresponding orthonormal eigenvectors :math:`\mathbf{\xi}_i` with :math:`i \in
 
 .. math::
    :label: C_eig
-   
+
    &\lambda_n\geq...\geq \lambda_1 > 0 \; \text{and},\\
    & \left<\mathbf{\xi}_i,\mathbf{\xi}_j\right> = \delta_{ij}.
-   
+
 To extract important objective features from the velocity field itself, we
 define the Eulerian rate of strain tensor in terms of the gradient of the
 velocity field,
 
 .. math::
    :label: S
-   
+
    \mathbf{S}(\mathbf{x}_0,t) = \dfrac{1}{2} \left(\nabla \mathbf{v}(\mathbf{x}_0,t) + \mathbf{v}(\mathbf{x}_0,t)^{\top} \right).
-   
+
 The matrix :math:`\mathbf{S}(\mathbf{x}_0,t)` is symmetric with real eigenvalues
 :math:`s_i` and corresponding orthonormal eigenvectors :math:`\mathbf{e}_i` with
 :math:`i \in \{1,2,...,n\}` such that,
 
 .. math::
    :label: S_eig
-   
+
    & s_n\geq...\geq s_1 \; \text{and},\\
    & \left<\mathbf{e}_i,\mathbf{e}_j\right> = \delta_{ij}.
-   
-   
+
+
 Hyperbolic LCS
 --------------
 
@@ -128,9 +128,9 @@ the linearized flow map as shown below.
 
 .. |pic1| image:: img/flowmap_nl_nbcs.svg
    :width: 49%
-   
+
 .. |pic2| image:: img/svd_vu_nbcs.svg
-   :width: 49%   
+   :width: 49%
 
 The figure on the left shows the action of the flow map on a small circle and
 the figure on the right shows the linear approximation.
@@ -144,7 +144,7 @@ are equal to the eigenvectors (:math:`\xi_i`) of
 .. note::
 
    The flow map acts on elements of the domain and maps them to the domain. Its
-   action on a set can be defined in the following manner: 
+   action on a set can be defined in the following manner:
    :math:`\mathbf{F}^{t_0 + T}_{t_0}(A_0) := \{\mathbf{F}^{t_0 + T}_{t_0}(\mathbf{x}_0) \in U | \mathbf{x}_0 \in A_0\}`.
    The derivative of the flow map, :math:`\nabla\mathbf{F}^{t_0+T}_{t_0}`, acts
    on elements of the tangent space (i.e. vectors) and maps them to elements
@@ -159,8 +159,8 @@ classic Lyapunov exponent, is defined as,
 
 .. math::
    :label: ftle
-   
-   \sigma_{t_0}^{t_0+T}(\mathbf{x}_0) = \frac{1}{2\left|T\right|}\log(\lambda_{n}).  
+
+   \sigma_{t_0}^{t_0+T}(\mathbf{x}_0) = \frac{1}{2\left|T\right|}\log(\lambda_{n}).
 
 FTLE was the first proposed method to find LCS :cite:`haller1998`,
 :cite:`haller2001`, :cite:`shadden2005` and remains a preferred method by many
@@ -210,8 +210,8 @@ compared to satisfy condition D.
    *a priori* and therefore this challenge is passed to the user in a trial and
    error fashion. For this reason, it is generally suggested to use one of the
    *FTLE ridge* methods described below.
-   
-   
+
+
 FTLE ridges
 ^^^^^^^^^^^
 
@@ -295,14 +295,14 @@ tangent at each endpoint is below another tolerance.
    representation, called *dynamical sharpening* is another way to obtain
    accurate FTLE ridges that uses the fact the FTLE ridges are attractors of
    the gradient dynamical system given by,
-   
+
    .. math::
-   
+
       \dfrac{d\mathbf{x}_0}{ds} = \nabla \sigma(\mathbf{x}_0).
-      
+
    While this approach does yield accurate ridges, we found that the approach
    implemented in NumbaCS achieves roughly the same level of accuracy at a
-   significantly lower computational cost. 
+   significantly lower computational cost.
 
 
 What conditions guarentee that a FTLE ridge is a hyperbolic LCS? Haller gave
@@ -359,17 +359,17 @@ iLE
 A few years later, Nolan et al. :cite:`nolan2020` showed that, in the limit as
 integration time goes to zero, the FTLE converges to the eigenvalues of the
 Eulerian rate of strain tensor with its sign determined by which direction the
-limit is taken it. They referred to this as the 
+limit is taken it. They referred to this as the
 **instantaneous Lyapunov exponent (iLE)** and defined it as,
 
 .. math::
    \lim_{T \to 0^{\pm}} \sigma_{t_0}^{t_0+T}(\mathbf{x}_0) = \pm s_{\pm}(\mathbf{x}_0,t_0)
-   
+
 where the :math:`\pm` denotes which direction the limit is taken in and the
 maximum and minimum eigenvalues of :math:`\mathbf{S}(\mathbf{x}_0,t)`
 respectively. The iLE is meant to serve as a diagnostic (like the FTLE does in
 the finite time case) in the instantaneous case. Like the FTLE field, they
-defined iLE ridges in the same manner as they were defined in 
+defined iLE ridges in the same manner as they were defined in
 :ref:`theory:ftle ridges` with the FTLE field being replaced by the :math:`s_1`
 or :math:`s_2` field and the eigenvector of
 :math:`\mathbf{C}^{t_0+T}_{t_0}(\mathbf{x}_0)` replaced by the corresponding
@@ -392,7 +392,7 @@ improves on the numerical implementation of the variational approach by
 providing a simpler algorithm with greater efficiency. Shortly before this work,
 Haller et al. :cite:`haller2016` defined the Lagrangian averaged vorticity
 deviation (LAVD) and provided yet another way to identify elliptic LCS. NumbaCS
-implements this approach as we found it to be the most efficient. 
+implements this approach as we found it to be the most efficient.
 
 
 LAVD
@@ -406,16 +406,16 @@ vortices in a flow, whose boundaries coincide with elliptic LCS. Given a system
 instantaneous spatial mean of vorticity is given by,
 
 .. math::
-   
+
    \mathbf{\bar{\omega}}(t) = \frac{\int_U \mathbf{\omega}(\mathbf{x},t)dV}{\text{vol}(U)}
-   
+
 where vol(:math:`\cdot`) represents the volume (in 3D) or the area (in 2D) and
 :math:`dV` represents either a volume or area element. Then, the **LAVD** is
 defined as,
- 
+
 .. math::
    :label: lavd
-   
+
    \text{LAVD}_{t_0}^{t}(\mathbf{x}_0) := \frac{1}{|t - t_0|} \int_{t_0}^{t} |\mathbf{\omega}(\mathbf{x}(s,\mathbf{x}_0),s) - \bar{\mathbf{\omega}}(s) | ds.
 
 To extract rotationally coherent vortices, local maxima of the LAVD field are
@@ -435,9 +435,9 @@ Elliptic OECS
 
 Like the hyperbolic case, elliptic LCS have Eulerian counterparts defined in
 very similar ways but in terms of eigenvalues and eigenvectors of
-:math:`\mathbf{S}(\mathbf{x}_0,t)` instead of 
+:math:`\mathbf{S}(\mathbf{x}_0,t)` instead of
 :math:`\mathbf{C}^{t_0+T}_{t_0}(\mathbf{x}_0)`. In the Serra and Haller paper
-:cite:`serra2017`, they show, by replacing the right Cauchy Green deformation 
+:cite:`serra2017`, they show, by replacing the right Cauchy Green deformation
 tensor with the Euerian rate of strain tensor, that the null geodesic
 approach works for the Eulerian case as well. In the Haller et al. paper
 :cite:`haller2016` on LAVD, they also define a quantity for the Eulerian case,
@@ -453,9 +453,9 @@ The **IVD** is defined as,
 
 .. math::
    :label: ivd
-   
+
    \text{IVD}(\mathbf{x},t) := |\mathbf{\omega}(\mathbf{x},t) - \bar{\mathbf{\omega}}(t)|
-  
+
 and it can be shown that the IVD is the limit of the LAVD as integration time
 goes to zero. The outermost closed convex level curves can be extracted in the
 same manner as is done for LAVD. The maxima are referred to as **IVD-based
@@ -481,12 +481,12 @@ the flow maps defined in equation :eq:`flowmap`,
 
 .. math::
    :label: flowmap_comp
-   
+
    \mathbf{F}_{t_0}^{t_0+T} = \mathbf{F}_{t_{N-1}}^{t_N} \circ \cdot \cdot \cdot \circ \mathbf{F}_{t_1}^{t_2} \circ \mathbf{F}_{t_0}^{t_1}
-   
+
 where :math:`t_{N} = t_0 + T` and the associative binary operation is the
 composition operation. Therefore, the flow map over some time window
-:math:`[t_0,t_0+T]` can be obtained by composing a collection of intermediate 
+:math:`[t_0,t_0+T]` can be obtained by composing a collection of intermediate
 flow maps of shorter time windows. This is not very useful when only a single
 flow map is desired but if a time series of flow maps is needed, this can cut
 down the computational cost. Note that if a time series of FTLE was desired for
@@ -496,7 +496,7 @@ computed as,
 
 .. math::
    :label: flowmap_comp_series
-   
+
    \mathbf{F}_{t_0}^{t_0+T} &= \mathbf{F}_{t_{N-1}}^{t_{N}} \circ \cdot \cdot \cdot \circ \mathbf{F}_{t_1}^{t_2} \circ \mathbf{F}_{t_0}^{t_1}\\
    \mathbf{F}_{t_1}^{t_1+T} &= \mathbf{F}_{t_{N}}^{t_{N+1}} \circ \cdot \cdot \cdot \circ \mathbf{F}_{t_2}^{t_3} \circ \mathbf{F}_{t_1}^{t_2}\\
    &\vdots \\
@@ -517,17 +517,17 @@ and returns the interpolated map, i.e.
 
 .. math::
    :label: interp
-   
+
    \mathcal{I}&: \mathbf{F}_{\mathcal{G}_k} \mapsto \mathcal{I}\mathbf{F}_k \quad \text{where} \\
    \mathcal{I}\mathbf{F}_k&: U \rightarrow U
-   
+
 and :math:`\mathcal{I}\mathbf{F}_k` is the interpolated flow map
-:math:`\mathbf{F}_{t_k}^{t_{k+1}}`.  
+:math:`\mathbf{F}_{t_k}^{t_{k+1}}`.
 Then, for any :math:`t_k \in \{t_0,t_1,...,t_n\}`
 
 .. math::
    :label: interp_comp
-   
+
    \widetilde{\mathbf{F}}_{t_k}^{t_k+T}(\mathcal{G}) &= \mathcal{I}\mathbf{F}_{N+k-1} \circ \cdot \cdot \cdot \circ \mathcal{I}\mathbf{F}_{k+1} \circ \mathbf{F}_{\mathcal{G}_k}\\
    &\approx \mathbf{F}_{t_k}^{t_k+T}(\mathcal{G})
 
@@ -542,7 +542,7 @@ single-tier unidirectional method which is what was described above.
    This method achieves the most computational savings when particles mapped
    under the action of the flow do not leave the domain on which the coherent
    structure method is being computed (i.e. if :math:`U_{D} \subset U` is the
-   coherent structure domain then 
+   coherent structure domain then
    :math:`\mathbf{F}\restriction U_{D}: U_{D} \rightarrow U_{D}`). If
    this is not the case, the flow map would need to be computed on a larger
    domain and the computational savings would shrink (and eventually vanish as
@@ -552,5 +552,5 @@ single-tier unidirectional method which is what was described above.
 
 References
 ----------
-    
-.. bibliography:: refs.bib    
+
+.. bibliography:: refs.bib

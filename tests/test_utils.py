@@ -334,4 +334,3 @@ def test_cart_prod():
     cprod = cart_prod((t,x,y))
 
     assert np.all(cprod == cprod_expected)
-

@@ -152,8 +152,8 @@ Compute hyperbolic LCS using the variational theory.
     arclen_flag=True
 
     # extract hyperbolic lcs
-    lcs = hyperbolic_lcs(eigval_max, eigvecs, x, y, step_size, steps, lf, lmin, r, nmax, 
-                         dist_tol=dtol, 
+    lcs = hyperbolic_lcs(eigval_max, eigvecs, x, y, step_size, steps, lf, lmin, r, nmax,
+                         dist_tol=dtol,
                          nlines=nlines,
                          ep_dist_tol=ep_dist_tol,
                          percentile=percentile,

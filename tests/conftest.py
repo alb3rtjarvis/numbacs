@@ -159,6 +159,3 @@ def elliptic_oecs_data():
     with open(join(dir_path,"testing_data/ellipoecs.pkl"), 'rb') as f:
         elliptic_oecs = pickle.load(f)
     return elliptic_oecs
-
-
-
