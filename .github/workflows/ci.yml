@@ -40,9 +40,9 @@ jobs:
         with:
           environment-file: environment-dev.yml
           environment-name: numbacs-dev-env
-          create-args: >-
-            python=${{ matrix.python-version }} # Sets/overrides Python in the env
+          create-args: python=${{ matrix.python-version }}
           cache-environment: true
+          init-shell: bash
 
       - name: Install numbacs from source (editable)
         shell: bash -el {0}
