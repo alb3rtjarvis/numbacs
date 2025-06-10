@@ -47,7 +47,7 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     parallel = np.isclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
 
     if not np.all(parallel):
-        return False, dotprod
+        return False, dotprod, zero_mask
     else:
         return True, np.all(parallel | zero_mask)
 
@@ -130,7 +130,8 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     is_close = evecs_allclose(Svecs.astype(np.float32), Svecs_expected)
     if not is_close[0]:
         dotprod = is_close[1]
-        inds = np.argwhere(np.abs(dotprod) < 1)
+        zero_mask = is_close[2]
+        inds = np.argwhere((np.abs(dotprod) < 1.0 - 1e-7) & (~zero_mask))
         print(f"Indices not parallel: {inds}")
         print(f"Vectors computed: {Svecs[tuple(inds.T)]}")
         print(f"Vectors expected: {Svecs_expected[tuple(inds.T)]}")
