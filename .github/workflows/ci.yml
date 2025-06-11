@@ -62,7 +62,7 @@ jobs:
 
       - name: Run light integration test for Windows
         if: runner.os == 'Windows'
-        run: python tests/windows_integration_check.py
+        run: python windows_integration_check.py
 
 #      - name: Run Pytest excluding integration (Windows)
 #        if: runner.os == 'Windows'
