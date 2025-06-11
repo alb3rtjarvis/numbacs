@@ -46,8 +46,8 @@ jobs:
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
-          environment-file: environment-ci.yml
-          environment-name: numbacs-ci
+          environment-file: environment-dev.yml
+          environment-name: numbacs-dev
           create-args: python=${{ matrix.python-version }}
           cache-environment: true
           init-shell: bash powershell
@@ -60,7 +60,7 @@ jobs:
         if: runner.os != 'Windows'
         run: pytest -v --cov=src/numbacs --cov-report=xml tests/
 
-      - name: Run light integration test for Windows
+      - name: Run light integration check for Windows
         if: runner.os == 'Windows'
         run: python windows_integration_check.py
 
