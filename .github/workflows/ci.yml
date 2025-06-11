@@ -49,7 +49,7 @@ jobs:
           environment-file: environment-ci.yml
           environment-name: numbacs-ci
           create-args: python=${{ matrix.python-version }}
-          cache-environment: false
+          cache-environment: true
           init-shell: bash powershell
 
       - name: Install numbacs from source
