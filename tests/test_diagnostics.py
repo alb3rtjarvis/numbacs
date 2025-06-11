@@ -5,20 +5,6 @@ from numbacs.diagnostics import (ftle_grid_2D, C_tensor_2D, C_eig_aux_2D, C_eig_
                                  lavd_grid_2D, ile_2D_func, S_eig_2D_func, S_2D_func,
                                  ile_2D_data, S_eig_2D_data, ivd_grid_2D)
 
-# def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
-#     """
-#     Check if eigenvector angles are close
-#     """
-
-#     norms = np.linalg.norm(evecs, axis=-2)
-#     norms_expected = np.linalg.norm(evecs_expected, axis=-2)
-#     mask = np.logical_and(norms > atol, norms_expected > atol)[:,:,0]
-#     evecs = np.divide(evecs[mask,:,:], norms[mask,np.newaxis,:])
-#     evecs_expected = np.divide(evecs_expected[mask,:,:], norms_expected[mask,np.newaxis,:])
-#     dotprod = np.einsum("...ab,...ab->...b", evecs, evecs_expected)
-
-#     return np.allclose(np.abs(dotprod), 1.0, rtol=rtol, atol=atol)
-
 def reconstruct_matrix(eigvals, eigvecs):
     """
     Reconstruct matrix from spectral decomposition. Used to check that eigenvales/vectors
@@ -155,20 +141,6 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data):
     Svals, Svecs = S_eig_2D_func(vel_func,x,y,t0=t0,h=dx)
     S_expected = reconstruct_matrix(Svals_expected, Svecs_expected)
     S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
-
-    close_flag = np.isclose(S, S_expected)
-    nclose_inds = np.argwhere(~close_flag)
-    i0,j0 = (0,0)
-    if len(nclose_inds) > 0:
-        for ind in nclose_inds[:7]:
-            i,j = ind[:2]
-            if i == i0 and j == j0:
-                continue
-            print(f"i = {i} and j = {j} not close")
-            print(f"Computed S = {S[i,j,:,:]}")
-            print(f"Expected S = {S_expected[i,j,:,:]}")
-            i0 = i
-            j0 = j
 
     assert np.allclose(S, S_expected)
 
