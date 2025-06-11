@@ -68,29 +68,27 @@ jobs:
         if: runner.os == 'Windows'
         run: python tests/windows_integration_check.py
 
-  windows_integration_check:
-    name: Windows Integration Check
-    # This job needs the first job to succeed
-    needs: test_suite
-    # It only runs if the test_suite job for the 'windows-latest' matrix entry was successful
-    if: success()
-    runs-on: windows-latest
+#  windows_integration_check:
+#    name: Windows Integration Check
+#    needs: test_suite
+#    if: success()
+#    runs-on: windows-latest
 
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Micromamba
-        uses: mamba-org/setup-micromamba@v2
-        with:
-          environment-file: environment-ci.yml
-          environment-name: numbacs-ci-env
-          create-args: python=3.10 # Hardcode a python version for this specific check
-          cache-environment: true
-          init-shell: bash powershell
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Set up Micromamba
+#        uses: mamba-org/setup-micromamba@v2
+#        with:
+#          environment-file: environment-ci.yml
+#          environment-name: numbacs-ci-env
+#          create-args: python=3.10
+#          cache-environment: true
+#          init-shell: bash powershell
 
-      - name: Install numbacs
-        run: python -m pip install --no-deps -e .
+#      - name: Install numbacs
+#        run: python -m pip install --no-deps -e .
 
-      - name: Run Windows Integration Confidence Check Script
+#      - name: Run Windows Integration Confidence Check Script
 
 
 #      - name: Run Windows Debug Script
