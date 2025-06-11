@@ -1,4 +1,4 @@
-name: numbacs-dev-env
+name: numbacs-dev
 channels:
   - conda-forge
 dependencies:

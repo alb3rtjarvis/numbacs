@@ -46,19 +46,28 @@ jobs:
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
-          environment-file: environment-dev.yml
-          environment-name: numbacs-dev-env
+          environment-file: environment-ci.yml
+          environment-name: numbacs-ci
           create-args: python=${{ matrix.python-version }}
           cache-environment: true
           init-shell: bash powershell
 
-      - name: Install numbacs from source (editable)
+      - name: Install numbacs from source
         run: |
           python -m pip install --no-deps -e .
 
-      - name: Run Pytest without Coverage
-        run: pytest -v -s tests/test_integration.py
-#        run: pytest -v --cov=src/numbacs --cov-report=xml --cov-report=term-missing tests/
+      - name: Run Pytest and Coverage (UNIX-like)
+        if: runner.os != 'Windows'
+        run: pytest -v --cov=src/numbacs --cov-report=xml tests/
+
+      - name: Run Pytest excluding integration (Windows)
+        if: runner.os == 'Windows'
+        run: pytest -v --cov=src/numbacs --cov-report=xml --ignore=tests/test_integration.py tests/
+
+      - name: Run light integration test for Windows
+        if: runner.os == 'Windows'
+        run: python tests/windows_integration_check.py
+
 
 #      - name: Run Windows Debug Script
 #        if: runner.os == 'Windows'
