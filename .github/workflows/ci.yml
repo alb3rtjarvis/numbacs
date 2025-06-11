@@ -46,8 +46,8 @@ jobs:
       - name: Set up Micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
-          environment-file: environment-dev.yml
-          environment-name: numbacs-dev
+          environment-file: environment-ci.yml
+          environment-name: numbacs-ci
           create-args: python=${{ matrix.python-version }}
           cache-environment: true
           init-shell: bash powershell
