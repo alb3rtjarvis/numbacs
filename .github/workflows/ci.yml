@@ -60,19 +60,15 @@ jobs:
         if: runner.os != 'Windows'
         run: pytest -v --cov=src/numbacs --cov-report=xml tests/
 
-      - name: Run Windows debug
+      - name: Run Pytest excluding integration (Windows)
         if: runner.os == 'Windows'
-        run: python windows_debug_script.py
+        run: pytest -v --cov=src/numbacs --cov-report=xml --ignore=tests/test_integration.py tests/
 
       - name: Run light integration check for Windows
+        if: runner.os == 'Windows'
         env:
           NUMBA_NUM_THREADS: 1
-        if: runner.os == 'Windows'
         run: python windows_integration_check.py
-
-#      - name: Run Pytest excluding integration (Windows)
-#        if: runner.os == 'Windows'
-#        run: pytest -v --cov=src/numbacs --cov-report=xml --ignore=tests/test_integration.py tests/
 
 #  windows_integration_check:
 #    name: Windows Integration Check
