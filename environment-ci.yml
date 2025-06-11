@@ -10,5 +10,7 @@ dependencies:
   - interpolation>=2.2.6
   - numbalsoda
   - contourpy
-  - pytest
-  - pytest-cov
+  - pip
+  - pip:
+    - pytest
+    - pytest-cov
