@@ -1,3 +1,4 @@
+print("Importing basic packages...")
 import numpy as np
 import sys
 

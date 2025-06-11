@@ -9,9 +9,5 @@ dependencies:
   - interpolation>=2.2.6
   - numbalsoda
   - contourpy
-  - pip
-  - pip:
-    - pytest
-    - pytest-cov
-    - ruff
-    - pre-commit
+  - pytest
+  - pytest-cov
