@@ -64,9 +64,11 @@ jobs:
         if: runner.os == 'Windows'
         run: python windows_debug_script.py
 
-#      - name: Run light integration check for Windows
-#        if: runner.os == 'Windows'
-#        run: python windows_integration_check.py
+      - name: Run light integration check for Windows
+        env:
+          NUMBA_NUM_THREADS: 1
+        if: runner.os == 'Windows'
+        run: python windows_integration_check.py
 
 #      - name: Run Pytest excluding integration (Windows)
 #        if: runner.os == 'Windows'
