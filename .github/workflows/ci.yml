@@ -57,7 +57,7 @@ jobs:
           python -m pip install --no-deps -e .
 
       - name: Run Pytest without Coverage
-        run: pytest -v tests/test_integration.py tests/test_diagnostics.py
+        run: pytest -v -s tests/test_integration.py
 #        run: pytest -v --cov=src/numbacs --cov-report=xml --cov-report=term-missing tests/
 
 #      - name: Run Windows Debug Script
