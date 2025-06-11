@@ -60,9 +60,13 @@ jobs:
         if: runner.os != 'Windows'
         run: pytest -v --cov=src/numbacs --cov-report=xml tests/
 
-      - name: Run light integration check for Windows
+      - name: Run Windows debug
         if: runner.os == 'Windows'
-        run: python windows_integration_check.py
+        run: python windows_debug_script.py
+
+#      - name: Run light integration check for Windows
+#        if: runner.os == 'Windows'
+#        run: python windows_integration_check.py
 
 #      - name: Run Pytest excluding integration (Windows)
 #        if: runner.os == 'Windows'
