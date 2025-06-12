@@ -66,4 +66,4 @@ jobs:
         if: runner.os == 'Windows'
         env:
           NUMBA_NUM_THREADS: 1
-        run: python windows_integration_check.py
+        run: tests/python windows_integration_check.py
