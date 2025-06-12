@@ -12,6 +12,8 @@
 #
 import os
 import sys
+import inspect
+import importlib
 sys.path.insert(0, os.path.abspath('../../src'))
 
 
@@ -37,9 +39,11 @@ extensions = [
 		'sphinxcontrib.bibtex',
 		'sphinx.ext.autosectionlabel',
 		'myst_parser',
-		'sphinx_gallery.gen_gallery'
+		'sphinx_gallery.gen_gallery',
+		'sphinx.ext.linkcode',
 		]
 
+autoapi_type = 'python'
 autoapi_dirs = ['../../src/numbacs']
 autoapi_options = [
 		   'undoc-members',
@@ -85,3 +89,54 @@ html_static_path = ['_static']
 html_css_files = [
     'css/custom.css',
 ]
+
+# -- Linkcode implementation ---------------------------------------------------
+
+def linkcode_resolve(domain, info):
+    """
+    Determine the URL corresponding to a Python object.
+    """
+    if domain != 'py' or not info['module']:
+        return None
+
+    # Get the Python object being documented
+    try:
+        obj = importlib.import_module(info['module'])
+        for part in info['fullname'].split('.'):
+            obj = getattr(obj, part)
+
+        # Unwrap decorators to get the original function
+        obj = inspect.unwrap(obj)
+
+        # Get the source file and line numbers
+        file = inspect.getsourcefile(obj)
+        if file is None:
+            return None
+
+        lines, start_line = inspect.getsourcelines(obj)
+
+        # Make the file path relative to the project root
+        project_root = os.path.dirname(os.path.abspath('../../'))
+        file = os.path.relpath(file, start=project_root)
+
+        try:
+            url_path = file[file.rfind('src/'):]
+        except ValueError:
+            return None
+
+    except (TypeError, AttributeError, ImportError, ValueError, KeyError):
+        return None
+
+    # Get the branch/tag/commit from Read the Docs environment variables
+    # Fallback to 'main' for local builds
+    version = os.environ.get('READTHEDOCS_VERSION', 'main')
+    if version == 'latest':
+        version = 'main'
+
+    # Construct the GitHub URL
+    user = "alb3rtjarvis"
+    repo = "numbacs"
+
+    end_line = start_line + len(lines) - 1
+
+    return f"https://github.com/{user}/{repo}/blob/{version}/{url_path}#L{start_line}-L{end_line}"
