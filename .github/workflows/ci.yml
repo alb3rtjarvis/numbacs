@@ -2,7 +2,9 @@ name: Continuous integration
 
 on:
   push:
-    branches: [main]
+    branches: [paper]
+  pull_request:
+    branches: [paper]
   workflow_dispatch:
 
 jobs:
