@@ -2,7 +2,7 @@ name: Continuous integration
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
