@@ -158,17 +158,6 @@ at t~0~ = 0, integration time T = -10. Total runtime per
 iterate: ~5.219s (flowmap (aux grid): ~1.83s; C eig (aux grid): ~0.039s;
 hyperbolic LCS extraction: ~3.350s). Both are computed over a 401x201 grid.
 
-**Analytical Flow (Bickley jet)**
-
-![](./img/bickley_elcs.png#center){ width=95% }
-
-[Bickley jet elliptic LCS](https://numbacs.readthedocs.io/en/latest/auto_examples/elliptic_lcs/plot_bickley_elliptic_lcs.html#sphx-glr-auto-examples-elliptic-lcs-plot-bickley-elliptic-lcs-py)
-at t~0~ = 0, integration time T = 40 days. Total runtime per
-iterate: ~9.200s (flowmap: ~5.050s; LAVD: ~4.140s; elliptic LCS extraction: ~0.010s).
-Computed over 482x121 grid.
-
-\newpage
-
 **Numerical Flow (QGE)**
 
 ![](./img/qge_ridges.png){ width=33% }
@@ -186,6 +175,15 @@ at t~0~ = 0.5. Total runtime per iterate: ~0.0452s
 (IVD: ~0.0002s; elliptic OECS extraction: ~0.045s).
 All are computed over a 257x513 grid.
 
+
+**Analytical Flow (Bickley jet)**
+
+![](./img/bickley_elcs.png#center){ width=95% }
+
+[Bickley jet elliptic LCS](https://numbacs.readthedocs.io/en/latest/auto_examples/elliptic_lcs/plot_bickley_elliptic_lcs.html#sphx-glr-auto-examples-elliptic-lcs-plot-bickley-elliptic-lcs-py)
+at t~0~ = 0, integration time T = 40 days. Total runtime per
+iterate: ~9.200s (flowmap: ~5.050s; LAVD: ~4.140s; elliptic LCS extraction: ~0.010s).
+Computed over 482x121 grid.
 
 **Numerical Flow (MERRA-2)**
 
