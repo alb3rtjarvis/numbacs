@@ -37,7 +37,7 @@ pip install numbacs
 **_NOTE:_** It is strongly recommended to use conda for installation
 due to some reported issues when using pip for one of the dependencies
 (see issues [#20](https://github.com/Nicholaswogan/numbalsoda/issues/20)
-and [#27](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
+and [#29](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
 numbalsoda package -- these seems to primarily affect Windows installations).
 
 ## Basic usage
@@ -134,7 +134,9 @@ ftle = ftle_grid_2D(flowmap, T, dx, dy)
 # plot coastlines and FTLE
 coastlines = np.load('../data/merra_june2020/coastlines.npy')
 fig,ax = plt.subplots(dpi=200)
-ax.scatter(coastlines[:,0], coastlines[:,1], 1, 'k', marker='.', edgecolors=None, linewidths=0)
+ax.scatter(
+    coastlines[:,0], coastlines[:,1], 1, 'k', marker='.', edgecolors=None, linewidths=0
+)
 ax.contourf(lonf, latf, ftle.T, levels=80, zorder=0)
 ax.set_xlim([lonf[0], lonf[-1]])
 ax.set_ylim([latf[0], latf[-1]])
