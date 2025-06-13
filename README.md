@@ -38,7 +38,7 @@ pip install numbacs
 due to some reported issues when using pip for one of the dependencies
 (see issues [#20](https://github.com/Nicholaswogan/numbalsoda/issues/20)
 and [#29](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
-numbalsoda package -- these seems to primarily affect Windows installations).
+numbalsoda package -- these seem to primarily affect Windows installations).
 
 ## Basic usage
 
