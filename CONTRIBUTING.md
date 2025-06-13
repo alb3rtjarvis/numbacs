@@ -2,7 +2,7 @@ Contributing to NumbaCS
 =======================
 
 
-First off, thank you for considering contributing to NumbaCS. 
+First off, thank you for considering contributing to NumbaCS.
 
 How to contribute
 -----------------
@@ -83,10 +83,10 @@ following rules before you submit a pull request:
    to other methods available in NumbaCS.
 
 -  Documentation and tests are necessary for enhancements to be
-   accepted. Bug-fixes or new features should be provided with 
+   accepted. Bug-fixes or new features should be provided with
    with passing tests using pytest. If you are unfamiliar with pytest,
    see the [pytest](https://docs.pytest.org/en/stable/) documentation for
-   details. These tests verify the correct behavior of the fix or feature. 
+   details. These tests verify the correct behavior of the fix or feature.
    For the Bug-fixes case, at the time of the PR, tests should fail for
    the code base in main and pass for the PR code.
 
@@ -127,15 +127,15 @@ following rules before submitting:
   import scipy; print("SciPy", scipy.__version__)
   import contourpy; print("ContourPy", contourpy.__version__)
   ```
-  
+
   The rest (numbalsoda and interpolation) can be found by opening a terminal and
   running the following commands:
-  
+
   ```bash
   $ conda activate numbacs_env
   $ conda list
   ```
-  
+
   where ```numbacs_env``` is the conda enviornment that NumbaCS is installed in.
 
 -  Please be specific about what functions are involved
@@ -159,7 +159,7 @@ documentation without the example gallery with `make html-noplot`. The resulting
 be placed in `docs/build/html/` and are viewable in a web browser.
 
 For building the documentation, you will need
-[sphinx](https://www.sphinx-doc.org/),
+[sphinx](https://www.sphinx-doc.org/)
 [matplotlib](http://matplotlib.org/), and
 [pillow](http://pillow.readthedocs.io/en/latest/).
 
@@ -171,6 +171,6 @@ method does to the data and a figure (coming from an example)
 illustrating it.
 
 
-This Contribution guide is strongly inspired by the one of the 
+This Contribution guide is strongly inspired by the one of the
 [POT](https://github.com/PythonOT/POT) team, which was inspired by the one
 of the [scikit-learn](https://github.com/scikit-learn/scikit-learn) team.

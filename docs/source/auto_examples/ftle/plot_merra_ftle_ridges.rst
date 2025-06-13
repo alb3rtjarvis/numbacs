@@ -52,7 +52,7 @@ ranging from 500hPa to 800hPa.
 
 Get flow data
 --------------
-Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+Load in atmospheric velocity data, dates, and coordinates. Set domain for
 FTLE computation and integration span. Create interpolant and retrieve flow.
 
 .. note::

@@ -23,9 +23,9 @@ from scipy.ndimage import gaussian_filter
 # %%
 # Get flow data
 # --------------
-# Load in atmospheric velocity data, dates, and coordinates. Set domain for 
+# Load in atmospheric velocity data, dates, and coordinates. Set domain for
 # FTLE computation and integration span. Create interpolant and retrieve flow.
-# 
+#
 # .. note::
 #    Pandas is a simpler option for storing and manipulating dates but we use
 #    numpy here as Pandas is not a dependency.

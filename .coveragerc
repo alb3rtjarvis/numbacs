@@ -1,0 +1,11 @@
+[run]
+branch = true
+source = src/numbacs
+
+omit =
+    tests/*
+    */site-packages/*
+    */dist-packages/*
+
+[report]
+fail_under = 0

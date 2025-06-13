@@ -72,7 +72,7 @@ elcs = rotcohvrt(ivd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=min
 # sphinx_gallery_thumbnail_number = 1
 fig,ax = plt.subplots(dpi=200)
 ax.contourf(x,y,ivd.T,levels=80)
-ax.set_aspect('equal')   
+ax.set_aspect('equal')
 for rcv,c in elcs:
     ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
     ax.scatter(c[0],c[1],1.5)

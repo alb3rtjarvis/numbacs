@@ -31,11 +31,14 @@ conda install -c conda-forge numbacs
 ```
 Pip:
 ```
-python -m pip install numbacs
+pip install numbacs
 ```
 
 **_NOTE:_** It is strongly recommended to use conda for installation
-due to some reported issues when using pip for one of the dependencies.
+due to some reported issues when using pip for one of the dependencies
+(see issues [#20](https://github.com/Nicholaswogan/numbalsoda/issues/20)
+and [#29](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
+numbalsoda package -- these seems to primarily affect Windows installations).
 
 ## Basic usage
 
@@ -55,7 +58,7 @@ T = -10.
 int_direction = copysign(1, T)
 
 # get ode to be used by 'flowmap_grid_2D'
-funcptr, params, domain = get_predefined_flow('double_gyre', int_direction = int_direction)
+funcptr, params, domain = get_predefined_flow('double_gyre', int_direction=int_direction)
 
 # set up domain
 nx,ny = 401,201
@@ -91,50 +94,52 @@ import matplotlib.pyplot as plt
 # load in atmospheric data
 dates = np.load('../data/merra_june2020/dates.npy')
 dt = (dates[1] - dates[0]).astype('timedelta64[h]').astype(int)
-t = np.arange(0,len(dates)*dt,dt,np.float64)
+t = np.arange(0, len(dates)*dt, dt, np.float64)
 lon = np.load('../data/merra_june2020/lon.npy')
 lat = np.load('../data/merra_june2020/lat.npy')
 
 # NumbaCS uses 'ij' indexing, most geophysical data uses 'xy'
 # indexing for the spatial coordintes. We need to switch axes and
 # scale by 3.6 since velocity data is in m/s and we want km/hr.
-u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1,2)*3.6
-v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1,2)*3.6
+u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1, 2)*3.6
+v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1, 2)*3.6
 nt,nx,ny = u.shape
 
 # set domain on which ftle will be computed
 dx = 0.2
 dy = 0.2
-lonf = np.arange(-100,35+dx,dx)
-latf = np.arange(-5,45+dy,dy)
+lonf = np.arange(-100, 35+dx, dx)
+latf = np.arange(-5, 45+dy, dy)
 
 # set integration span and integration direction
 day = 16
 t0_date = np.datetime64("2020-06-{:02d}".format(day))
 t0 = t[np.nonzero(dates == t0_date)[0][0]]
 T = -72.0
-params = np.array([copysign(1,T)])
+params = np.array([copysign(1, T)])
 
 # get interpolant arrays of velocity field
 grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, lon, lat, u, v)
 
 # retrieve flow and set spherical = 1 since flow is on spherical domain
-# and lon is from [-180,180)
+# and lon is from [-180, 180)
 funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
 # compute final position of particle trajectories over grid
 flowmap = flowmap_grid_2D(funcptr, t0, T, lonf, latf, params)
 
 # compute FTLE over grid
-ftle = ftle_grid_2D(flowmap,T,dx,dy)
+ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 # plot coastlines and FTLE
 coastlines = np.load('../data/merra_june2020/coastlines.npy')
 fig,ax = plt.subplots(dpi=200)
-ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,linewidths=0)
-ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
-ax.set_xlim([lonf[0],lonf[-1]])
-ax.set_ylim([latf[0],latf[-1]])
+ax.scatter(
+    coastlines[:,0], coastlines[:,1], 1, 'k', marker='.', edgecolors=None, linewidths=0
+)
+ax.contourf(lonf, latf, ftle.T, levels=80, zorder=0)
+ax.set_xlim([lonf[0], lonf[-1]])
+ax.set_ylim([latf[0], latf[-1]])
 ax.set_aspect('equal')
 plt.show()
 ```
@@ -147,7 +152,7 @@ NumbaCS is built on top of three main packages: [Numba](https://numba.pydata.org
 
 ## Roadmap
 
-Future releases aim to extend certain methods to higher dimensions, implement new features that should be straightforward within this framework (shape coherent sets, lobe dynamics, etc.), and further streamline and optimize the process for large-scale geophysical applications. 
+Future releases aim to extend certain methods to higher dimensions, implement new features that should be straightforward within this framework (shape coherent sets, lobe dynamics, etc.), and further streamline and optimize the process for large-scale geophysical applications.
 
 ## Contributing
 
@@ -159,7 +164,11 @@ for more details.
 
 ## Similar software
 
-[`Lagrangian`](https://lagrangian.readthedocs.io/en/latest/index.html) -- 
+This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmarks](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
+
+---
+
+[`Lagrangian`](https://lagrangian.readthedocs.io/en/latest/index.html) --
 Python package for computing FSLE, FTLE, and eigenvectors of Cauchy-Green tensor with a
 focus on geophysical flows. Only works with NetCDF files for velocity data.
 Largely written in C++ with pybind11 used for binding, resulting in fast
@@ -168,7 +177,7 @@ runtimes.
 - *Integration*: RK4 (C++)
 - *Interpolation*: Linear
 
-[`Dynlab`](https://github.com/hokiepete/dynlab) -- 
+[`Dynlab`](https://github.com/hokiepete/dynlab) --
 Object oriented Python package
 which computes Lagrangian and Eulerian diagnostics along with ridge extraction.
 Provides a large collection of predefined flows and is very user friendly.
@@ -176,7 +185,7 @@ Provides a large collection of predefined flows and is very user friendly.
 - *Integration*: LSODA (Python)
 - *Interpolation*: N/A
 
-[`TBarrier`](https://github.com/haller-group/TBarrier) -- 
+[`TBarrier`](https://github.com/haller-group/TBarrier) --
 Collection of Jupyter
 notebooks accompanying the book *Transport Barriers and Coherent Structures
 in Flow Data -- Advective, Diffusive, Stochastic, and Active methods by George
@@ -188,21 +197,21 @@ implements purely advective methods in 2D).
 - *Integration*: RK4 (Python)
 - *Interpolation*: Linear in time, cubic in space
 
-[`Newman`](https://github.com/RossDynamics/Newmanv3.1) -- 
+[`Newman`](https://github.com/RossDynamics/Newmanv3.1) --
 Fast C++ code for computing FTLE which works with geophysical flows and storm
 tracking. Velocity data must be raw binary or ASCII format. No longer maintained.
 - *Features* (both 2D and 3D): FTLE, Cauchy Green eigenvectors
 - *Integration*: RK45, RK4, Euler (C++)
 - *Interpolation*: Linear
 
-[`Aquila-LCS`](https://github.com/ChristianLagares/Aquila-LCS) -- 
+[`Aquila-LCS`](https://github.com/ChristianLagares/Aquila-LCS) --
 Python code designed to compute FTLE for high-speed turbulent boundary layers in 3D.
 Utilizes Numba to implement GPU and CPU versions of the code for fast runtimes.
 - *Features* (both 2D and 3D): FTLE, FSLE
 - *Integration*: Euler (Python/Numba)
 - *Interpolation*: Linear
 
-[`CoherentStructures.jl`](https://coherentstructures.github.io/CoherentStructures.jl/stable/) -- 
+[`CoherentStructures.jl`](https://coherentstructures.github.io/CoherentStructures.jl/stable/) --
 Julia toolbox for computing LCS/FTCS in aperiodic flows. Implements elliptic
 LCS methods, FEM-based methods (FEM approximation of dynamic Laplacian for FTCS
 extraction), and Graph Laplacian-based methods (spectral clustering and
@@ -211,20 +220,20 @@ diffusion maps for coherent sets).
 - *Integration*: DifferentialEquations.jl, a very advanced and efficient suite of DE solvers (Julia)
 - *Interpolation*: Linear, cubic, B-Spline
 
-[`LCS Tool`](https://github.com/haller-group/LCStool) -- 
+[`LCS Tool`](https://github.com/haller-group/LCStool) --
 MATLAB code used to compute elliptic LCS, hyperbolic LCS, and FTLE.
 - *Features*: FTLE, variational hyperbolic LCS, variational elliptic LCS
 - *Integration*: ode45 - based off of RK5(4) due to Dormand and Prince (MATLAB)
 - *Interpolation*: Linear, cubic
 
-[`LCS MATLAB Kit`](https://dabirilab.com/software) -- 
+[`LCS MATLAB Kit`](https://dabirilab.com/software) --
 MATLAB GUI for computing FTLE from a time series of 2D velocity data. Has FTLE
 implementation for intertial particles as well (iFTLE).
 - *Features*: FTLE, iFTLE
 - *Integration*: Version 1.0 -- RK4 (MATLAB), Version 2.3 -- Euler (MATLAB)
 - *Interpolation* Version 1.0 -- Cubic, Version 2.3 -- Linear
 
-[`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) -- 
+[`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) --
 Numba accelerated Python package which efficiently computes a variety of
 coherent structure methods.
 - *Features*: FTLE, iLE, FTLE ridge extraction, variational hyperbolic LCS and OECS, LAVD-based elliptic LCS, IVD-based elliptic OECS, flow map composition

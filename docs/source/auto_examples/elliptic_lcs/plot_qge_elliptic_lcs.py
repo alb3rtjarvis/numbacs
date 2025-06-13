@@ -101,12 +101,12 @@ elcs = rotcohvrt(lavd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=mi
 # sphinx_gallery_thumbnail_number = 1
 fig,ax = plt.subplots(dpi=200)
 ax.contourf(x,y,lavd.T,levels=80)
-ax.set_aspect('equal')   
+ax.set_aspect('equal')
 for rcv,c in elcs:
     ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
     ax.scatter(c[0],c[1],1.5)
-plt.show()    
-    
+plt.show()
+
 # %%
 # Advect elliptic LCS
 # -------------------
@@ -136,7 +136,7 @@ adv_circ, _ = flowmap_n(funcptr,t0,T,circ_delta,params,n=frames)
 
 # find which points from the filled circle are inside elliptic lcs
 # for plotting purposes
-mask = pts_in_poly_mask(rcv0,circ_delta)    
+mask = pts_in_poly_mask(rcv0,circ_delta)
 
 # create plot
 fig,ax = plt.subplots(dpi = 100)
@@ -160,15 +160,15 @@ def update(frame):
     data0 = np.column_stack((x0,y0))
     data_in = np.column_stack((x_in,y_in))
     data_out = np.column_stack((x_out,y_out))
-    
+
     # update each scatter plot
     scatter0.set_offsets(data0)
     scatter_in.set_offsets(data_in)
     scatter_out.set_offsets(data_out)
-    
+
     # update title
     ax.set_title("t = {:.2f}".format(round(teval[frame],2)))
-    
+
     return (scatter0, scatter_in, scatter_out)
 
 # create animation

@@ -1,0 +1,31 @@
+{
+    "creators": [
+        {
+            "name": "Jarvis, Albert",
+            "orcid": "0009-0006-8770-6728",
+            "affiliation": "Virginia Tech"
+        }
+    ],
+    "contributors": [
+        {
+            "name": "Ross, Shane",
+            "orcid": "0000-0001-5523-2376",
+            "affiliation": "Virginia Tech"
+        }
+    ],
+    "title": "NumbaCS",
+    "access_right": "open",
+    "description": "Numba-accelerated coherent structure package.",
+    "keywords": [
+        "applied mathematics",
+        "numba",
+        "fluid dynamics",
+        "dynamical systems",
+        "lagrangian coherent structures",
+        "lcs",
+        "ftle"
+    ],
+    "license": "mpl-2.0",
+    "upload_type": "software",
+    "language": "python"
+}
