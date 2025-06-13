@@ -164,7 +164,7 @@ for more details.
 
 ## Similar software
 
-This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmark](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
+This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmarks](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
 
 ---
 
