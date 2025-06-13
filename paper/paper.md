@@ -167,6 +167,8 @@ at t~0~ = 0, integration time T = 40 days. Total runtime per
 iterate: ~9.200s (flowmap: ~5.050s; LAVD: ~4.140s; elliptic LCS extraction: ~0.010s).
 Computed over 482x121 grid.
 
+\newpage
+
 **Numerical Flow (QGE)**
 
 ![](./img/qge_ridges.png){ width=33% }
