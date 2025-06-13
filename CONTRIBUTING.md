@@ -159,7 +159,7 @@ documentation without the example gallery with `make html-noplot`. The resulting
 be placed in `docs/build/html/` and are viewable in a web browser.
 
 For building the documentation, you will need
-[sphinx](https://www.sphinx-doc.org/)
+[sphinx](https://www.sphinx-doc.org/),
 [matplotlib](http://matplotlib.org/), and
 [pillow](http://pillow.readthedocs.io/en/latest/).
 
