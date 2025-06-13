@@ -25,17 +25,20 @@ bibliography: paper.bib
 
 # Summary
 
-`NumbaCS` (Numba Coherent Structures) is a Python package that implements a
-variety of coherent structure methods in an efficient and user-friendly manner.
-"Coherent structure methods" refer to any method which can be used to infer or
-extract Lagrangian and objective Eulerian coherent structures. The theory behind
-these methods have been developed over the last few decades with the aim of
-extending many of the important invariant objects from time-independent
-dynamical systems theory to the more general setting where a system may have
-arbitrary time dependence and may only be known or defined for some finite time.
-These time-dependent systems are ubiquitous in the context of geophysical and
-engineering flows where the evolution of the velocity field depends on time and
-velocity data representing these flows is not available for all time. By
+`NumbaCS` (Numba Coherent Structures) is a Python package that efficiently
+implements a variety of methods for studying material transport in time-dependent
+fluid flows. It leverages `Numba` -- a high performance Python compiler
+for generating optimized machine code from Python functions -- along with other
+`Numba`-compatible packages behind the scenes, producing fast and user-friendly
+implementations of coherent structure methods. "Coherent structure methods" refer
+to any method which can be used to infer or extract Lagrangian and objective
+Eulerian coherent structures. The theory behind these methods have been developed
+over the last few decades with the aim of extending many of the important invariant
+objects from time-independent dynamical systems theory to the more general setting
+where a system may have arbitrary time dependence and may only be known or defined
+for some finite time. These time-dependent systems are ubiquitous in the context of
+geophysical and engineering flows where the evolution of the velocity field depends
+on time and velocity data representing these flows is not available for all time. By
 extending the ideas from the time-independent setting to the more general
 time-dependent setting, important transient objects (coherent structures) can
 be identified which govern how material is transported within a flow.
@@ -47,20 +50,20 @@ persons lost at sea.
 
 # Statement of need
 
-As theory and implementations of coherent structures have been developed [@haller1998; @shadden2005; 
-@mathur2007; @haller2011; @farazmand2012; @schindler2012; @haller2013; 
+As theory and implementations of coherent structures have been developed [@haller1998; @shadden2005;
+@mathur2007; @haller2011; @farazmand2012; @schindler2012; @haller2013;
 @haller2016; @serra2016; @nolan2020] and the utility of these tools
 has been demonstrated over the last two decades [@dutoit2010; @rutherford2012;
-@peacock2013; @serra2017; @liu2018; @nolanpollution2020; @gunther2021; 
+@peacock2013; @serra2017; @liu2018; @nolanpollution2020; @gunther2021;
 @pretorius2023; @curbelo2023], there has been a steadily growing
-interest in using these methods for real-world applications. 
+interest in using these methods for real-world applications.
 Early on, software implementations were largely contained to in-house packages
 developed by applied mathematicians and engineers advancing the theory. Over
 the years, there have been a number of software packages developed in an attempt
 to provide implementations of some of these methods for practitioners outside
 of the field. Some provide a friendly interface for users (`Dynlab` -- @dynlab;
  `LCS MATLAB Kit` -- @lcskit), others aim to provide efficient implementations of
-specific methods (sometimes in specific circumstances) 
+specific methods (sometimes in specific circumstances)
 (`Lagrangian` -- @lagrangian; `Newman` -- @dutoitthesis2010;
 `Aquila-LCS` --  @lagares2023gpu), and a few implement a variety of methods
 (`Tbarrier` -- @tbarrier; `LCS Tool` - @lcstool). NumbaCS intends to unite these aims by providing
@@ -68,7 +71,7 @@ efficient and user-friendly implementations of a variety of coherent structure
 methods. By doing this, the hope is to provide a powerful tool for experienced
 practitioners and a low barrier of entry for newcomers. In addition, as new
 methods/implementations arise, the framework laid out in `NumbaCS`
-provides a straightforward environment for contributions and maintenance. 
+provides a straightforward environment for contributions and maintenance.
 Also of note is another package called `CoherentStructures.jl` [@csjl], which is
 fast, user-friendly, and implements a variety of methods. This package has some
 overlap with `NumbaCS` but they both implement methods which the other does not.
@@ -100,17 +103,17 @@ For flows defined by numerical velocity data:
 
 - Simple creation of JIT compiled linear and cubic interpolants
 
-All of these implementations are relatively straightforward to use and 
+All of these implementations are relatively straightforward to use and
 quite efficient. This is due to three key dependencies `NumbaCS` utilizes to speed
 up computations. The first is `Numba` [@numba], a JIT compiler for Python which can
 drastically speed up numerical operations and provides a simple framework
 for parallelizing tasks. Next, `numbalsoda` [@numbalsoda] is a Python wrapper to
 ODE solvers in both C++ (LSODA) and FORTRAN (DOP853) that bypasses the Python
-interpreter and can be used within Numba functions (standard Python ODE solvers
-cannot be executed within `Numba` functions). This package is crucial to the
-efficiency of NumbaCS as particle integration is often the most costly part of
-finite-time coherent structure methods. Finally, the `interpolation` package
-[@interpolation] provides optimized interpolation in Python and is utilized in
+interpreter and can be used within Numba functions (common Python ODE solvers, such
+as those provided by the `SciPy` package, cannot be executed within `Numba` functions).
+This package is crucial to the efficiency of NumbaCS as particle integration is often
+the most costly part of finite-time coherent structure methods. Finally, the `interpolation`
+package [@interpolation] provides optimized interpolation in Python and is utilized in
 `NumbaCS` to create JIT compiled interpolant functions, producing efficient
 implementations of methods even for flows defined by numerical data.
 By taking advantage of these packages behind the scenes, `NumbaCS` is able to
@@ -121,7 +124,7 @@ achieving runtimes closer to that of a compiled language.
 # Examples
 
 A [User Guide](https://numbacs.readthedocs.io/en/latest/userguide.html) is
-provided which details the workflow in NumbaCS and a number of examples 
+provided which details the workflow in NumbaCS and a number of examples
 demonstrating the functionality are covered in the
 [Example Gallery](https://numbacs.readthedocs.io/en/latest/auto_examples/index.html).
 Here we show the output of a few examples, provide the runtime of each, and
@@ -177,7 +180,7 @@ Middle: [QGE hyperbolic OECS](https://numbacs.readthedocs.io/en/latest/auto_exam
 at t~0~ = 0.15. Total runtime per
 iterate: ~2.238s (S eig: ~0.038s; hyperbolic OECS extraction: ~2.200s).
 Right: [QGE elliptic OECS](https://numbacs.readthedocs.io/en/latest/auto_examples/elliptic_oecs/plot_qge_elliptic_oecs.html#sphx-glr-auto-examples-elliptic-oecs-plot-qge-elliptic-oecs-py)
-at t~0~ = 0.5. Total runtime per iterate: ~0.0452s 
+at t~0~ = 0.5. Total runtime per iterate: ~0.0452s
 (IVD: ~0.0002s; elliptic OECS extraction: ~0.045s).
 All are computed over a 257x513 grid.
 
@@ -199,14 +202,14 @@ defined by numerical velocity data. One is a numerical simulation of the
 quasi-geostrophic equations (QGE). We thank the authors of @mou2021 for providing
 us with this dataset, which was used extensively during development, and allowing
 a piece of the dataset to be included in the package. The full dataset was over
-the time span [10,81] with dt = 0.01. We provide the velocity fields over the 
+the time span [10,81] with dt = 0.01. We provide the velocity fields over the
 much shorter time span of [10,11] with the same dt. For details on parameters
 used in the simulation, refer to the cited paper. The other dataset is a MERRA-2
 vertically averaged reanalysis dataset [@merra2; @merra_file], which was used as
 part of a paper [@jarvis2024] coauthored by the authors of this paper. Wind
 velocity fields were vertically averaged over pressure surfaces ranging from
 500 hPa to 800 hPa. The corresponding latitude, longitude, and
-date arrays are also provided. All data can be downloaded from the 
+date arrays are also provided. All data can be downloaded from the
 [data folder](https://github.com/alb3rtjarvis/numbacs/tree/main/examples/data)
 on the GitHub page.
 
