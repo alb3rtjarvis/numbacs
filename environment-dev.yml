@@ -9,11 +9,15 @@ dependencies:
   - interpolation>=2.2.6
   - numbalsoda
   - contourpy
+  - pytest
+  - pytest-cov
+  - ruff
+  - pre-commit
+  - sphinx
+  - sphinx_rtd_theme
+  - myst-parser
+  - sphinx-autoapi
+  - sphinxcontrib-bibtex
   - pip
   - pip:
-    - pytest
-    - pytest-cov
-    - ruff
-    - pre-commit
-    - sphinx
-    - sphinx-rtd-theme
+    - sphinx_gallery
