@@ -9,7 +9,15 @@ description = 'Numba accelerated coherent structure package.'
 readme = "README.md"
 requires-python = ">=3.10, <3.12"
 license = "MPL-2.0"
-keywords = []
+keywords = [
+  "applied-mathematics",
+  "dynamical-systems",
+  "numba",
+  "fluid-dynamics",
+  "lcs",
+  "ftle",
+  "lagrangian-coherent-structures"
+]
 authors = [
   { name = "alb3rtjarvis", email = "ajarvis@vt.edu" },
 ]
@@ -39,6 +47,10 @@ lint = [
 docs = [
     "sphinx",
     "sphinx-rtd-theme",
+    "myst-parser",
+    "sphinx-autoapi",
+    "sphinxcontrib-bibtex",
+    "sphinx-gallery"
 ]
 dev = [
     "numbacs[test,lint,docs]",
