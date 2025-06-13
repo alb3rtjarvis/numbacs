@@ -25,7 +25,7 @@ Compute the FTLE field for atmospheric flow at time of Godzilla dust
 storm using MERRA-2 data which is vertically averaged over pressure surfaces
 ranging from 500hPa to 800hPa.
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-21
+.. GENERATED FROM PYTHON SOURCE LINES 10-20
 
 .. code-block:: Python
 
@@ -46,7 +46,7 @@ ranging from 500hPa to 800hPa.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 22-30
+.. GENERATED FROM PYTHON SOURCE LINES 21-29
 
 Get flow data
 --------------
@@ -57,30 +57,30 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 30-51
+.. GENERATED FROM PYTHON SOURCE LINES 29-50
 
 .. code-block:: Python
 
 
     # load in atmospheric data
-    dates = np.load('../data/merra_june2020/dates.npy')
-    dt = (dates[1] - dates[0]).astype('timedelta64[h]').astype(int)
-    t = np.arange(0,len(dates)*dt,dt,np.float64)
-    lon = np.load('../data/merra_june2020/lon.npy')
-    lat = np.load('../data/merra_june2020/lat.npy')
+    dates = np.load("../data/merra_june2020/dates.npy")
+    dt = (dates[1] - dates[0]).astype("timedelta64[h]").astype(int)
+    t = np.arange(0, len(dates) * dt, dt, np.float64)
+    lon = np.load("../data/merra_june2020/lon.npy")
+    lat = np.load("../data/merra_june2020/lat.npy")
 
     # NumbaCS uses 'ij' indexing, most geophysical data uses 'xy'
     # indexing for the spatial coordintes. We need to switch axes and
     # scale by 3.6 since velocity data is in m/s and we want km/hr.
-    u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1,2)*3.6
-    v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1,2)*3.6
-    nt,nx,ny = u.shape
+    u = np.moveaxis(np.load("../data/merra_june2020/u_500_800hPa.npy"), 1, 2) * 3.6
+    v = np.moveaxis(np.load("../data/merra_june2020/v_500_800hPa.npy"), 1, 2) * 3.6
+    nt, nx, ny = u.shape
 
     # set domain on which ftle will be computed
     dx = 0.15
     dy = 0.15
-    lonf = np.arange(-100,35+dx,dx)
-    latf = np.arange(-5,45+dy,dy)
+    lonf = np.arange(-100, 35 + dx, dx)
+    latf = np.arange(-5, 45 + dy, dy)
 
 
 
@@ -89,26 +89,26 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-53
+.. GENERATED FROM PYTHON SOURCE LINES 51-52
 
 set integration span and integration direction
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-67
+.. GENERATED FROM PYTHON SOURCE LINES 52-66
 
 .. code-block:: Python
 
     day = 16
-    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0_date = np.datetime64(f"2020-06-{day:02d}")
     t0 = t[np.nonzero(dates == t0_date)[0][0]]
     T = -72.0
-    params = np.array([copysign(1,T)])
+    params = np.array([copysign(1, T)])
 
     # get interpolant arrays of velocity field
     grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, lon, lat, u, v)
 
     # set integration direction and retrieve flow
     # set spherical = 1 since flow is on spherical domain and lon is from [-180,180)
-    params = np.array([copysign(1,T)])
+    params = np.array([copysign(1, T)])
     funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
 
@@ -118,13 +118,13 @@ set integration span and integration direction
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-71
+.. GENERATED FROM PYTHON SOURCE LINES 67-70
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-73
+.. GENERATED FROM PYTHON SOURCE LINES 70-72
 
 .. code-block:: Python
 
@@ -137,17 +137,17 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-77
+.. GENERATED FROM PYTHON SOURCE LINES 73-76
 
 FTLE
 ----
 Compute FTLE field from final particle positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-79
+.. GENERATED FROM PYTHON SOURCE LINES 76-78
 
 .. code-block:: Python
 
-    ftle = ftle_grid_2D(flowmap,T,dx,dy)
+    ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 
 
@@ -156,25 +156,26 @@ Compute FTLE field from final particle positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-84
+.. GENERATED FROM PYTHON SOURCE LINES 79-83
 
 Plot
 ----
 Plot the results. Using the cartopy package for plotting geophysical data is
 advised but it is not a dependency so we simply use matplotlib.
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-91
+.. GENERATED FROM PYTHON SOURCE LINES 83-91
 
 .. code-block:: Python
 
-    coastlines = np.load('../data/merra_june2020/coastlines.npy')
-    fig,ax = plt.subplots(dpi=200)
-    ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,linewidths=0)
-    ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
-    ax.set_xlim([lonf[0],lonf[-1]])
-    ax.set_ylim([latf[0],latf[-1]])
-    ax.set_aspect('equal')
+    coastlines = np.load("../data/merra_june2020/coastlines.npy")
+    fig, ax = plt.subplots(dpi=200)
+    ax.scatter(coastlines[:, 0], coastlines[:, 1], 1, "k", marker=".", edgecolors=None, linewidths=0)
+    ax.contourf(lonf, latf, ftle.T, levels=80, zorder=0)
+    ax.set_xlim([lonf[0], lonf[-1]])
+    ax.set_ylim([latf[0], latf[-1]])
+    ax.set_aspect("equal")
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/ftle/images/sphx_glr_plot_merra_ftle_001.png
@@ -189,7 +190,7 @@ advised but it is not a dependency so we simply use matplotlib.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 18.059 seconds)
+   **Total running time of the script:** (0 minutes 17.216 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_merra_ftle.py:

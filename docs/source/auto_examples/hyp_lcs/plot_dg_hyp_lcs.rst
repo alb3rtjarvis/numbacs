@@ -23,7 +23,7 @@ Double gyre Hyperbolic LCS
 
 Compute hyperbolic LCS using the variational theory for the double gyre.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-19
+.. GENERATED FROM PYTHON SOURCE LINES 8-18
 
 .. code-block:: Python
 
@@ -44,31 +44,31 @@ Compute hyperbolic LCS using the variational theory for the double gyre.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow
 --------------
 Set the integration span and direction, retrieve the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-39
+.. GENERATED FROM PYTHON SOURCE LINES 22-38
 
 .. code-block:: Python
 
 
     # set initial time, integration time, and integration direction
-    t0 = 0.
-    T = -10.
-    int_direction = copysign(1,T)
+    t0 = 0.0
+    T = -10.0
+    int_direction = copysign(1, T)
 
     # retrieve function pointer and parameters for double gyre flow.
-    funcptr, params, domain = get_predefined_flow('double_gyre', int_direction = int_direction)
+    funcptr, params, domain = get_predefined_flow("double_gyre", int_direction=int_direction)
 
     # set up domain
-    nx,ny = 401,201
-    x = np.linspace(domain[0][0],domain[0][1],nx)
-    y = np.linspace(domain[1][0],domain[1][1],ny)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nx, ny = 401, 201
+    x = np.linspace(domain[0][0], domain[0][1], nx)
+    y = np.linspace(domain[1][0], domain[1][1], ny)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -77,13 +77,13 @@ Set the integration span and direction, retrieve the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-43
+.. GENERATED FROM PYTHON SOURCE LINES 39-42
 
 Integrate
 ---------
 Integrate grid of particles and auxillary grid with spacing h, return final positions
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-49
+.. GENERATED FROM PYTHON SOURCE LINES 42-48
 
 .. code-block:: Python
 
@@ -91,7 +91,7 @@ Integrate grid of particles and auxillary grid with spacing h, return final posi
     # computes final position of particle trajectories over grid + auxillary grid
     # with spacing h
     h = 1e-5
-    flowmap = flowmap_aux_grid_2D(funcptr, t0, T, x, y, params,h=h)
+    flowmap = flowmap_aux_grid_2D(funcptr, t0, T, x, y, params, h=h)
 
 
 
@@ -100,24 +100,24 @@ Integrate grid of particles and auxillary grid with spacing h, return final posi
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-53
+.. GENERATED FROM PYTHON SOURCE LINES 49-52
 
 CG eigenvalues, eigenvectors, and FTLE
 ----------------------------------------------
 Compute eigenvalues/vectors of CG tensor from final particle positions and compute FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-61
+.. GENERATED FROM PYTHON SOURCE LINES 52-60
 
 .. code-block:: Python
 
 
     # compute eigenvalues/vectors of Cauchy Green tensor
-    eigvals,eigvecs = C_eig_aux_2D(flowmap, dx, dy, h=h)
-    eigval_max = eigvals[:,:,1]
-    eigvec_max = eigvecs[:,:,:,1]
+    eigvals, eigvecs = C_eig_aux_2D(flowmap, dx, dy, h=h)
+    eigval_max = eigvals[:, :, 1]
+    eigvec_max = eigvecs[:, :, :, 1]
 
     # copmute FTLE from max eigenvalue
-    ftle = ftle_from_eig(eigval_max,T)
+    ftle = ftle_from_eig(eigval_max, T)
 
 
 
@@ -125,13 +125,13 @@ Compute eigenvalues/vectors of CG tensor from final particle positions and compu
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-65
+.. GENERATED FROM PYTHON SOURCE LINES 61-64
 
 Hyperbolic LCS
 --------------
 Compute hyperbolic LCS using the variational theory.
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-90
+.. GENERATED FROM PYTHON SOURCE LINES 64-100
 
 .. code-block:: Python
 
@@ -146,19 +146,30 @@ Compute hyperbolic LCS using the variational theory.
     nmax = -1
     dtol = 1e-1
     nlines = 10
-    percentile=40
-    ep_dist_tol=1e-2
+    percentile = 40
+    ep_dist_tol = 1e-2
     lambda_avg_min = 600
-    arclen_flag=True
+    arclen_flag = True
 
     # extract hyperbolic lcs
-    lcs = hyperbolic_lcs(eigval_max, eigvecs, x, y, step_size, steps, lf, lmin, r, nmax,
-                         dist_tol=dtol,
-                         nlines=nlines,
-                         ep_dist_tol=ep_dist_tol,
-                         percentile=percentile,
-                         lambda_avg_min=lambda_avg_min,
-                         arclen_flag=arclen_flag)
+    lcs = hyperbolic_lcs(
+        eigval_max,
+        eigvecs,
+        x,
+        y,
+        step_size,
+        steps,
+        lf,
+        lmin,
+        r,
+        nmax,
+        dist_tol=dtol,
+        nlines=nlines,
+        ep_dist_tol=ep_dist_tol,
+        percentile=percentile,
+        lambda_avg_min=lambda_avg_min,
+        arclen_flag=arclen_flag,
+    )
 
 
 
@@ -167,22 +178,23 @@ Compute hyperbolic LCS using the variational theory.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-94
+.. GENERATED FROM PYTHON SOURCE LINES 101-104
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-99
+.. GENERATED FROM PYTHON SOURCE LINES 104-110
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ftle.T,levels=80)
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ftle.T, levels=80)
     for l in lcs:
-        ax.plot(l[:,0],l[:,1],'r',lw=1)
-    ax.set_aspect('equal')
+        ax.plot(l[:, 0], l[:, 1], "r", lw=1)
+    ax.set_aspect("equal")
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/hyp_lcs/images/sphx_glr_plot_dg_hyp_lcs_001.png
@@ -197,7 +209,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 30.174 seconds)
+   **Total running time of the script:** (0 minutes 29.687 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_lcs_plot_dg_hyp_lcs.py:

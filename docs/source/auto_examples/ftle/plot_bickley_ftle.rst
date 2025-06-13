@@ -23,7 +23,7 @@ Bickley jet FTLE
 
 Compute the FTLE field for the bickley jet.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-18
+.. GENERATED FROM PYTHON SOURCE LINES 8-17
 
 .. code-block:: Python
 
@@ -43,32 +43,32 @@ Compute the FTLE field for the bickley jet.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 19-22
+.. GENERATED FROM PYTHON SOURCE LINES 18-21
 
 Get flow
 --------------
 Set the integration span and direction, retrieve the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 22-39
+.. GENERATED FROM PYTHON SOURCE LINES 21-38
 
 .. code-block:: Python
 
 
     # set initial time, integration time, and integration direction
-    t0 = 0.
-    T = 6.
-    int_direction = copysign(1,T)
+    t0 = 0.0
+    T = 6.0
+    int_direction = copysign(1, T)
 
     # retrieve function pointer, parameters, and domain for bickley jet flow.
-    funcptr, params, domain = get_predefined_flow('bickley_jet', int_direction = int_direction)
+    funcptr, params, domain = get_predefined_flow("bickley_jet", int_direction=int_direction)
 
     # set up domain
     dx = 0.05
     dy = 0.05
-    x = np.arange(domain[0][0],domain[0][1]+dx,dx)
-    y = np.arange(domain[1][0],domain[1][1]+dy,dy)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    x = np.arange(domain[0][0], domain[0][1] + dx, dx)
+    y = np.arange(domain[1][0], domain[1][1] + dy, dy)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -77,13 +77,13 @@ Set the integration span and direction, retrieve the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-43
+.. GENERATED FROM PYTHON SOURCE LINES 39-42
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-45
+.. GENERATED FROM PYTHON SOURCE LINES 42-44
 
 .. code-block:: Python
 
@@ -96,17 +96,17 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-49
+.. GENERATED FROM PYTHON SOURCE LINES 45-48
 
 FTLE
 ----
 Compute FTLE field from final particle positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-51
+.. GENERATED FROM PYTHON SOURCE LINES 48-50
 
 .. code-block:: Python
 
-    ftle = ftle_grid_2D(flowmap,T,dx,dy)
+    ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 
 
@@ -115,19 +115,19 @@ Compute FTLE field from final particle positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-55
+.. GENERATED FROM PYTHON SOURCE LINES 51-54
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-59
+.. GENERATED FROM PYTHON SOURCE LINES 54-58
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ftle.T,levels=80)
-    ax.set_aspect('equal')
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ftle.T, levels=80)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -144,7 +144,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.852 seconds)
+   **Total running time of the script:** (0 minutes 4.844 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_bickley_ftle.py:

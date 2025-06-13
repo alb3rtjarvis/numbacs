@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:34.091** total execution time for 6 files **from auto_examples/hyp_oecs**:
+**00:35.229** total execution time for 6 files **from auto_examples/hyp_oecs**:
 
 .. container::
 
@@ -32,21 +32,21 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_qge_hyp_oecs.py` (``plot_qge_hyp_oecs.py``)
-     - 00:34.091
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_bickley_ile.py` (``plot_bickley_ile.py``)
-     - 00:00.000
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_dg_ile.py` (``plot_dg_ile.py``)
-     - 00:00.000
-     - 0.0
    * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_merra_hyp_oecs.py` (``plot_merra_hyp_oecs.py``)
-     - 00:00.000
+     - 00:12.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_merra_ile.py` (``plot_merra_ile.py``)
-     - 00:00.000
+     - 00:07.364
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_qge_hyp_oecs.py` (``plot_qge_hyp_oecs.py``)
+     - 00:06.595
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_bickley_ile.py` (``plot_bickley_ile.py``)
+     - 00:03.937
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_dg_ile.py` (``plot_dg_ile.py``)
+     - 00:03.726
      - 0.0
    * - :ref:`sphx_glr_auto_examples_hyp_oecs_plot_qge_ile.py` (``plot_qge_ile.py``)
-     - 00:00.000
+     - 00:01.606
      - 0.0

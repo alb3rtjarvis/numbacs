@@ -23,7 +23,7 @@ Bickley jet Elliptic OECS
 
 Compute the IVD-based elliptic OECS for the Bickley jet.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-19
+.. GENERATED FROM PYTHON SOURCE LINES 8-18
 
 .. code-block:: Python
 
@@ -44,31 +44,31 @@ Compute the IVD-based elliptic OECS for the Bickley jet.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow callable
 -----------------
 Get callable for velocity field, set up domain, and initial time
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-40
+.. GENERATED FROM PYTHON SOURCE LINES 22-39
 
 .. code-block:: Python
 
 
     # retrieve callable to compute vorticity
-    vel_spline = get_predefined_callable('bickley_jet',return_domain=False)
+    vel_spline = get_predefined_callable("bickley_jet", return_domain=False)
 
     # set up larger domain to capture all elliptic lcs
-    domain = ((-2.0,6.371*pi + 2.0),(-3.0,3.0))
+    domain = ((-2.0, 6.371 * pi + 2.0), (-3.0, 3.0))
     dx = 0.05
     dy = 0.05
-    x = np.arange(domain[0][0],domain[0][1]+dx,dx)
-    y = np.arange(domain[1][0],domain[1][1]+dy,dy)
+    x = np.arange(domain[0][0], domain[0][1] + dx, dx)
+    y = np.arange(domain[1][0], domain[1][1] + dy, dy)
     nx = len(x)
     ny = len(y)
 
     # set initial time
-    t0 = 0.
+    t0 = 0.0
     t = np.array([t0])
 
 
@@ -78,19 +78,19 @@ Get callable for velocity field, set up domain, and initial time
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 41-44
+.. GENERATED FROM PYTHON SOURCE LINES 40-43
 
 Vorticity
 ---------
 Compute vorticity on the grid at t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-49
+.. GENERATED FROM PYTHON SOURCE LINES 43-48
 
 .. code-block:: Python
 
 
     # compute vorticity and spatial mean of vorticity
-    vort = curl_func_tspan(vel_spline,t,x,y).squeeze()
+    vort = curl_func_tspan(vel_spline, t, x, y).squeeze()
     vort_avg = np.mean(vort)
 
 
@@ -100,19 +100,19 @@ Compute vorticity on the grid at t0.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-53
+.. GENERATED FROM PYTHON SOURCE LINES 49-52
 
 IVD
 ---
 Compute IVD from vorticity.
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-57
+.. GENERATED FROM PYTHON SOURCE LINES 52-56
 
 .. code-block:: Python
 
 
     # compute lavd
-    ivd = ivd_grid_2D(vort,vort_avg)
+    ivd = ivd_grid_2D(vort, vort_avg)
 
 
 
@@ -121,13 +121,13 @@ Compute IVD from vorticity.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 58-61
+.. GENERATED FROM PYTHON SOURCE LINES 57-60
 
 IVD-based elliptic OECS
 -----------------------
 Compute elliptic OECS from IVD.
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-67
+.. GENERATED FROM PYTHON SOURCE LINES 60-66
 
 .. code-block:: Python
 
@@ -136,7 +136,7 @@ Compute elliptic OECS from IVD.
     r = 2.5
     convexity_deficiency = 5e-6
     min_len = 1.0
-    elcs = rotcohvrt(ivd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=min_len)
+    elcs = rotcohvrt(ivd, x, y, r, convexity_deficiency=convexity_deficiency, min_len=min_len)
 
 
 
@@ -144,25 +144,26 @@ Compute elliptic OECS from IVD.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-71
+.. GENERATED FROM PYTHON SOURCE LINES 67-70
 
 Plot
 ----
 Plot the elliptic OECS over the IVD field.
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-79
+.. GENERATED FROM PYTHON SOURCE LINES 70-79
 
 .. code-block:: Python
 
 
     # sphinx_gallery_thumbnail_number = 1
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ivd.T,levels=80)
-    ax.set_aspect('equal')
-    for rcv,c in elcs:
-        ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
-        ax.scatter(c[0],c[1],1.5)
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ivd.T, levels=80)
+    ax.set_aspect("equal")
+    for rcv, c in elcs:
+        ax.plot(rcv[:, 0], rcv[:, 1], lw=1.5)
+        ax.scatter(c[0], c[1], 1.5)
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/elliptic_oecs/images/sphx_glr_plot_bickley_elliptic_oecs_001.png
@@ -177,7 +178,7 @@ Plot the elliptic OECS over the IVD field.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.470 seconds)
+   **Total running time of the script:** (0 minutes 1.693 seconds)
 
 
 .. _sphx_glr_download_auto_examples_elliptic_oecs_plot_bickley_elliptic_oecs.py:

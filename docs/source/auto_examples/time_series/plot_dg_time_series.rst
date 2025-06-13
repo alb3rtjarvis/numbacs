@@ -23,7 +23,7 @@ Double gyre time series
 
 Compare run times for different flowmap methods for the double gyre.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-25
+.. GENERATED FROM PYTHON SOURCE LINES 8-26
 
 .. code-block:: Python
 
@@ -33,13 +33,15 @@ Compare run times for different flowmap methods for the double gyre.
 
     import numpy as np
     from interpolation.splines import UCGrid
-    from numbacs.integration import (flowmap_grid_2D, flowmap_composition_initial,
-                                     flowmap_composition_step)
+    from numbacs.integration import (
+        flowmap_grid_2D,
+        flowmap_composition_initial,
+        flowmap_composition_step,
+    )
     from numbacs.flows import get_predefined_flow
     from numbacs.diagnostics import ftle_grid_2D
     import matplotlib.pyplot as plt
     import time
-    from math import copysign
     import numba
     from numba import njit, prange
 
@@ -50,18 +52,18 @@ Compare run times for different flowmap methods for the double gyre.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 26-29
+.. GENERATED FROM PYTHON SOURCE LINES 27-30
 
 Get flow
 --------------
 Set the integration span and direction, retrieve the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 29-45
+.. GENERATED FROM PYTHON SOURCE LINES 30-46
 
 .. code-block:: Python
 
 
-    funcptr, params, domain = get_predefined_flow('double_gyre', int_direction = 1.0)
+    funcptr, params, domain = get_predefined_flow("double_gyre", int_direction=1.0)
     nx = 201
     ny = 101
     x = np.linspace(domain[0][0], domain[0][1], nx)
@@ -69,12 +71,12 @@ Set the integration span and direction, retrieve the flow, and set up domain.
     dx = x[1] - x[0]
     dy = y[1] - y[0]
 
-    t0 = 0.
-    T = 16.
-    h = 1.
-    grid = UCGrid((x[0],x[-1],nx),(y[0],y[-1],ny))
+    t0 = 0.0
+    T = 16.0
+    h = 1.0
+    grid = UCGrid((x[0], x[-1], nx), (y[0], y[-1], ny))
     n = 200
-    tspan = np.arange(t0, t0 + n*h, h)
+    tspan = np.arange(t0, t0 + n * h, h)
 
 
 
@@ -83,26 +85,26 @@ Set the integration span and direction, retrieve the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-49
+.. GENERATED FROM PYTHON SOURCE LINES 47-50
 
 Warm-up
 -------
 Run flowmap_grid_2D and ftle_grid_2D so warm-up time is not included in comparison.
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-60
+.. GENERATED FROM PYTHON SOURCE LINES 50-61
 
 .. code-block:: Python
 
 
     wu_t = time.perf_counter()
-    flowmap_wu = flowmap_grid_2D(funcptr,t0,T,x,y,params)
+    flowmap_wu = flowmap_grid_2D(funcptr, t0, T, x, y, params)
     wu_t = time.perf_counter() - wu_t
-    print("Flowmap with warm-up took {:.5f} seconds".format(wu_t))
+    print(f"Flowmap with warm-up took {wu_t:.5f} seconds")
 
     wu_t = time.perf_counter()
-    ftle_wu = ftle_grid_2D(flowmap_wu,T,dx,dy)
+    ftle_wu = ftle_grid_2D(flowmap_wu, T, dx, dy)
     wu_t = time.perf_counter() - wu_t
-    print("FTLE with warm-up took {:.5f} seconds".format(wu_t))
+    print(f"FTLE with warm-up took {wu_t:.5f} seconds")
 
 
 
@@ -112,58 +114,58 @@ Run flowmap_grid_2D and ftle_grid_2D so warm-up time is not included in comparis
 
  .. code-block:: none
 
-    Flowmap with warm-up took 2.37978 seconds
-    FTLE with warm-up took 2.53314 seconds
+    Flowmap with warm-up took 0.14957 seconds
+    FTLE with warm-up took 0.00383 seconds
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-64
+.. GENERATED FROM PYTHON SOURCE LINES 62-65
 
 Flowmap composition
 -------------------
 Perform flowmap composition over tspan and compute time series of FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 64-100
+.. GENERATED FROM PYTHON SOURCE LINES 65-101
 
 .. code-block:: Python
 
 
-    ftlec = np.zeros((n,nx,ny),np.float64)
+    ftlec = np.zeros((n, nx, ny), np.float64)
     ctt = 0
     c0s = time.perf_counter()
-    flowmap0, flowmaps, nT = flowmap_composition_initial(funcptr,t0,T,h,x,y,grid,params)
+    flowmap0, flowmaps, nT = flowmap_composition_initial(funcptr, t0, T, h, x, y, grid, params)
     c0f = time.perf_counter()
-    c0 = c0f-c0s
+    c0 = c0f - c0s
     ctt += c0
 
     ftt = 0
     f0s = time.perf_counter()
-    ftlec[0,:,:] = ftle_grid_2D(flowmap0,T,dx,dy)
+    ftlec[0, :, :] = ftle_grid_2D(flowmap0, T, dx, dy)
     f0f = time.perf_counter()
     f0 = f0s - f0f
     ftt += f0
-    for k in range(1,n):
+    for k in range(1, n):
         t0 = tspan[k] + T - h
         cks = time.perf_counter()
-        flowmap_k, flowmaps = flowmap_composition_step(flowmaps,funcptr,t0,h,nT,x,y,grid,params)
+        flowmap_k, flowmaps = flowmap_composition_step(flowmaps, funcptr, t0, h, nT, x, y, grid, params)
         ckf = time.perf_counter()
-        ctt += ckf-cks
+        ctt += ckf - cks
 
         fks = time.perf_counter()
-        ftlec[k,:,:] = ftle_grid_2D(flowmap_k,T,dx,dy)
+        ftlec[k, :, :] = ftle_grid_2D(flowmap_k, T, dx, dy)
         fkf = time.perf_counter()
         ftt += fkf - fks
 
-    print("Flowmap and FTLE computation (composed flowmap) took {:.5f} seconds".format(ctt+ftt))
-    print("Average time for flowmap and FTLE was {:.5f} seconds".format((ctt+ftt)/n))
-    print("Average time for flowmap was {:.5f} seconds".format(ctt/n))
-    print("Average time for FTLE was {:.5f} seconds".format(ftt/n))
-    print("\nInitial flowmap integration and composition took {:.5f} seconds".format(c0))
-    print("Average time for flowmap composition was {:.5f} seconds".format((ctt-c0)/(n-1)))
+    print(f"Flowmap and FTLE computation (composed flowmap) took {ctt + ftt:.5f} seconds")
+    print(f"Average time for flowmap and FTLE was {(ctt + ftt) / n:.5f} seconds")
+    print(f"Average time for flowmap was {ctt / n:.5f} seconds")
+    print(f"Average time for FTLE was {ftt / n:.5f} seconds")
+    print(f"\nInitial flowmap integration and composition took {c0:.5f} seconds")
+    print(f"Average time for flowmap composition was {(ctt - c0) / (n - 1):.5f} seconds")
 
-    cfmtt = ctt+ftt
-    cfmat = ((ctt-c0) + (ftt-f0))/(n-1)
+    cfmtt = ctt + ftt
+    cfmat = ((ctt - c0) + (ftt - f0)) / (n - 1)
 
 
 
@@ -172,18 +174,18 @@ Perform flowmap composition over tspan and compute time series of FTLE.
 
  .. code-block:: none
 
-    Flowmap and FTLE computation (composed flowmap) took 8.46070 seconds
-    Average time for flowmap and FTLE was 0.04230 seconds
-    Average time for flowmap was 0.03824 seconds
-    Average time for FTLE was 0.00406 seconds
+    Flowmap and FTLE computation (composed flowmap) took 8.55872 seconds
+    Average time for flowmap and FTLE was 0.04279 seconds
+    Average time for flowmap was 0.03853 seconds
+    Average time for FTLE was 0.00427 seconds
 
-    Initial flowmap integration and composition took 0.99912 seconds
-    Average time for flowmap composition was 0.03342 seconds
-
-
+    Initial flowmap integration and composition took 0.89070 seconds
+    Average time for flowmap composition was 0.03425 seconds
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 101-106
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 102-107
 
 Standard flowmap
 ----------------
@@ -191,36 +193,36 @@ Compute flowmap over tspan using a simple loop and the flowmap_grid_2D function,
 compute time series of FTLE. In this case, parallelization is performed over the
 spatial domain within the functions flowmap_grid_2D and ftle_grid_2D.
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-132
+.. GENERATED FROM PYTHON SOURCE LINES 107-133
 
 .. code-block:: Python
 
 
     # set counter for total time and preallocate ftle
     tt = 0
-    ftle = np.zeros((n,nx,ny),np.float64)
+    ftle = np.zeros((n, nx, ny), np.float64)
     ftt = 0
     # loop over initial times, compute flowmap and ftle
     for k in range(n):
         t0 = tspan[k]
         ks = time.perf_counter()
-        flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
+        flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
         kf = time.perf_counter()
-        kt = kf-ks
+        kt = kf - ks
         tt += kt
 
         fks = time.perf_counter()
-        ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
+        ftle[k, :, :] = ftle_grid_2D(flowmap, T, dx, dy)
         fkf = time.perf_counter()
         ftt += fkf - fks
 
-    print("Flowmap and FTLE computation (parallel in space) took {:.5f}".format(tt+ftt))
-    print("Average time for flowmap and FTLE was {:.5f} seconds".format((tt+ftt)/n))
-    print("Average time for flowmap was {:.5f} seconds".format(tt/n))
-    print("Average time for FTLE was {:.5f} seconds".format(ftt/n))
+    print(f"Flowmap and FTLE computation (parallel in space) took {tt + ftt:.5f}")
+    print(f"Average time for flowmap and FTLE was {(tt + ftt) / n:.5f} seconds")
+    print(f"Average time for flowmap was {tt / n:.5f} seconds")
+    print(f"Average time for FTLE was {ftt / n:.5f} seconds")
 
-    fmtt = tt+ftt
-    fmat = (tt+ftt)/n
+    fmtt = tt + ftt
+    fmat = (tt + ftt) / n
 
 
 
@@ -229,15 +231,15 @@ spatial domain within the functions flowmap_grid_2D and ftle_grid_2D.
 
  .. code-block:: none
 
-    Flowmap and FTLE computation (parallel in space) took 32.54825
-    Average time for flowmap and FTLE was 0.16274 seconds
-    Average time for flowmap was 0.15784 seconds
-    Average time for FTLE was 0.00490 seconds
+    Flowmap and FTLE computation (parallel in space) took 31.92739
+    Average time for flowmap and FTLE was 0.15964 seconds
+    Average time for flowmap was 0.15493 seconds
+    Average time for FTLE was 0.00471 seconds
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-139
+.. GENERATED FROM PYTHON SOURCE LINES 134-140
 
 Parallelization over time
 -------------------------
@@ -246,15 +248,16 @@ function as shown below. This may provide a moderate speed up (depending on the
 hardware being used and the length of tspan). Functions like this can be created
 for many diagnostic and extraction methods.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-189
+.. GENERATED FROM PYTHON SOURCE LINES 140-192
 
 .. code-block:: Python
+
 
 
     # function which moves the parallel load to the time domain
     # instead of spatial domain
     @njit(parallel=True)
-    def ftle_tspan(funcptr,tspan,T,x,y,params):
+    def ftle_tspan(funcptr, tspan, T, x, y, params):
         """
         Function to compute time series of ftle fields in parallel.
 
@@ -284,22 +287,23 @@ for many diagnostic and extraction methods.
         dx = x[1] - x[0]
         dy = y[1] - y[0]
         nt = len(tspan)
-        ftle = np.zeros((nt,nx,ny),numba.float64)
+        ftle = np.zeros((nt, nx, ny), numba.float64)
         for k in prange(nt):
             t0 = tspan[k]
-            flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
-            ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
+            flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
+            ftle[k, :, :] = ftle_grid_2D(flowmap, T, dx, dy)
 
         return ftle
+
 
     pts = time.perf_counter()
     ftlep = ftle_tspan(funcptr, tspan, T, x, y, params)
     ptt = time.perf_counter() - pts
-    print("Flowmap and FTLE computation (parallel in time) took {:.5f} seconds".format(ptt))
-    print("Average time for flowmap and FTLE was {:.5f} seconds".format(ptt/n))
+    print(f"Flowmap and FTLE computation (parallel in time) took {ptt:.5f} seconds")
+    print(f"Average time for flowmap and FTLE was {ptt / n:.5f} seconds")
 
     pfmtt = ptt
-    pfmat = ptt/n
+    pfmat = ptt / n
 
 
 
@@ -308,38 +312,40 @@ for many diagnostic and extraction methods.
 
  .. code-block:: none
 
-    Flowmap and FTLE computation (parallel in time) took 33.36895 seconds
-    Average time for flowmap and FTLE was 0.16684 seconds
+    Flowmap and FTLE computation (parallel in time) took 32.94830 seconds
+    Average time for flowmap and FTLE was 0.16474 seconds
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 190-193
+.. GENERATED FROM PYTHON SOURCE LINES 193-196
 
 Compare timings
 ---------------
 Compare timings and quantify speedup
 
-.. GENERATED FROM PYTHON SOURCE LINES 193-210
+.. GENERATED FROM PYTHON SOURCE LINES 196-215
 
 .. code-block:: Python
 
 
     d1 = 5
     d2 = 2
-    data = [[round(fmtt,d1),round(fmtt/fmtt,d2),round(fmat/fmat,d2)],
-            [round(pfmtt,d1),round(fmtt/pfmtt,d2),round(fmat/pfmat,d2)],
-            [round(cfmtt,d1),round(fmtt/cfmtt,d2),round(fmat/cfmat,d2)]]
+    data = [
+        [round(fmtt, d1), round(fmtt / fmtt, d2), round(fmat / fmat, d2)],
+        [round(pfmtt, d1), round(fmtt / pfmtt, d2), round(fmat / pfmat, d2)],
+        [round(cfmtt, d1), round(fmtt / cfmtt, d2), round(fmat / cfmat, d2)],
+    ]
 
-    times = ["total time (n={})".format(n),"x speedup","x speedup (per step)"]
-    methods = ["standard","parallel time","composition"]
+    times = [f"total time (n={n})", "x speedup", "x speedup (per step)"]
+    methods = ["standard", "parallel time", "composition"]
 
-    format_row = "{:>25}"*(len(data[0]) + 1)
+    format_row = "{:>25}" * (len(data[0]) + 1)
 
     print(format_row.format("", *times))
 
-    for name, vals in zip(methods,data):
-        print(format_row.format(name,*vals))
+    for name, vals in zip(methods, data):
+        print(format_row.format(name, *vals))
 
 
 
@@ -350,30 +356,30 @@ Compare timings and quantify speedup
  .. code-block:: none
 
                                     total time (n=200)                x speedup     x speedup (per step)
-                     standard                 32.54825                      1.0                      1.0
-                parallel time                 33.36895                     0.98                     0.98
-                  composition                   8.4607                     3.85                     4.34
+                     standard                 31.92739                      1.0                      1.0
+                parallel time                  32.9483                     0.97                     0.97
+                  composition                  8.55872                     3.73                     4.14
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 211-215
+.. GENERATED FROM PYTHON SOURCE LINES 216-220
 
 Plot FTLE from different flowmap methods
 ----------------------------------------
 Plot FTLE from standard flowmap method and composition flowmap method.
 They are qualitatively indistinguishable.
 
-.. GENERATED FROM PYTHON SOURCE LINES 215-222
+.. GENERATED FROM PYTHON SOURCE LINES 220-227
 
 .. code-block:: Python
 
     i = 5
-    fig,axs = plt.subplots(nrows=2,ncols=1,sharex=True,dpi=200)
-    axs[0].contourf(x,y,ftle[i,:,:].T)
-    axs[1].contourf(x,y,ftlec[i,:,:].T)
-    axs[0].set_aspect('equal')
-    axs[1].set_aspect('equal')
+    fig, axs = plt.subplots(nrows=2, ncols=1, sharex=True, dpi=200)
+    axs[0].contourf(x, y, ftle[i, :, :].T)
+    axs[1].contourf(x, y, ftlec[i, :, :].T)
+    axs[0].set_aspect("equal")
+    axs[1].set_aspect("equal")
 
 
 
@@ -387,7 +393,7 @@ They are qualitatively indistinguishable.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 223-228
+.. GENERATED FROM PYTHON SOURCE LINES 228-233
 
 Error plots
 -----------
@@ -395,13 +401,14 @@ Compute and plot error between FTLE from standard flowmap method
 and flowmap composition. Standard flowmap FTLE is assumed to be
 true value.
 
-.. GENERATED FROM PYTHON SOURCE LINES 228-295
+.. GENERATED FROM PYTHON SOURCE LINES 233-304
 
 .. code-block:: Python
 
 
+
     # mean absolute error
-    def MAE(true,est):
+    def MAE(true, est):
         """
         Compute mean absolute error.
 
@@ -419,10 +426,11 @@ true value.
 
         """
         n = true.size
-        return np.sum(np.abs(true-est))/n
+        return np.sum(np.abs(true - est)) / n
+
 
     # symmetric mean absolute percentage error
-    def sMAPE(true,est):
+    def sMAPE(true, est):
         """
         Compute symmetric mean absolute percentage error. In this form,
         true and est are assumed to be strictly positive.
@@ -441,32 +449,34 @@ true value.
 
         """
         n = true.size
-        return np.sum(np.divide(abs(true-est),true+est))*(200/n)
+        return np.sum(np.divide(abs(true - est), true + est)) * (200 / n)
 
-    mae = np.zeros(n,np.float64)
-    smape = np.zeros(n,np.float64)
+
+    mae = np.zeros(n, np.float64)
+    smape = np.zeros(n, np.float64)
     for k in range(n):
-        f = ftle[k,:,:]
-        f = f[f>0]
-        fc = ftlec[k,:,:]
-        fc = fc[fc>0]
-        mae[k] = MAE(f,fc)
-        smape[k] = sMAPE(f,fc)
+        f = ftle[k, :, :]
+        f = f[f > 0]
+        fc = ftlec[k, :, :]
+        fc = fc[fc > 0]
+        mae[k] = MAE(f, fc)
+        smape[k] = sMAPE(f, fc)
 
-    fig,ax1 = plt.subplots(figsize = (8,6))
+    fig, ax1 = plt.subplots(figsize=(8, 6))
 
-    color = 'tab:red'
-    ax1.set_xlabel('iterate')
-    ax1.set_ylabel('MAE', color=color)
+    color = "tab:red"
+    ax1.set_xlabel("iterate")
+    ax1.set_ylabel("MAE", color=color)
     ax1.plot(mae, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.tick_params(axis="y", labelcolor=color)
 
     ax2 = ax1.twinx()
 
-    color = 'tab:blue'
-    ax2.set_ylabel('sMAPE (%)', color=color)
-    ax2.plot(smape, '--', color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
+    color = "tab:blue"
+    ax2.set_ylabel("sMAPE (%)", color=color)
+    ax2.plot(smape, "--", color=color)
+    ax2.tick_params(axis="y", labelcolor=color)
+
 
 
 .. image-sg:: /auto_examples/time_series/images/sphx_glr_plot_dg_time_series_002.png
@@ -481,7 +491,7 @@ true value.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 26.043 seconds)
+   **Total running time of the script:** (1 minutes 14.035 seconds)
 
 
 .. _sphx_glr_download_auto_examples_time_series_plot_dg_time_series.py:

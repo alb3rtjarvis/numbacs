@@ -23,7 +23,7 @@ Quasi-geostrophic FTLE
 
 Compute the FTLE field for the QGE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-20
+.. GENERATED FROM PYTHON SOURCE LINES 8-19
 
 .. code-block:: Python
 
@@ -45,40 +45,40 @@ Compute the FTLE field for the QGE.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 21-25
+.. GENERATED FROM PYTHON SOURCE LINES 20-24
 
 Get flow data
 --------------
 Load velocity data, set up domain, set the integration span and direction, create
 interpolant of velocity data and retrieve necessary arrays.
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-49
+.. GENERATED FROM PYTHON SOURCE LINES 24-48
 
 .. code-block:: Python
 
 
     # load in qge velocity data
-    u = np.load('../data/qge/qge_u.npy')
-    v = np.load('../data/qge/qge_v.npy')
+    u = np.load("../data/qge/qge_u.npy")
+    v = np.load("../data/qge/qge_v.npy")
 
     # set up domain
-    nt,nx,ny = u.shape
-    x = np.linspace(0,1,nx)
-    y = np.linspace(0,2,ny)
-    t = np.linspace(0,1,nt)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nt, nx, ny = u.shape
+    x = np.linspace(0, 1, nx)
+    y = np.linspace(0, 2, ny)
+    t = np.linspace(0, 1, nt)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
     # set integration span and integration direction
     t0 = 0.0
     T = 0.1
-    params = np.array([copysign(1,T)])  # important this is an array of type float
+    params = np.array([copysign(1, T)])  # important this is an array of type float
 
     # get interpolant arrays of velocity field
     grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
 
     # get flow to be integrated
-    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
+    funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode="linear")
 
 
 
@@ -87,13 +87,13 @@ interpolant of velocity data and retrieve necessary arrays.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-53
+.. GENERATED FROM PYTHON SOURCE LINES 49-52
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-55
+.. GENERATED FROM PYTHON SOURCE LINES 52-54
 
 .. code-block:: Python
 
@@ -106,17 +106,17 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 56-59
+.. GENERATED FROM PYTHON SOURCE LINES 55-58
 
 FTLE
 ----
 Compute FTLE field from final particle positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 59-61
+.. GENERATED FROM PYTHON SOURCE LINES 58-60
 
 .. code-block:: Python
 
-    ftle = ftle_grid_2D(flowmap,T,dx,dy)
+    ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 
 
@@ -125,20 +125,21 @@ Compute FTLE field from final particle positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-65
+.. GENERATED FROM PYTHON SOURCE LINES 61-64
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-68
+.. GENERATED FROM PYTHON SOURCE LINES 64-68
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ftle.T,levels=100)
-    ax.set_aspect('equal')
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ftle.T, levels=100)
+    ax.set_aspect("equal")
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/ftle/images/sphx_glr_plot_qge_ftle_001.png
@@ -153,7 +154,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 8.252 seconds)
+   **Total running time of the script:** (0 minutes 4.375 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_qge_ftle.py:

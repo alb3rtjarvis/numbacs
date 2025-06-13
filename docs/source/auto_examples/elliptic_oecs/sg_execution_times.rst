@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:13.449** total execution time for 2 files **from auto_examples/elliptic_oecs**:
+**00:02.424** total execution time for 2 files **from auto_examples/elliptic_oecs**:
 
 .. container::
 
@@ -33,8 +33,8 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_elliptic_oecs_plot_bickley_elliptic_oecs.py` (``plot_bickley_elliptic_oecs.py``)
-     - 00:12.470
+     - 00:01.693
      - 0.0
    * - :ref:`sphx_glr_auto_examples_elliptic_oecs_plot_qge_elliptic_oecs.py` (``plot_qge_elliptic_oecs.py``)
-     - 00:00.979
+     - 00:00.730
      - 0.0

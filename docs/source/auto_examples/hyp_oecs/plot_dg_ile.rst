@@ -23,7 +23,7 @@ Double gyre iLE
 
 Compute the iLE field for the double gyre.
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-17
+.. GENERATED FROM PYTHON SOURCE LINES 9-16
 
 .. code-block:: Python
 
@@ -41,29 +41,29 @@ Compute the iLE field for the double gyre.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 18-21
+.. GENERATED FROM PYTHON SOURCE LINES 17-20
 
 Get flow
 --------------
 Set the initial time, retrieve a jit-callable for the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 21-35
+.. GENERATED FROM PYTHON SOURCE LINES 20-34
 
 .. code-block:: Python
 
 
     # set time at which to compute iLE
-    t0 = 0.
+    t0 = 0.0
 
     # retrieve function pointer, parameters, and domain for double gyre flow.
-    vel_func, domain = get_predefined_callable('double_gyre')
+    vel_func, domain = get_predefined_callable("double_gyre")
 
     # set up domain
-    nx,ny = 401,201
-    x = np.linspace(domain[0][0],domain[0][1],nx)
-    y = np.linspace(domain[1][0],domain[1][1],ny)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nx, ny = 401, 201
+    x = np.linspace(domain[0][0], domain[0][1], nx)
+    y = np.linspace(domain[1][0], domain[1][1], ny)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -72,17 +72,17 @@ Set the initial time, retrieve a jit-callable for the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 36-39
+.. GENERATED FROM PYTHON SOURCE LINES 35-38
 
 iLE
 ---------
 Compute iLE from velocity function at t = t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 39-41
+.. GENERATED FROM PYTHON SOURCE LINES 38-40
 
 .. code-block:: Python
 
-    ile = ile_2D_func(vel_func, x, y, t0 = t0)
+    ile = ile_2D_func(vel_func, x, y, t0=t0)
 
 
 
@@ -91,19 +91,19 @@ Compute iLE from velocity function at t = t0.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 42-45
+.. GENERATED FROM PYTHON SOURCE LINES 41-44
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 45-49
+.. GENERATED FROM PYTHON SOURCE LINES 44-48
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ile.T,levels=80)
-    ax.set_aspect('equal')
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ile.T, levels=80)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -120,7 +120,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 4.885 seconds)
+   **Total running time of the script:** (0 minutes 3.726 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_dg_ile.py:

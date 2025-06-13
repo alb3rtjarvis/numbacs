@@ -23,7 +23,7 @@ Bickley jet iLE
 
 Compute the iLE field for the bickley jet.
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-17
+.. GENERATED FROM PYTHON SOURCE LINES 9-16
 
 .. code-block:: Python
 
@@ -41,31 +41,31 @@ Compute the iLE field for the bickley jet.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 18-21
+.. GENERATED FROM PYTHON SOURCE LINES 17-20
 
 Get flow
 --------------
 Set the initial time, retrieve a jit-callable for the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 21-37
+.. GENERATED FROM PYTHON SOURCE LINES 20-36
 
 .. code-block:: Python
 
 
     # set time at which to compute iLE
-    t0 = 0.
+    t0 = 0.0
 
     # retrieve function pointer, parameters, and domain for double gyre flow.
-    vel_func, domain = get_predefined_callable('bickley_jet')
+    vel_func, domain = get_predefined_callable("bickley_jet")
 
     # set up domain
     # set up domain
     dx = 0.05
     dy = 0.05
-    x = np.arange(domain[0][0],domain[0][1]+dx,dx)
-    y = np.arange(domain[1][0],domain[1][1]+dy,dy)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    x = np.arange(domain[0][0], domain[0][1] + dx, dx)
+    y = np.arange(domain[1][0], domain[1][1] + dy, dy)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -74,17 +74,17 @@ Set the initial time, retrieve a jit-callable for the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 38-41
+.. GENERATED FROM PYTHON SOURCE LINES 37-40
 
 iLE
 ---------
 Compute iLE from velocity function at t = t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 41-43
+.. GENERATED FROM PYTHON SOURCE LINES 40-42
 
 .. code-block:: Python
 
-    ile = ile_2D_func(vel_func, x, y, t0 = t0)
+    ile = ile_2D_func(vel_func, x, y, t0=t0)
 
 
 
@@ -93,19 +93,19 @@ Compute iLE from velocity function at t = t0.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-47
+.. GENERATED FROM PYTHON SOURCE LINES 43-46
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-51
+.. GENERATED FROM PYTHON SOURCE LINES 46-50
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ile.T,levels=80)
-    ax.set_aspect('equal')
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ile.T, levels=80)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -122,7 +122,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 4.085 seconds)
+   **Total running time of the script:** (0 minutes 3.937 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_bickley_ile.py:

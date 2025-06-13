@@ -23,7 +23,7 @@ Double gyre FTLE
 
 Compute the FTLE field for the double gyre.
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-19
+.. GENERATED FROM PYTHON SOURCE LINES 9-18
 
 .. code-block:: Python
 
@@ -43,31 +43,31 @@ Compute the FTLE field for the double gyre.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow
 --------------
 Set the integration span and direction, retrieve the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-39
+.. GENERATED FROM PYTHON SOURCE LINES 22-38
 
 .. code-block:: Python
 
 
     # set initial time, integration time, and integration direction
-    t0 = 0.
-    T = -10.
-    int_direction = copysign(1,T)
+    t0 = 0.0
+    T = -10.0
+    int_direction = copysign(1, T)
 
     # retrieve function pointer, parameters, and domain for double gyre flow.
-    funcptr, params, domain = get_predefined_flow('double_gyre', int_direction = int_direction)
+    funcptr, params, domain = get_predefined_flow("double_gyre", int_direction=int_direction)
 
     # set up domain
-    nx,ny = 401,201
-    x = np.linspace(domain[0][0],domain[0][1],nx)
-    y = np.linspace(domain[1][0],domain[1][1],ny)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nx, ny = 401, 201
+    x = np.linspace(domain[0][0], domain[0][1], nx)
+    y = np.linspace(domain[1][0], domain[1][1], ny)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -76,13 +76,13 @@ Set the integration span and direction, retrieve the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-43
+.. GENERATED FROM PYTHON SOURCE LINES 39-42
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-45
+.. GENERATED FROM PYTHON SOURCE LINES 42-44
 
 .. code-block:: Python
 
@@ -95,17 +95,17 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-49
+.. GENERATED FROM PYTHON SOURCE LINES 45-48
 
 FTLE
 ----
 Compute FTLE field from final particle positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-51
+.. GENERATED FROM PYTHON SOURCE LINES 48-50
 
 .. code-block:: Python
 
-    ftle = ftle_grid_2D(flowmap,T,dx,dy)
+    ftle = ftle_grid_2D(flowmap, T, dx, dy)
 
 
 
@@ -114,19 +114,19 @@ Compute FTLE field from final particle positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-55
+.. GENERATED FROM PYTHON SOURCE LINES 51-54
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-59
+.. GENERATED FROM PYTHON SOURCE LINES 54-58
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ftle.T,levels=80)
-    ax.set_aspect('equal')
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ftle.T, levels=80)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -143,7 +143,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.799 seconds)
+   **Total running time of the script:** (0 minutes 0.745 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_dg_ftle.py:

@@ -23,7 +23,7 @@ Quasi-geostrophic Elliptic OECS
 
 Compute the IVD-based elliptic OECS for the QGE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-19
+.. GENERATED FROM PYTHON SOURCE LINES 8-18
 
 .. code-block:: Python
 
@@ -44,32 +44,32 @@ Compute the IVD-based elliptic OECS for the QGE.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow data
 --------------
 Load velocity data, set up domain, and set initial time
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-40
+.. GENERATED FROM PYTHON SOURCE LINES 22-39
 
 .. code-block:: Python
 
 
     # load in qge velocity data
-    u = np.load('../data/qge/qge_u.npy')
-    v = np.load('../data/qge/qge_v.npy')
+    u = np.load("../data/qge/qge_u.npy")
+    v = np.load("../data/qge/qge_v.npy")
 
     # set up domain
-    nt,nx,ny = u.shape
-    x = np.linspace(0,1,nx)
-    y = np.linspace(0,2,ny)
-    t = np.linspace(0,1,nt)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nt, nx, ny = u.shape
+    x = np.linspace(0, 1, nx)
+    y = np.linspace(0, 2, ny)
+    t = np.linspace(0, 1, nt)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
     # set initial time
     t0 = 0.5
-    k0 = np.argwhere(t==t0)[0][0]
+    k0 = np.argwhere(t == t0)[0][0]
 
 
 
@@ -78,19 +78,19 @@ Load velocity data, set up domain, and set initial time
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 41-44
+.. GENERATED FROM PYTHON SOURCE LINES 40-43
 
 Vorticity
 ---------
 Copmute vorticity on the grid and over the times for which the flowmap was returned.
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-49
+.. GENERATED FROM PYTHON SOURCE LINES 43-48
 
 .. code-block:: Python
 
 
     # compute vorticity and create interpolant for it
-    vort = curl_vel(u[k0,:,:],v[k0,:,:],dx,dy)
+    vort = curl_vel(u[k0, :, :], v[k0, :, :], dx, dy)
     vort_avg = np.mean(vort)
 
 
@@ -100,19 +100,19 @@ Copmute vorticity on the grid and over the times for which the flowmap was retur
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-53
+.. GENERATED FROM PYTHON SOURCE LINES 49-52
 
 IVD
 ---
 Compute IVD from vorticity.
 
-.. GENERATED FROM PYTHON SOURCE LINES 53-57
+.. GENERATED FROM PYTHON SOURCE LINES 52-56
 
 .. code-block:: Python
 
 
     # compute lavd
-    ivd = ivd_grid_2D(vort,vort_avg)
+    ivd = ivd_grid_2D(vort, vort_avg)
 
 
 
@@ -121,13 +121,13 @@ Compute IVD from vorticity.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 58-61
+.. GENERATED FROM PYTHON SOURCE LINES 57-60
 
 IVD-based elliptic OECS
 -----------------------
 Compute elliptic OECS from IVD.
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-67
+.. GENERATED FROM PYTHON SOURCE LINES 60-66
 
 .. code-block:: Python
 
@@ -136,7 +136,7 @@ Compute elliptic OECS from IVD.
     r = 0.2
     convexity_deficiency = 1e-3
     min_len = 0.25
-    elcs = rotcohvrt(ivd,x,y,r,convexity_deficiency=convexity_deficiency,min_len=min_len)
+    elcs = rotcohvrt(ivd, x, y, r, convexity_deficiency=convexity_deficiency, min_len=min_len)
 
 
 
@@ -144,25 +144,26 @@ Compute elliptic OECS from IVD.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-71
+.. GENERATED FROM PYTHON SOURCE LINES 67-70
 
 Plot
 ----
 Plot the elliptic OECS over the IVD field.
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-79
+.. GENERATED FROM PYTHON SOURCE LINES 70-79
 
 .. code-block:: Python
 
 
     # sphinx_gallery_thumbnail_number = 1
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ivd.T,levels=80)
-    ax.set_aspect('equal')
-    for rcv,c in elcs:
-        ax.plot(rcv[:,0],rcv[:,1],lw=1.5)
-        ax.scatter(c[0],c[1],1.5)
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ivd.T, levels=80)
+    ax.set_aspect("equal")
+    for rcv, c in elcs:
+        ax.plot(rcv[:, 0], rcv[:, 1], lw=1.5)
+        ax.scatter(c[0], c[1], 1.5)
     plt.show()
+
 
 
 .. image-sg:: /auto_examples/elliptic_oecs/images/sphx_glr_plot_qge_elliptic_oecs_001.png
@@ -177,7 +178,7 @@ Plot the elliptic OECS over the IVD field.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.979 seconds)
+   **Total running time of the script:** (0 minutes 0.730 seconds)
 
 
 .. _sphx_glr_download_auto_examples_elliptic_oecs_plot_qge_elliptic_oecs.py:

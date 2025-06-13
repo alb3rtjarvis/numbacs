@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**14:09.458** total execution time for 5 files **from auto_examples/time_series**:
+**28:28.395** total execution time for 5 files **from auto_examples/time_series**:
 
 .. container::
 
@@ -33,17 +33,17 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_numbacs_vs_scipy_reduced.py` (``plot_qge_numbacs_vs_scipy_reduced.py``)
-     - 14:09.458
+     - 13:42.299
      - 0.0
    * - :ref:`sphx_glr_auto_examples_time_series_plot_dg_numbacs_vs_scipy.py` (``plot_dg_numbacs_vs_scipy.py``)
-     - 00:00.000
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_time_series_plot_dg_time_series.py` (``plot_dg_time_series.py``)
-     - 00:00.000
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_ridge_time_series.py` (``plot_qge_ridge_time_series.py``)
-     - 00:00.000
+     - 08:19.659
      - 0.0
    * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_time_series.py` (``plot_qge_time_series.py``)
-     - 00:00.000
+     - 04:21.449
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_time_series_plot_dg_time_series.py` (``plot_dg_time_series.py``)
+     - 01:14.035
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_time_series_plot_qge_ridge_time_series.py` (``plot_qge_ridge_time_series.py``)
+     - 00:50.954
      - 0.0

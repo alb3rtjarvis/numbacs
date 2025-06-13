@@ -23,7 +23,7 @@ Bickley jet FTLE ridges
 
 Compute the FTLE field and ridges for the bickley jet.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-19
+.. GENERATED FROM PYTHON SOURCE LINES 8-18
 
 .. code-block:: Python
 
@@ -44,32 +44,32 @@ Compute the FTLE field and ridges for the bickley jet.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow
 --------------
 Set the integration span and direction, retrieve the flow, and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-40
+.. GENERATED FROM PYTHON SOURCE LINES 22-39
 
 .. code-block:: Python
 
 
     # set initial time, integration time, and integration direction
-    t0 = 0.
-    T = 6.
-    int_direction = copysign(1,T)
+    t0 = 0.0
+    T = 6.0
+    int_direction = copysign(1, T)
 
     # retrieve function pointer, parameters, and domain for bickley jet flow.
-    funcptr, params, domain = get_predefined_flow('bickley_jet', int_direction = int_direction)
+    funcptr, params, domain = get_predefined_flow("bickley_jet", int_direction=int_direction)
 
     # set up domain
     dx = 0.05
     dy = 0.05
-    x = np.arange(domain[0][0],domain[0][1]+dx,dx)
-    y = np.arange(domain[1][0],domain[1][1]+dy,dy)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    x = np.arange(domain[0][0], domain[0][1] + dx, dx)
+    y = np.arange(domain[1][0], domain[1][1] + dy, dy)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -78,13 +78,13 @@ Set the integration span and direction, retrieve the flow, and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 41-44
+.. GENERATED FROM PYTHON SOURCE LINES 40-43
 
 Integrate
 ---------
 Integrate grid of particles and return final positions.
 
-.. GENERATED FROM PYTHON SOURCE LINES 44-46
+.. GENERATED FROM PYTHON SOURCE LINES 43-45
 
 .. code-block:: Python
 
@@ -97,21 +97,21 @@ Integrate grid of particles and return final positions.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-50
+.. GENERATED FROM PYTHON SOURCE LINES 46-49
 
 CG eigenvalues, eigenvectors, and FTLE
 ----------------------------------------------
 Compute eigenvalues/vectors of CG tensor from final particle positions and compute FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-59
+.. GENERATED FROM PYTHON SOURCE LINES 49-58
 
 .. code-block:: Python
 
 
     # compute eigenvalues/vectors of Cauchy Green tensor
-    eigvals,eigvecs = C_eig_2D(flowmap, dx, dy)
-    eigval_max = eigvals[:,:,1]
-    eigvec_max = eigvecs[:,:,:,1]
+    eigvals, eigvecs = C_eig_2D(flowmap, dx, dy)
+    eigval_max = eigvals[:, :, 1]
+    eigvec_max = eigvecs[:, :, :, 1]
 
     # compute FTLE from max eigenvalue
     ftle = ftle_from_eig(eigval_max, T)
@@ -123,27 +123,27 @@ Compute eigenvalues/vectors of CG tensor from final particle positions and compu
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-63
+.. GENERATED FROM PYTHON SOURCE LINES 59-62
 
 Ridge extraction
 ----------------
 Compute ordered FTLE ridges.
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-74
+.. GENERATED FROM PYTHON SOURCE LINES 62-73
 
 .. code-block:: Python
 
 
     # set parameters for ridge function
     percentile = 90
-    sdd_thresh = 10.
+    sdd_thresh = 10.0
 
     # identify ridge points, link points in each ridge in an ordered manner,
     # connect close enough ridges
     dist_tol = 1e-1
-    ridge_curves = ftle_ordered_ridges(ftle,eigvec_max,x,y,dist_tol,
-                                       percentile=percentile,sdd_thresh=sdd_thresh,
-                                       min_ridge_pts=25)
+    ridge_curves = ftle_ordered_ridges(
+        ftle, eigvec_max, x, y, dist_tol, percentile=percentile, sdd_thresh=sdd_thresh, min_ridge_pts=25
+    )
 
 
 
@@ -151,21 +151,21 @@ Compute ordered FTLE ridges.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-78
+.. GENERATED FROM PYTHON SOURCE LINES 74-77
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-84
+.. GENERATED FROM PYTHON SOURCE LINES 77-83
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,ftle.T,levels=80)
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, ftle.T, levels=80)
     for rc in ridge_curves:
-        ax.plot(rc[:,0],rc[:,1],lw=1.5)
-    ax.set_aspect('equal')
+        ax.plot(rc[:, 0], rc[:, 1], lw=1.5)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -182,7 +182,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 15.934 seconds)
+   **Total running time of the script:** (0 minutes 15.322 seconds)
 
 
 .. _sphx_glr_download_auto_examples_ftle_plot_bickley_ftle_ridges.py:

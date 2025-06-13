@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 NumbaCS vs SciPy/NumPy -- QGE
 =============================
@@ -13,8 +12,7 @@ a pure SciPy/NumPy implementation for the QGE.
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from scipy.integrate import odeint, solve_ivp
-import matplotlib.pyplot as plt
+from scipy.integrate import odeint
 from numbacs.integration import flowmap_grid_2D
 from numbacs.flows import get_interp_arrays_2D, get_flow_2D
 from numbacs.diagnostics import ftle_grid_2D
@@ -30,24 +28,24 @@ from functools import partial
 # interpolant of velocity data and retrieve necessary arrays.
 
 # load in qge velocity data
-u = np.load('../data/qge/qge_u.npy')
-v = np.load('../data/qge/qge_v.npy')
+u = np.load("../data/qge/qge_u.npy")
+v = np.load("../data/qge/qge_v.npy")
 
 # set up domain
-nt,nx,ny = u.shape
-x = np.linspace(0,1,nx)
-y = np.linspace(0,2,ny)
-t = np.linspace(0,1,nt)
-dx = x[1]-x[0]
-dy = y[1]-y[0]
+nt, nx, ny = u.shape
+x = np.linspace(0, 1, nx)
+y = np.linspace(0, 2, ny)
+t = np.linspace(0, 1, nt)
+dx = x[1] - x[0]
+dy = y[1] - y[0]
 
 # use reduced domain or scipy will take much too long
 s = 4
 x = x[::s]
 y = y[::s]
 t = t[::s]
-u = u[::s,::s,::s]
-v = v[::s,::s,::s]
+u = u[::s, ::s, ::s]
+v = v[::s, ::s, ::s]
 
 nx = len(x)
 ny = len(y)
@@ -55,13 +53,13 @@ ny = len(y)
 # set integration span and integration direction
 t0 = 0.0
 T = 0.1
-params = np.array([copysign(1,T)])  # important this is an array of type float
+params = np.array([copysign(1, T)])  # important this is an array of type float
 
 # get interpolant arrays of velocity field
 grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
 
 # get flow to be integrated
-funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
+funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode="linear")
 
 
 # %%
@@ -70,14 +68,14 @@ funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, extrap_mode='linear')
 # Create interpolant and function for SciPy ode solver.
 
 
-ui = RegularGridInterpolator((t,x,y), u, method= 'linear', bounds_error=False, fill_value=0.0)
-vi = RegularGridInterpolator((t,x,y), v, method= 'linear', bounds_error=False, fill_value=0.0)
+ui = RegularGridInterpolator((t, x, y), u, method="linear", bounds_error=False, fill_value=0.0)
+vi = RegularGridInterpolator((t, x, y), v, method="linear", bounds_error=False, fill_value=0.0)
 
-def odeint_fun(yy,tt):
 
-    pt = np.array([tt,yy[0],yy[1]])
+def odeint_fun(yy, tt):
+    pt = np.array([tt, yy[0], yy[1]])
 
-    return ui(pt)[0],vi(pt)[0]
+    return ui(pt)[0], vi(pt)[0]
 
 
 # %%
@@ -88,35 +86,36 @@ def odeint_fun(yy,tt):
 # The scipy.integrate.solve_ivp function is newer and allows the use of other solvers
 # but odeint is faster even when solve_ivp uses LSODA as its method.
 
-tspan = np.array([t0,t0+T])
+tspan = np.array([t0, t0 + T])
 
-def scipy_odeint_flowmap_par(t0,y0):
-    tspan = np.array([t0,t0+T])
+
+def scipy_odeint_flowmap_par(t0, y0):
+    tspan = np.array([t0, t0 + T])
     sol = odeint(odeint_fun, y0, tspan, rtol=1e-6, atol=1e-8)
-    flowmap = sol[-1,:]
+    flowmap = sol[-1, :]
 
     return flowmap
 
-def numpy_ftle_par(fm,inds):
 
-    i,j = inds
+def numpy_ftle_par(fm, inds):
+    i, j = inds
     absT = abs(T)
-    dxdx = (fm[i+1,j,0] - fm[i-1,j,0])/(2*dx)
-    dxdy = (fm[i,j+1,0] - fm[i,j-1,0])/(2*dy)
-    dydx = (fm[i+1,j,1] - fm[i-1,j,1])/(2*dx)
-    dydy = (fm[i,j+1,1] - fm[i,j-1,1])/(2*dy)
+    dxdx = (fm[i + 1, j, 0] - fm[i - 1, j, 0]) / (2 * dx)
+    dxdy = (fm[i, j + 1, 0] - fm[i, j - 1, 0]) / (2 * dy)
+    dydx = (fm[i + 1, j, 1] - fm[i - 1, j, 1]) / (2 * dx)
+    dydy = (fm[i, j + 1, 1] - fm[i, j - 1, 1]) / (2 * dy)
 
-    off_diagonal = dxdx*dxdy + dydx*dydy
-    C = np.array([[dxdx**2 + dydx**2, off_diagonal],
-                   [off_diagonal, dxdy**2 + dydy**2]])
+    off_diagonal = dxdx * dxdy + dydx * dydy
+    C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
 
     max_eig = np.linalg.eigvalsh(C)[-1]
     if max_eig > 1:
-        ftle = 1/(2*absT)*log(max_eig)
+        ftle = 1 / (2 * absT) * log(max_eig)
     else:
         ftle = 0
 
     return ftle
+
 
 # %%
 # Compute SciPy/Numpy flow map, FTLE
@@ -127,10 +126,10 @@ def numpy_ftle_par(fm,inds):
 
 # set initial conditions
 n = 2
-t0span = np.linspace(0,0.1,n)
-[X,Y] = np.meshgrid(x,y,indexing='ij')
-Y0 = np.column_stack((X.ravel(),Y.ravel()))
-sftle = np.zeros((n,nx-2,ny-2),np.float64)
+t0span = np.linspace(0, 0.1, n)
+[X, Y] = np.meshgrid(x, y, indexing="ij")
+Y0 = np.column_stack((X.ravel(), Y.ravel()))
+sftle = np.zeros((n, nx - 2, ny - 2), np.float64)
 
 # set parallel pool to use maximum number of threads for this hardware,
 # open pool
@@ -138,39 +137,37 @@ num_threads = 8
 pl = Pool(num_threads)
 
 # create inds to pass to ftle function
-xinds = np.arange(1,nx-1)
-yinds = np.arange(1,ny-1)
-[I,J] = np.meshgrid(xinds,yinds,indexing='ij')
-inds = np.column_stack((I.ravel(),J.ravel()))
+xinds = np.arange(1, nx - 1)
+yinds = np.arange(1, ny - 1)
+[I, J] = np.meshgrid(xinds, yinds, indexing="ij")
+inds = np.column_stack((I.ravel(), J.ravel()))
 
 # compute flowmap and ftle parallel in space
 sfmtt = 0
 sftt = 0
 
-for k,t0 in enumerate(t0span):
+for k, t0 in enumerate(t0span):
     ks = time.perf_counter()
-    func = partial(scipy_odeint_flowmap_par,t0)
-    res = np.array(pl.map(func,Y0)).reshape(nx,ny,2)
+    func = partial(scipy_odeint_flowmap_par, t0)
+    res = np.array(pl.map(func, Y0)).reshape(nx, ny, 2)
     kf = time.perf_counter()
     sfmtt += kf - ks
 
     fks = time.perf_counter()
-    func2 = partial(numpy_ftle_par,res)
-    sftle[k,:,:] = np.array(pl.map(func2, inds)).reshape(nx-2,ny-2)
+    func2 = partial(numpy_ftle_par, res)
+    sftle[k, :, :] = np.array(pl.map(func2, inds)).reshape(nx - 2, ny - 2)
     fkf = time.perf_counter()
     sftt += fkf - fks
 
 pl.close()
 pl.terminate()
 
-print("SciPy/NumPy flowmap and FTLE took "
-      + "{:.5f} seconds for {} iterates".format(sfmtt + sftt, n))
-print("Mean time for SciPy/NumPy flowmap and FTLE -- "
-      + "{:.5f} seconds\n".format((sfmtt + sftt)/n))
-print("Scipy flowmap took {:.5} seconds for {:1d} iterates".format(sfmtt,n))
-print("Mean time for Scipy flowmap -- {:.5} seconds\n".format(sfmtt/n))
-print("NumPy ftle took {:.5} seconds for {:1d} iterates".format(sftt,n))
-print("Mean time for NumPy ftle -- {:.5} seconds\n".format(sftt/n))
+print("SciPy/NumPy flowmap and FTLE took " + f"{sfmtt + sftt:.5f} seconds for {n} iterates")
+print("Mean time for SciPy/NumPy flowmap and FTLE -- " + f"{(sfmtt + sftt) / n:.5f} seconds\n")
+print(f"Scipy flowmap took {sfmtt:.5} seconds for {n:1d} iterates")
+print(f"Mean time for Scipy flowmap -- {sfmtt / n:.5} seconds\n")
+print(f"NumPy ftle took {sftt:.5} seconds for {n:1d} iterates")
+print(f"Mean time for NumPy ftle -- {sftt / n:.5} seconds\n")
 
 # %%
 # Compute NumbaCS flow map, FTLE
@@ -179,18 +176,18 @@ print("Mean time for NumPy ftle -- {:.5} seconds\n".format(sftt/n))
 # For this problem on this hardware, computing flow map and FTLE parallel in space
 # (as opposed to parallel in time) was the faster implementation.
 
-ftle = np.zeros((n,nx,ny),np.float64)
+ftle = np.zeros((n, nx, ny), np.float64)
 
 # first call and record warmup times
 wfm = time.perf_counter()
-flowmap_wu = flowmap_grid_2D(funcptr,t0,T,x,y,params)
+flowmap_wu = flowmap_grid_2D(funcptr, t0, T, x, y, params)
 wu_fm = time.perf_counter() - wfm
-print("Flowmap with warm-up took {:.5f} seconds".format(wu_fm))
+print(f"Flowmap with warm-up took {wu_fm:.5f} seconds")
 
 wf = time.perf_counter()
-ftle[0,:,:] = ftle_grid_2D(flowmap_wu,T,dx,dy)
+ftle[0, :, :] = ftle_grid_2D(flowmap_wu, T, dx, dy)
 wu_f = time.perf_counter() - wf
-print("FTLE with warm-up took {:.5f} seconds".format(wu_f))
+print(f"FTLE with warm-up took {wu_f:.5f} seconds")
 
 # initialize runtime counters
 fmtt = wu_fm
@@ -199,27 +196,29 @@ ftt = wu_f
 # loop over initial times, compute flowmap and ftle
 for k, t0 in enumerate(t0span[1:]):
     ks = time.perf_counter()
-    flowmap = flowmap_grid_2D(funcptr,t0,T,x,y,params)
+    flowmap = flowmap_grid_2D(funcptr, t0, T, x, y, params)
     kf = time.perf_counter()
-    fmtt += kf-ks
+    fmtt += kf - ks
 
     fks = time.perf_counter()
-    ftle[k,:,:] = ftle_grid_2D(flowmap,T,dx,dy)
+    ftle[k, :, :] = ftle_grid_2D(flowmap, T, dx, dy)
     fkf = time.perf_counter()
-    ftt += fkf-fks
+    ftt += fkf - fks
 
-print("NumbaCS flowmap and FTLE took "
-      + "{:.5f} for {:1d} iterates".format(fmtt+ftt,n))
-print("Mean time for flowmap and FTLE -- {:.5f} seconds (w/ warmup)".format((fmtt+ftt)/n))
-print("Mean time for flowmap and FTLE -- "
-      + "{:.5f} seconds (w/o warmup)\n".format((fmtt-wu_fm+ftt-wu_f)/(n-1)))
-print("NumbaCS flowmap_grid_2D took {:.5f} seconds for {:1d} iterates".format(fmtt,n))
-print("Mean time for flowmap_grid_2D -- {:.5f} seconds (w/ warmup)".format(fmtt/n))
-print("Mean time for flowmap_grid_2D -- "
-      + "{:.5f} seconds (w/o warmup)\n".format((fmtt-wu_fm)/(n-1)))
-print("NumbaCS ftle_grid_2D took {:.5f} seconds for {:1d} iterates".format(ftt,n))
-print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/ warmup)".format(ftt/n))
-print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/o warmup)".format((ftt-wu_f)/(n-1)))
+print("NumbaCS flowmap and FTLE took " + f"{fmtt + ftt:.5f} for {n:1d} iterates")
+print(f"Mean time for flowmap and FTLE -- {(fmtt + ftt) / n:.5f} seconds (w/ warmup)")
+print(
+    "Mean time for flowmap and FTLE -- "
+    + f"{(fmtt - wu_fm + ftt - wu_f) / (n - 1):.5f} seconds (w/o warmup)\n"
+)
+print(f"NumbaCS flowmap_grid_2D took {fmtt:.5f} seconds for {n:1d} iterates")
+print(f"Mean time for flowmap_grid_2D -- {fmtt / n:.5f} seconds (w/ warmup)")
+print(
+    "Mean time for flowmap_grid_2D -- " + f"{(fmtt - wu_fm) / (n - 1):.5f} seconds (w/o warmup)\n"
+)
+print(f"NumbaCS ftle_grid_2D took {ftt:.5f} seconds for {n:1d} iterates")
+print(f"Mean time for ftle_grid_2D -- {ftt / n:.5f} seconds (w/ warmup)")
+print(f"Mean time for ftle_grid_2D -- {(ftt - wu_f) / (n - 1):.5f} seconds (w/o warmup)")
 
 # %%
 # Compare timings
@@ -234,23 +233,25 @@ print("Mean time for ftle_grid_2D -- {:.5f} seconds (w/o warmup)".format((ftt-wu
 stt = sfmtt + sftt
 ntt = fmtt + ftt
 
-stpi = (sfmtt + sftt)/n
-ntpi = (ntt - wu_fm - wu_f)/(n-1)
+stpi = (sfmtt + sftt) / n
+ntpi = (ntt - wu_fm - wu_f) / (n - 1)
 
 d1 = 5
 d2 = 2
-data = [[round(stt,d1),'--','--'],
-        [round(ntt,d1),round(stt/ntt,d2),round(stpi/ntpi,d2)]]
+data = [
+    [round(stt, d1), "--", "--"],
+    [round(ntt, d1), round(stt / ntt, d2), round(stpi / ntpi, d2)],
+]
 
-times = ["total time (n={})".format(n),"speedup","speedup (n->inf)"]
-methods = ["SciPy/NumPy","NumbaCS"]
+times = [f"total time (n={n})", "speedup", "speedup (n->inf)"]
+methods = ["SciPy/NumPy", "NumbaCS"]
 
-format_row = "{:>25}"*(len(data[0]) + 1)
+format_row = "{:>25}" * (len(data[0]) + 1)
 
 print(format_row.format("", *times))
 
-for name, vals in zip(methods,data):
-    print(format_row.format(name,*vals))
+for name, vals in zip(methods, data):
+    print(format_row.format(name, *vals))
 
 # %%
 #

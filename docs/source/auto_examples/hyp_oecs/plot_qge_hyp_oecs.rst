@@ -23,7 +23,7 @@ Quasi-geostrophic hyperbolic OECS
 
 Compute the hyperbolic OECS saddles for QGE flow.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-19
+.. GENERATED FROM PYTHON SOURCE LINES 8-18
 
 .. code-block:: Python
 
@@ -44,28 +44,28 @@ Compute the hyperbolic OECS saddles for QGE flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 20-23
+.. GENERATED FROM PYTHON SOURCE LINES 19-22
 
 Get flow data
 --------------
 Load velocity data and set up domain.
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-35
+.. GENERATED FROM PYTHON SOURCE LINES 22-34
 
 .. code-block:: Python
 
 
     # load in qge velocity data
-    u = np.load('../data/qge/qge_u.npy')
-    v = np.load('../data/qge/qge_v.npy')
+    u = np.load("../data/qge/qge_u.npy")
+    v = np.load("../data/qge/qge_v.npy")
 
     # set up domain
-    nt,nx,ny = u.shape
-    x = np.linspace(0,1,nx)
-    y = np.linspace(0,2,ny)
-    t = np.linspace(0,1,nt)
-    dx = x[1]-x[0]
-    dy = y[1]-y[0]
+    nt, nx, ny = u.shape
+    x = np.linspace(0, 1, nx)
+    y = np.linspace(0, 2, ny)
+    t = np.linspace(0, 1, nt)
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
 
 
 
@@ -73,21 +73,21 @@ Load velocity data and set up domain.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 36-39
+.. GENERATED FROM PYTHON SOURCE LINES 35-38
 
 S eigenvalues, eigenvectors
 ---------------------------
 Compute eigenvalues/vectors of S tensor from velocity field at time t = t[k0].
 
-.. GENERATED FROM PYTHON SOURCE LINES 39-45
+.. GENERATED FROM PYTHON SOURCE LINES 38-44
 
 .. code-block:: Python
 
 
     k0 = 15
     # compute eigenvalues/vectors of Eulerian rate of strain tensor
-    eigvals,eigvecs = S_eig_2D_data(u[k0,:,:],v[k0,:,:],dx,dy)
-    s2 = eigvals[:,:,1]
+    eigvals, eigvecs = S_eig_2D_data(u[k0, :, :], v[k0, :, :], dx, dy)
+    s2 = eigvals[:, :, 1]
 
 
 
@@ -96,13 +96,13 @@ Compute eigenvalues/vectors of S tensor from velocity field at time t = t[k0].
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-49
+.. GENERATED FROM PYTHON SOURCE LINES 45-48
 
 Hyperbolic OECS saddles
 -----------------------
 Compute generalized saddle points and hyperbolic oecs.
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-61
+.. GENERATED FROM PYTHON SOURCE LINES 48-60
 
 .. code-block:: Python
 
@@ -112,11 +112,11 @@ Compute generalized saddle points and hyperbolic oecs.
     h = 1e-4
     steps = 4000
     maxlen = 0.05
-    minval = np.percentile(s2,50)
+    minval = np.percentile(s2, 50)
     n = 10
 
     # compute hyperbolic_oecs
-    oecs = hyperbolic_oecs(s2,eigvecs,x,y,r,h,steps,maxlen,minval,n=n)
+    oecs = hyperbolic_oecs(s2, eigvecs, x, y, r, h, steps, maxlen, minval, n=n)
 
 
 
@@ -125,24 +125,23 @@ Compute generalized saddle points and hyperbolic oecs.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-65
+.. GENERATED FROM PYTHON SOURCE LINES 61-64
 
 Plot all OECS
 -------------
 Plot the OECS overlaid on iLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-74
+.. GENERATED FROM PYTHON SOURCE LINES 64-72
 
 .. code-block:: Python
 
-    fig,ax = plt.subplots(dpi=200)
-    ax.contourf(x,y,s2.T,levels=np.linspace(0,np.percentile(s2,99.5),51),
-                extend='both',zorder=0)
+    fig, ax = plt.subplots(dpi=200)
+    ax.contourf(x, y, s2.T, levels=np.linspace(0, np.percentile(s2, 99.5), 51), extend="both", zorder=0)
 
     for k in range(len(oecs)):
-        ax.plot(oecs[k][0][:,0],oecs[k][0][:,1],'r',lw=1)
-        ax.plot(oecs[k][1][:,0],oecs[k][1][:,1],'b',lw=1)
-    ax.set_aspect('equal')
+        ax.plot(oecs[k][0][:, 0], oecs[k][0][:, 1], "r", lw=1)
+        ax.plot(oecs[k][1][:, 0], oecs[k][1][:, 1], "b", lw=1)
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -156,13 +155,13 @@ Plot the OECS overlaid on iLE.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-78
+.. GENERATED FROM PYTHON SOURCE LINES 73-76
 
 Advect OECS
 -----------
 Advect OECS and a circle centered at the generalized saddle point.
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-103
+.. GENERATED FROM PYTHON SOURCE LINES 76-101
 
 .. code-block:: Python
 
@@ -173,23 +172,23 @@ Advect OECS and a circle centered at the generalized saddle point.
     from numbacs.integration import flowmap_n
 
     # get funcptr, set parameters for integration, and integrate
-    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t,x,y,u,v)
+    grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, x, y, u, v)
     funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v)
 
     nc = 4000
     nT = 4
     T = 0.06
-    t_eval = np.linspace(0,T,nT)
+    t_eval = np.linspace(0, T, nT)
     adv_circ = []
     adv_rep = []
     adv_att = []
     t0 = t[k0]
     # advect the top 2 (in strength) OECS
     for k in range(len(oecs[:3])):
-        circ1 = gen_filled_circ(maxlen,nc,c=oecs[k][2],xlims=(0,1),ylims=(0,2))
-        adv_circ.append(flowmap_n(funcptr, t0, T, circ1, np.array([1.0]), n = nT)[0])
-        adv_rep.append(flowmap_n(funcptr, t0, T, oecs[k][0], np.array([1.0]), n = nT)[0])
-        adv_att.append(flowmap_n(funcptr, t0, T, oecs[k][1], np.array([1.0]), n = nT)[0])
+        circ1 = gen_filled_circ(maxlen, nc, c=oecs[k][2], xlims=(0, 1), ylims=(0, 2))
+        adv_circ.append(flowmap_n(funcptr, t0, T, circ1, np.array([1.0]), n=nT)[0])
+        adv_rep.append(flowmap_n(funcptr, t0, T, oecs[k][0], np.array([1.0]), n=nT)[0])
+        adv_att.append(flowmap_n(funcptr, t0, T, oecs[k][1], np.array([1.0]), n=nT)[0])
 
 
 
@@ -198,31 +197,45 @@ Advect OECS and a circle centered at the generalized saddle point.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 104-107
+.. GENERATED FROM PYTHON SOURCE LINES 102-105
 
 Plot advected OECS
 ------------------
 Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 
-.. GENERATED FROM PYTHON SOURCE LINES 107-123
+.. GENERATED FROM PYTHON SOURCE LINES 105-135
 
 .. code-block:: Python
 
-    fig,axs = plt.subplots(nrows=1,ncols=4,sharex=True,sharey=True,dpi=200)
+    fig, axs = plt.subplots(nrows=1, ncols=4, sharex=True, sharey=True, dpi=200)
     axs = axs.flat
     nax = len(axs)
     for i in range(nax):
         kt = i
-        axs[i].set_title('t0 + {:.2f}'.format(t_eval[i]))
+        axs[i].set_title(f"t0 + {t_eval[i]:.2f}")
         for k in range(len(adv_rep)):
-            axs[i].scatter(adv_rep[k][:,kt,0],adv_rep[k][:,kt,1],1,'r',marker='.',
-                           edgecolors=None,linewidths=0)
-            axs[i].scatter(adv_att[k][:,kt,0],adv_att[k][:,kt,1],1,'b',marker='.',
-                           edgecolors=None,linewidths=0)
-            axs[i].scatter(adv_circ[k][:,kt,0],adv_circ[k][:,kt,1],0.5,'g',zorder=0)
-        axs[i].set_xlim([0,1])
-        axs[i].set_ylim([0,2])
-        axs[i].set_aspect('equal')
+            axs[i].scatter(
+                adv_rep[k][:, kt, 0],
+                adv_rep[k][:, kt, 1],
+                1,
+                "r",
+                marker=".",
+                edgecolors=None,
+                linewidths=0,
+            )
+            axs[i].scatter(
+                adv_att[k][:, kt, 0],
+                adv_att[k][:, kt, 1],
+                1,
+                "b",
+                marker=".",
+                edgecolors=None,
+                linewidths=0,
+            )
+            axs[i].scatter(adv_circ[k][:, kt, 0], adv_circ[k][:, kt, 1], 0.5, "g", zorder=0)
+        axs[i].set_xlim([0, 1])
+        axs[i].set_ylim([0, 2])
+        axs[i].set_aspect("equal")
     plt.show()
 
 
@@ -239,7 +252,7 @@ Plot advected OECS at 0.00, 0.02, 0.04, and 0.06 units of time after t0.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 34.091 seconds)
+   **Total running time of the script:** (0 minutes 6.595 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_oecs_plot_qge_hyp_oecs.py:

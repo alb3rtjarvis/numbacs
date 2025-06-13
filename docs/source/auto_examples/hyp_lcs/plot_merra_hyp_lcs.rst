@@ -25,7 +25,7 @@ Compute hyperbolic LCS using the variational theory for atmospheric flow at time
 storm using MERRA-2 data which is vertically averaged over pressure surfaces
 ranging from 500hPa to 800hPa..
 
-.. GENERATED FROM PYTHON SOURCE LINES 11-22
+.. GENERATED FROM PYTHON SOURCE LINES 10-21
 
 .. code-block:: Python
 
@@ -47,7 +47,7 @@ ranging from 500hPa to 800hPa..
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-31
+.. GENERATED FROM PYTHON SOURCE LINES 22-30
 
 Get flow data
 --------------
@@ -58,45 +58,45 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
    Pandas is a simpler option for storing and manipulating dates but we use
    numpy here as Pandas is not a dependency.
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-68
+.. GENERATED FROM PYTHON SOURCE LINES 30-67
 
 .. code-block:: Python
 
 
     # load in atmospheric data
-    dates = np.load('../data/merra_june2020/dates.npy')
-    dt = (dates[1] - dates[0]).astype('timedelta64[h]').astype(int)
-    t = np.arange(0,len(dates)*dt,dt,np.float64)
-    lon = np.load('../data/merra_june2020/lon.npy')
-    lat = np.load('../data/merra_june2020/lat.npy')
+    dates = np.load("../data/merra_june2020/dates.npy")
+    dt = (dates[1] - dates[0]).astype("timedelta64[h]").astype(int)
+    t = np.arange(0, len(dates) * dt, dt, np.float64)
+    lon = np.load("../data/merra_june2020/lon.npy")
+    lat = np.load("../data/merra_june2020/lat.npy")
 
     # NumbaCS uses 'ij' indexing, most geophysical data uses 'xy'
     # indexing for the spatial coordintes. We need to switch axes and
     # scale by 3.6 since velocity data is in m/s and we want km/hr.
-    u = np.moveaxis(np.load('../data/merra_june2020/u_500_800hPa.npy'),1,2)*3.6
-    v = np.moveaxis(np.load('../data/merra_june2020/v_500_800hPa.npy'),1,2)*3.6
-    nt,nx,ny = u.shape
+    u = np.moveaxis(np.load("../data/merra_june2020/u_500_800hPa.npy"), 1, 2) * 3.6
+    v = np.moveaxis(np.load("../data/merra_june2020/v_500_800hPa.npy"), 1, 2) * 3.6
+    nt, nx, ny = u.shape
 
     # set domain on which ftle will be computed
     dx = 0.1
     dy = 0.1
-    lonf = np.arange(-100,35+dx,dx)
-    latf = np.arange(-5,45+dy,dy)
+    lonf = np.arange(-100, 35 + dx, dx)
+    latf = np.arange(-5, 45 + dy, dy)
 
 
     # set integration span and integration direction
     day = 16
-    t0_date = np.datetime64("2020-06-{:02d}".format(day))
+    t0_date = np.datetime64(f"2020-06-{day:02d}")
     t0 = t[np.nonzero(dates == t0_date)[0][0]]
     T = -72.0
-    params = np.array([copysign(1,T)])
+    params = np.array([copysign(1, T)])
 
     # get interpolant arrays of velocity field
     grid_vel, C_eval_u, C_eval_v = get_interp_arrays_2D(t, lon, lat, u, v)
 
     # set integration direction and retrieve flow
     # set spherical = 1 since flow is on spherical domain and lon is from [-180,180)
-    params = np.array([copysign(1,T)])
+    params = np.array([copysign(1, T)])
     funcptr = get_flow_2D(grid_vel, C_eval_u, C_eval_v, spherical=1)
 
 
@@ -106,13 +106,13 @@ FTLE computation and integration span. Create interpolant and retrieve flow.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 69-72
+.. GENERATED FROM PYTHON SOURCE LINES 68-71
 
 Integrate
 ---------
 Integrate grid of particles and auxillary grid with spacing h, return final positions
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-78
+.. GENERATED FROM PYTHON SOURCE LINES 71-77
 
 .. code-block:: Python
 
@@ -120,7 +120,7 @@ Integrate grid of particles and auxillary grid with spacing h, return final posi
     # computes final position of particle trajectories over grid + auxillary grid
     # with spacing h
     h = 5e-3
-    flowmap = flowmap_aux_grid_2D(funcptr, t0, T, lonf, latf, params,h=h)
+    flowmap = flowmap_aux_grid_2D(funcptr, t0, T, lonf, latf, params, h=h)
 
 
 
@@ -129,24 +129,24 @@ Integrate grid of particles and auxillary grid with spacing h, return final posi
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 79-82
+.. GENERATED FROM PYTHON SOURCE LINES 78-81
 
 CG eigenvalues, eigenvectors, and FTLE
 ----------------------------------------------
 Compute eigenvalues/vectors of CG tensor from final particle positions and compute FTLE.
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-90
+.. GENERATED FROM PYTHON SOURCE LINES 81-89
 
 .. code-block:: Python
 
 
     # compute eigenvalues/vectors of Cauchy Green tensor
-    eigvals,eigvecs = C_eig_aux_2D(flowmap, dx, dy, h=h)
-    eigval_max = eigvals[:,:,1]
-    eigvec_max = eigvecs[:,:,:,1]
+    eigvals, eigvecs = C_eig_aux_2D(flowmap, dx, dy, h=h)
+    eigval_max = eigvals[:, :, 1]
+    eigvec_max = eigvecs[:, :, :, 1]
 
     # copmute FTLE from max eigenvalue
-    ftle = ftle_from_eig(eigval_max,T)
+    ftle = ftle_from_eig(eigval_max, T)
 
 
 
@@ -154,13 +154,13 @@ Compute eigenvalues/vectors of CG tensor from final particle positions and compu
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-94
+.. GENERATED FROM PYTHON SOURCE LINES 90-93
 
 Hyperbolic LCS
 --------------
 Compute hyperbolic LCS using the variational theory.
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-120
+.. GENERATED FROM PYTHON SOURCE LINES 93-130
 
 .. code-block:: Python
 
@@ -175,19 +175,30 @@ Compute hyperbolic LCS using the variational theory.
     nmax = 2000
     dtol = 0
     nlines = 20
-    percentile=0
-    ep_dist_tol=0.0
+    percentile = 0
+    ep_dist_tol = 0.0
     lambda_avg_min = 0
-    arclen_flag=False
+    arclen_flag = False
 
     # extract hyperbolic lcs
-    lcs = hyperbolic_lcs(eigval_max, eigvecs, lonf, latf, step_size, steps, lf, lmin, r, nmax,
-                         dist_tol=dtol,
-                         nlines=nlines,
-                         ep_dist_tol=ep_dist_tol,
-                         percentile=percentile,
-                         lambda_avg_min=lambda_avg_min,
-                         arclen_flag=arclen_flag)
+    lcs = hyperbolic_lcs(
+        eigval_max,
+        eigvecs,
+        lonf,
+        latf,
+        step_size,
+        steps,
+        lf,
+        lmin,
+        r,
+        nmax,
+        dist_tol=dtol,
+        nlines=nlines,
+        ep_dist_tol=ep_dist_tol,
+        percentile=percentile,
+        lambda_avg_min=lambda_avg_min,
+        arclen_flag=arclen_flag,
+    )
 
 
 
@@ -197,26 +208,26 @@ Compute hyperbolic LCS using the variational theory.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 121-124
+.. GENERATED FROM PYTHON SOURCE LINES 131-134
 
 Plot
 ----
 Plot the results.
 
-.. GENERATED FROM PYTHON SOURCE LINES 124-135
+.. GENERATED FROM PYTHON SOURCE LINES 134-145
 
 .. code-block:: Python
 
-    coastlines = np.load('../data/merra_june2020/coastlines.npy')
-    fig,ax = plt.subplots(dpi=200)
-    ax.scatter(coastlines[:,0],coastlines[:,1],1,'k',marker='.',edgecolors=None,linewidths=0)
-    ax.contourf(lonf,latf,ftle.T,levels=80,zorder=0)
+    coastlines = np.load("../data/merra_june2020/coastlines.npy")
+    fig, ax = plt.subplots(dpi=200)
+    ax.scatter(coastlines[:, 0], coastlines[:, 1], 1, "k", marker=".", edgecolors=None, linewidths=0)
+    ax.contourf(lonf, latf, ftle.T, levels=80, zorder=0)
     for l in lcs:
-        ax.plot(l[:,0],l[:,1],'r',lw=0.5)
+        ax.plot(l[:, 0], l[:, 1], "r", lw=0.5)
 
-    ax.set_xlim([lonf[0],lonf[-1]])
-    ax.set_ylim([latf[0],latf[-1]])
-    ax.set_aspect('equal')
+    ax.set_xlim([lonf[0], lonf[-1]])
+    ax.set_ylim([latf[0], latf[-1]])
+    ax.set_aspect("equal")
     plt.show()
 
 
@@ -233,7 +244,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (1 minutes 48.034 seconds)
+   **Total running time of the script:** (1 minutes 46.179 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_lcs_plot_merra_hyp_lcs.py:
