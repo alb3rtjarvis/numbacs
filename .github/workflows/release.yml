@@ -32,4 +32,11 @@ jobs:
         run: hatch build
 
       - name: Publish package to PyPi
+        if: github.event.release.prerelease == false
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish package to TestPyPi
+        if: github.event.release.prerelease == true
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
