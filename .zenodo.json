@@ -3,14 +3,16 @@
         {
             "name": "Jarvis, Albert",
             "orcid": "0009-0006-8770-6728",
-            "affiliation": "Virginia Tech"
+            "affiliation": "Virginia Tech",
+            "type": "ProjectLeader"
         }
     ],
     "contributors": [
         {
             "name": "Ross, Shane",
             "orcid": "0000-0001-5523-2376",
-            "affiliation": "Virginia Tech"
+            "affiliation": "Virginia Tech",
+            "type": "ProjectMember"
         }
     ],
     "title": "NumbaCS",
