@@ -42,6 +42,8 @@ numbalsoda package -- these seem to primarily affect Windows installations).
 
 ## Basic usage
 
+Below we show basic demonstrations for computing FTLE. See the [Examples Gallery](https://numbacs.readthedocs.io/en/latest/auto_examples/index.html) for more examples showcasing functionality.
+
 ### Predefined flow
 
 ```python
