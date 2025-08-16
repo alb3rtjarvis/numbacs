@@ -1,5 +1,12 @@
 # Releases
 
+## 0.1.2
+*August 16 2025*
+
+* Release for JOSS article
+* Setup CI (linting, formatting, testing, pypi upload)
+* Minor bug fixes
+
 ## 0.1.1
 *September 24 2024*
 
