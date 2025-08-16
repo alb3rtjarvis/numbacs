@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,7 +7,7 @@ name = "numbacs"
 dynamic = ["version"]
 description = 'Numba-accelerated coherent structure package.'
 readme = "README.md"
-requires-python = ">=3.10, <3.12"    # numbalsoda currently does not support >3.11
+requires-python = ">=3.10, <3.12"
 license = "MPL-2.0"
 keywords = [
   "applied-mathematics",
