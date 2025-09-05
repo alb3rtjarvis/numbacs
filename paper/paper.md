@@ -17,7 +17,7 @@ authors:
 affiliations:
  - name: Department of Mechanical Engineering, Virginia Tech, Blacksburg, VA, USA
    index: 1
- - name: Department of Ocean and Aerospace Engineering, Virginia Tech, Blacksburg, VA, USA
+ - name: Department of Aerospace and Ocean Engineering, Virginia Tech, Blacksburg, VA, USA
    index: 2
 date: 11 October 2024
 bibliography: paper.bib
