@@ -200,7 +200,7 @@ FTLE ridge extraction: ~0.27s). Computed over 902x335 grid.
 
 Two datasets are provided with NumbaCS to test the functionality for flows
 defined by numerical velocity data. One is a numerical simulation of the
-quasi-geostrophic equations (QGE). We thank the authors of @mou2021 for providing
+quasi-geostrophic equations (QGE). We thank the authors of [@mou2021] for providing
 us with this dataset, which was used extensively during development, and allowing
 a piece of the dataset to be included in the package. The full dataset was over
 the time span [10,81] with dt = 0.01. We provide the velocity fields over the
