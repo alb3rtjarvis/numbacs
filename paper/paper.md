@@ -31,8 +31,8 @@ fluid flows. It leverages `Numba` -- a high performance Python compiler
 for generating optimized machine code from Python functions -- along with other
 `Numba`-compatible packages behind the scenes, producing fast and user-friendly
 implementations of coherent structure methods. "Coherent structure methods" refer
-to any method which can be used to infer or extract Lagrangian and objective
-Eulerian coherent structures. The theory behind these methods have been developed
+to any method that can be used to infer or extract Lagrangian and objective
+Eulerian coherent structures. The theory behind these methods has been developed
 over the last few decades with the aim of extending many of the important invariant
 objects from time-independent dynamical systems theory to the more general setting
 where a system may have arbitrary time dependence and may only be known or defined
@@ -40,8 +40,8 @@ for some finite time. These time-dependent systems are ubiquitous in the context
 geophysical and engineering flows where the evolution of the velocity field depends
 on time and velocity data representing these flows is not available for all time. By
 extending the ideas from the time-independent setting to the more general
-time-dependent setting, important transient objects (coherent structures) can
-be identified which govern how material is transported within a flow.
+time-dependent setting, important transient objects (coherent structures)
+that govern how material is transported within a flow can be identified.
 Understanding material transport in flows is of great importance
 for applications ranging from monitoring the transport of a contaminant
 in the ocean or atmosphere to informing search and rescue strategies for
@@ -105,13 +105,13 @@ For flows defined by numerical velocity data:
 
 All of these implementations are relatively straightforward to use and
 quite efficient. This is due to three key dependencies `NumbaCS` utilizes to speed
-up computations. The first is `Numba` [@numba], a JIT compiler for Python which can
+up computations. The first is `Numba` [@numba], a JIT compiler for Python that can
 drastically speed up numerical operations and provides a simple framework
 for parallelizing tasks. Next, `numbalsoda` [@numbalsoda] is a Python wrapper to
 ODE solvers in both C++ (LSODA) and FORTRAN (DOP853) that bypasses the Python
 interpreter and can be used within Numba functions (common Python ODE solvers, such
 as those provided by the `SciPy` package, cannot be executed within `Numba` functions).
-This package is crucial to the efficiency of NumbaCS as particle integration is often
+This package is crucial to the efficiency of NumbaCS, as particle integration is often
 the most costly part of finite-time coherent structure methods. Finally, the `interpolation`
 package [@interpolation] provides optimized interpolation in Python and is utilized in
 `NumbaCS` to create JIT compiled interpolant functions, producing efficient
@@ -123,12 +123,12 @@ achieving runtimes closer to that of a compiled language.
 
 # Examples
 
-A [User Guide](https://numbacs.readthedocs.io/en/latest/userguide.html) is
-provided which details the workflow in NumbaCS and a number of examples
+A [User Guide](https://numbacs.readthedocs.io/en/latest/userguide.html) that 
+details the workflow in NumbaCS is provided, and a number of examples
 demonstrating the functionality are covered in the
 [Example Gallery](https://numbacs.readthedocs.io/en/latest/auto_examples/index.html).
 Here we show the output of a few examples, provide the runtime of each, and
-breakdown the runtime based on the parts of each method. "Flowmap" refers to
+break down the runtime based on the parts of each method. "Flowmap" refers to
 the particle integration step, "C eig" and "S eig" refer to the eigenvalue/vector
 step for Lagrangian and Eulerian methods respectively (this time will be
 roughly equal to the FTLE and iLE times), and the last is the extraction time
@@ -218,7 +218,7 @@ on the GitHub page.
 # Usage in ongoing research
 
 As of the writing of this paper, `NumbaCS` has not been public for long but has
-been utilized in one publication [@jarvis2024] where it was the computational
+been utilized in one publication [@jarvis2024], where it was the computational
 tool for all coherent structure methods. In addition, it is currently being used
 in an ongoing project focused on airborne invasive species traveling from Australia
 to New Zealand titled
