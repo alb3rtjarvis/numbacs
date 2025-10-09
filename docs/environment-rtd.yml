@@ -13,8 +13,8 @@ dependencies:
   - sphinx
   - sphinx_rtd_theme
   - myst-parser
-  - sphinx-autoapi
   - sphinxcontrib-bibtex
   - pip
   - pip:
     - sphinx_gallery
+    - sphinx-autoapi
