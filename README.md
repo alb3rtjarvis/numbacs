@@ -1,5 +1,7 @@
 # NumbaCS
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.07948/status.svg)](https://doi.org/10.21105/joss.07948) [![PyPI Latest Release](https://img.shields.io/pypi/v/numbacs.svg)](https://pypi.org/project/numbacs/) [![Conda Latest Release](https://anaconda.org/conda-forge/numbacs/badges/version.svg)](https://anaconda.org/conda-forge/numbacs) [![CI](https://github.com/alb3rtjarvis/numbacs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alb3rtjarvis/numbacs/actions/workflows/ci.yml) [![Platforms](https://anaconda.org/conda-forge/numbacs/badges/platforms.svg)](https://anaconda.org/conda-forge/numbacs) [![License](https://anaconda.org/conda-forge/numbacs/badges/license.svg)](https://anaconda.org/conda-forge/numbacs)
+
 **Documentation:** [https://numbacs.readthedocs.io/](https://numbacs.readthedocs.io/en/latest/)
 
 **Source Code (MPL-2.0):** [https://github.com/alb3rtjarvis/numbacs](https://github.com/alb3rtjarvis/numbacs)
@@ -164,6 +166,28 @@ to discuss what you would like to change.
 Please make sure to update tests as appropriate. See the [Contributing guide](https://numbacs.readthedocs.io/en/latest/contributing.html)
 for more details.
 
+## Citation
+
+If you use this package in your own work, we kindly ask you cite the following paper:
+
+Albert Jarvis & Shane D. Ross. (2025). NumbaCS: A fast Python package for coherent structure analysis. *Journal of Open Source Software*, 10(113), 7948. [https://doi.org/10.21105/joss.07948](https://doi.org/10.21105/joss.07948)
+
+BibTeX
+
+```bibtex
+@article{JarvisRoss2025,
+  title = {NumbaCS: A fast Python package for coherent structure analysis},
+  author = {Jarvis, Albert and Ross, Shane D.},
+  journal = {Journal of Open Source Software},
+  volume = {10},
+  number = {113},
+  pages = {7948},
+  year = {2025},
+  publisher = {The Open Journal},
+  doi = {10.21105/joss.07948}
+}
+```
+
 ## Similar software
 
 This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmarks](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
@@ -193,9 +217,9 @@ notebooks accompanying the book *Transport Barriers and Coherent Structures
 in Flow Data -- Advective, Diffusive, Stochastic, and Active methods by George
 Haller*. Python code which implements a wide variety of Lagrangian
 and Eulerian diagnostics and extraction methods for a variety of different
-transport settings, in both 2 and 3 dimensions (NumbaCS currently only
+transport settings, some in both 2 and 3 dimensions (NumbaCS currently only
 implements purely advective methods in 2D).
-- *Features* (both 2D and 3D): FTLE, iLE, variational hyperbolic LCS and OECS, variational elliptic LCS and OECS, variational parabolic LCS, active hyperbolic LCS and OECS, active elliptic LCS and OECS, DBS, diffusive and stochastic elliptic LCS and OECS
+- *Features*: (both 2D and 3D) FTLE, iLE, LAVD, various passive and active diagnostics, (2D) variational hyperbolic LCS and OECS, variational elliptic LCS and OECS, active hyperbolic LCS and OECS, active elliptic LCS and OECS, DBS, diffusive and stochastic elliptic LCS and OECS
 - *Integration*: RK4 (Python)
 - *Interpolation*: Linear in time, cubic in space
 
@@ -235,8 +259,13 @@ implementation for intertial particles as well (iFTLE).
 - *Integration*: Version 1.0 -- RK4 (MATLAB), Version 2.3 -- Euler (MATLAB)
 - *Interpolation* Version 1.0 -- Cubic, Version 2.3 -- Linear
 
+[`BarrierTool`](https://github.com/katsanoulis/BarrierTool) -- MATLAB GUI and scripts for computing advective and diffusive elliptic LCS and OECS.
+- *Features*: Variational elliptic LCS and OECS, diffusive and stochastic elliptic LCS and OECS
+- *Integration*: ode45 - based off of RK5(4) due to Dormand and Prince (MATLAB)
+- *Interpolation*: MATLAB interpolation options (linear, spline, cubic, etc.)
+
 [`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) --
-Numba accelerated Python package which efficiently computes a variety of
+Numba-accelerated Python package that efficiently computes a variety of
 coherent structure methods.
 - *Features*: FTLE, iLE, FTLE ridge extraction, variational hyperbolic LCS and OECS, LAVD-based elliptic LCS, IVD-based elliptic OECS, flow map composition
 - *Integration*: DOP853 (FORTRAN), LSODA (C++)
