@@ -166,6 +166,28 @@ to discuss what you would like to change.
 Please make sure to update tests as appropriate. See the [Contributing guide](https://numbacs.readthedocs.io/en/latest/contributing.html)
 for more details.
 
+## Citation
+
+If you use this package in your own work, we kindly ask you cite the following paper:
+
+Albert Jarvis & Shane D. Ross. (2025). NumbaCS: A fast Python package for coherent structure analysis. *Journal of Open Source Software*, 10(113), 7948. [https://doi.org/10.21105/joss.07948](https://doi.org/10.21105/joss.07948)
+
+BibTeX
+
+```bibtex
+@article{JarvisRoss2025,
+  title = {NumbaCS: A fast Python package for coherent structure analysis},
+  author = {Jarvis, Albert and Ross, Shane D.},
+  journal = {Journal of Open Source Software},
+  volume = {10},
+  number = {113},
+  pages = {7948},
+  year = {2025},
+  publisher = {The Open Journal},
+  doi = {10.21105/joss.07948}
+}
+```
+
 ## Similar software
 
 This section lists similar packages, their functionality, what ODE solvers are available (and what language they are implemented in), and the available interpolation routines. For performance comparisons of *some* packages on core functionality, see the [Benchmarks](https://github.com/alb3rtjarvis/coherent_benchmarks) repository.
