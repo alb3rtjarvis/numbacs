@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.abspath('../../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'NumbaCS'
-copyright = '2024, Albert Jarvis'
+copyright = '2025, Albert Jarvis'
 author = 'Albert Jarvis'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.1'
+release = '0.1.2'
 
 
 # -- General configuration ---------------------------------------------------
