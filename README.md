@@ -193,9 +193,9 @@ notebooks accompanying the book *Transport Barriers and Coherent Structures
 in Flow Data -- Advective, Diffusive, Stochastic, and Active methods by George
 Haller*. Python code which implements a wide variety of Lagrangian
 and Eulerian diagnostics and extraction methods for a variety of different
-transport settings, in both 2 and 3 dimensions (NumbaCS currently only
+transport settings, some in both 2 and 3 dimensions (NumbaCS currently only
 implements purely advective methods in 2D).
-- *Features* (both 2D and 3D): FTLE, iLE, variational hyperbolic LCS and OECS, variational elliptic LCS and OECS, variational parabolic LCS, active hyperbolic LCS and OECS, active elliptic LCS and OECS, DBS, diffusive and stochastic elliptic LCS and OECS
+- *Features*: (both 2D and 3D) FTLE, iLE, LAVD, various passive and active diagnostics, (2D) variational hyperbolic LCS and OECS, variational elliptic LCS and OECS, active hyperbolic LCS and OECS, active elliptic LCS and OECS, DBS, diffusive and stochastic elliptic LCS and OECS
 - *Integration*: RK4 (Python)
 - *Interpolation*: Linear in time, cubic in space
 
@@ -234,6 +234,11 @@ implementation for intertial particles as well (iFTLE).
 - *Features*: FTLE, iFTLE
 - *Integration*: Version 1.0 -- RK4 (MATLAB), Version 2.3 -- Euler (MATLAB)
 - *Interpolation* Version 1.0 -- Cubic, Version 2.3 -- Linear
+
+[`BarrierTool`](https://github.com/katsanoulis/BarrierTool) -- MATLAB GUI and scripts for computing advective and diffusive elliptic LCS and OECS.
+- *Features*: Variational elliptic LCS and OECS, diffusive and stochastic elliptic LCS and OECS
+- *Integration*: ode45 - based off of RK5(4) due to Dormand and Prince (MATLAB)
+- *Interpolation*: MATLAB interpolation options (linear, spline, cubic, etc.)
 
 [`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) --
 Numba accelerated Python package which efficiently computes a variety of
