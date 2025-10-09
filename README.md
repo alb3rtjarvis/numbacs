@@ -1,5 +1,7 @@
 # NumbaCS
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.07948/status.svg)](https://doi.org/10.21105/joss.07948) [![PyPI Latest Release](https://img.shields.io/pypi/v/numbacs.svg)](https://pypi.org/project/numbacs/) [![Conda Latest Release](https://anaconda.org/conda-forge/numbacs/badges/version.svg)](https://anaconda.org/conda-forge/numbacs) [![CI](https://github.com/alb3rtjarvis/numbacs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alb3rtjarvis/numbacs/actions/workflows/ci.yml) [![Platforms](https://anaconda.org/conda-forge/numbacs/badges/platforms.svg)](https://anaconda.org/conda-forge/numbacs) [![License](https://anaconda.org/conda-forge/numbacs/badges/license.svg)](https://anaconda.org/conda-forge/numbacs)
+
 **Documentation:** [https://numbacs.readthedocs.io/](https://numbacs.readthedocs.io/en/latest/)
 
 **Source Code (MPL-2.0):** [https://github.com/alb3rtjarvis/numbacs](https://github.com/alb3rtjarvis/numbacs)
@@ -241,7 +243,7 @@ implementation for intertial particles as well (iFTLE).
 - *Interpolation*: MATLAB interpolation options (linear, spline, cubic, etc.)
 
 [`NumbaCS`](https://numbacs.readthedocs.io/en/latest/) --
-Numba accelerated Python package which efficiently computes a variety of
+Numba-accelerated Python package that efficiently computes a variety of
 coherent structure methods.
 - *Features*: FTLE, iLE, FTLE ridge extraction, variational hyperbolic LCS and OECS, LAVD-based elliptic LCS, IVD-based elliptic OECS, flow map composition
 - *Integration*: DOP853 (FORTRAN), LSODA (C++)
