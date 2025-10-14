@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit, prange
 import numba
-from math import floor, pi, cos, sin
+from math import floor, pi, cos, sin, sqrt
 from scipy.interpolate import splprep, splev
 
 
@@ -1010,3 +1010,53 @@ def cart_prod(vecs):
         prod[j * nlast : (j + 1) * nlast, -1] = arr
 
     return prod
+
+
+@njit(inline="always")
+def eigvalsh_2D(A):
+    """
+    Computes the maximum eigenvalue for a Hermetian 2x2 array A.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape = (2, 2)
+        Hermetian 2x2 array.
+
+    Returns
+    -------
+    float
+        maximum eigenvalue of A.
+
+    """
+
+    a, b, d = A[0, 0], A[0, 1], A[1, 1]
+    trace = a + d
+    discriminant = sqrt((a - d) ** 2 + 4 * (b**2))
+
+    return 0.5 * (trace + discriminant)
+
+
+@njit(inline="always")
+def inv_2D(A):
+    """
+    Computes the inverse of a 2x2 array A.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape = (2, 2)
+        2x2 array.
+
+    Returns
+    -------
+    np.ndarray, shape = (2, 2)
+        inverse of A.
+
+    """
+    a, b, c, d = A[0, 0], A[0, 1], A[1, 0], A[1, 1]
+
+    det = a * d - b * c
+
+    if det != 0:
+        return np.array([[d, -b], [-c, a]]) / det
+    else:
+        return np.zeros((2, 2), numba.float64)
