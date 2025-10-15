@@ -3,6 +3,166 @@ from numba import njit, prange
 import numba
 from math import floor, pi, cos, sin, sqrt
 from scipy.interpolate import splprep, splev
+from scipy.ndimage import generate_binary_structure, binary_dilation
+
+
+@njit(inline="always")
+def gradF_stencil(F, i, j, dx, dy):
+    """
+    Stencil for computing the gradient of F, a grid of 2D vectors, at i, j,
+    with spacing dx and dy. Not boundary safe.
+
+    Parameters
+    ----------
+    F : np.ndarray, shape = (nx, ny, 2)
+        values of the vector F over grid.
+    i : int
+        index corresponding to the first dimension.
+    j : int
+        index corresponding to the second dimension.
+    dx : float
+        spacing in x-direction.
+    dy : float
+        spacing in y-direction.
+
+    Returns
+    -------
+    dFxdx : float
+        derivative of first component in x-direction.
+    dFxdy : float
+        derivative of first component in y-direction.
+    dFydx : float
+        derivative of second component in x-direction.
+    dFydy : float
+        derivative of second component in y-direction.
+
+    """
+
+    dFxdx = (F[i + 1, j, 0] - F[i - 1, j, 0]) / (2 * dx)
+    dFxdy = (F[i, j + 1, 0] - F[i, j - 1, 0]) / (2 * dy)
+    dFydx = (F[i + 1, j, 1] - F[i - 1, j, 1]) / (2 * dx)
+    dFydy = (F[i, j + 1, 1] - F[i, j - 1, 1]) / (2 * dy)
+
+    return dFxdx, dFxdy, dFydx, dFydy
+
+
+@njit(inline="always")
+def gradF_aux_stencil(F_aux, i, j, h):
+    """
+    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at i, j,
+    using the aux grid, with spacing h.
+
+    Parameters
+    ----------
+    F_aux : np.ndarray, shape = (nx, ny, n_aux, 2)
+        values of the vector F over aux-grid.
+    i : int
+        index corresponding to the first dimension.
+    j : int
+        index corresponding to the second dimension.
+    h : float
+        aux grid spacing.
+
+    Returns
+    -------
+    dFxdx : float
+        derivative of first component in x-direction.
+    dFxdy : float
+        derivative of first component in y-direction.
+    dFydx : float
+        derivative of second component in x-direction.
+    dFydy : float
+        derivative of second component in y-direction.
+
+    """
+
+    dFxdx = (F_aux[i, j, 0, 0] - F_aux[i, j, 1, 0]) / (2 * h)
+    dFxdy = (F_aux[i, j, 2, 0] - F_aux[i, j, 3, 0]) / (2 * h)
+    dFydx = (F_aux[i, j, 0, 1] - F_aux[i, j, 1, 1]) / (2 * h)
+    dFydy = (F_aux[i, j, 2, 1] - F_aux[i, j, 3, 1]) / (2 * h)
+
+    return dFxdx, dFxdy, dFydx, dFydy
+
+
+@njit(inline="always")
+def gradF_main_stencil(F_aux, i, j, dx, dy):
+    """
+    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at i, j,
+    using the main grid, with spacing dx, dy. Not boundary safe.
+
+    Parameters
+    ----------
+    F_aux : np.ndarray, shape = (nx, ny, 5, 2)
+        values of the vector F over aux-grid.
+    i : int
+        index corresponding to the first dimension.
+    j : int
+        index corresponding to the second dimension.
+    dx : float
+        spacing in x-direction.
+    dy : float
+        spacing in y-direction.
+
+    Returns
+    -------
+    dFxdx : float
+        derivative of first component in x-direction.
+    dFxdy : float
+        derivative of first component in y-direction.
+    dFydx : float
+        derivative of second component in x-direction.
+    dFydy : float
+        derivative of second component in y-direction.
+
+    """
+
+    dFxdx = (F_aux[i + 1, j, -1, 0] - F_aux[i - 1, j, -1, 0]) / (2 * dx)
+    dFxdy = (F_aux[i, j + 1, -1, 0] - F_aux[i, j - 1, -1, 0]) / (2 * dy)
+    dFydx = (F_aux[i + 1, j, -1, 1] - F_aux[i - 1, j, -1, 1]) / (2 * dx)
+    dFydy = (F_aux[i, j + 1, -1, 1] - F_aux[i, j - 1, -1, 1]) / (2 * dy)
+
+    return dFxdx, dFxdy, dFydx, dFydy
+
+
+@njit(inline="always")
+def gradUV_stencil(U, V, i, j, dx, dy):
+    """
+    Stencil for computing the gradient of velocity, defined by U, V, at i, j,
+    with spacing dx and dy. Not boundary safe.
+
+    Parameters
+    ----------
+    U : np.ndarray, shape = (nx, ny)
+        velocity in x-direction.
+    V : np.ndarray, shape = (nx, ny)
+        velocity in y-direction.
+    i : int
+        index corresponding to the first dimension.
+    j : int
+        index corresponding to the second dimension.
+    dx : float
+        spacing in x-direction.
+    dy : float
+        spacing in y-direction.
+
+    Returns
+    -------
+    dUdx : float
+        derivative of x velocity in x-direction.
+    dUdy : float
+        derivative of x velocity in y-direction.
+    dVdx : float
+        derivative of y velocity in x-direction.
+    dVdy : float
+        derivative of y velocity in y-direction.
+
+    """
+    dUdx = (U[i + 1, j] - U[i - 1, j]) / (2 * dx)
+    dUdy = (U[i, j + 1] - U[i, j - 1]) / (2 * dy)
+    dVdx = (V[i + 1, j] - V[i - 1, j]) / (2 * dx)
+    dVdy = (V[i, j + 1] - V[i, j - 1]) / (2 * dy)
+
+    return dUdx, dUdy, dVdx, dVdy
 
 
 @njit
@@ -1013,7 +1173,7 @@ def cart_prod(vecs):
 
 
 @njit(inline="always")
-def eigvalsh_2D(A):
+def eigvalsh_max_2D(A):
     """
     Computes the maximum eigenvalue for a Hermetian 2x2 array A.
 
@@ -1060,3 +1220,30 @@ def inv_2D(A):
         return np.array([[d, -b], [-c, a]]) / det
     else:
         return np.zeros((2, 2), numba.float64)
+
+
+def scipy_dilate_mask(mask, corners=False):
+    """
+    A wrapper for scipy.ndimage.binary_dilation() for expanding
+    a mask to all grid points that have neighbors that are True.
+
+    Parameters
+    ----------
+    mask : np.ndarray, shape=(nx, ny), dtype=bool
+        boolean array with True values corresponding to masked values.
+    corners : bool, optional
+        if True, only cardinal directions are used, if False, corners
+        are also used. The default is False.
+
+    Returns
+    -------
+    np.ndarray, shape=(nx, ny), dtype=bool
+        dilated mask.
+
+    """
+    if not corners:
+        structure = generate_binary_structure(2, 1)
+    else:
+        structure = generate_binary_structure(2, 2)
+
+    return binary_dilation(mask, structure=structure)
