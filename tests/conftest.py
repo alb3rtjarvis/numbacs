@@ -6,13 +6,20 @@ import os
 from os.path import join
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-
+nx, ny = (21, 11)
 @pytest.fixture
 def coords_dg():
-    x = np.linspace(0,2,21)
-    y = np.linspace(0,1,11)
+    x = np.linspace(0, 2, nx)
+    y = np.linspace(0, 1, ny)
 
     return x,y
+
+@pytest.fixture
+def mask_dg():
+    mask = np.zeros((nx, ny), np.bool_)
+    mask[::2, ::2] = True
+
+    return mask
 
 @pytest.fixture
 def fm_data():
