@@ -156,7 +156,21 @@ NumbaCS is built on top of three main packages: [Numba](https://numba.pydata.org
 
 ## Roadmap
 
-Future releases aim to extend certain methods to higher dimensions, implement new features that should be straightforward within this framework (shape coherent sets, lobe dynamics, etc.), and further streamline and optimize the process for large-scale geophysical applications.
+Future releases aim to extend certain methods to higher dimensions, implement new methods and features that should be straightforward within this framework, and further streamline and optimize the process for large-scale geophysical applications. Below is a list of features, methods, and improvements that are either currently in development or have plans for development in the future. I am currently the sole developer for this package, so some of these things may take time.
+
+### Under development
+- Support for masked data
+- Direct use of netCDF files for geophysical flows
+- FTLE on non-Eucledian manifolds ([Lekien and Ross, 2010](https://pubs.aip.org/aip/cha/article-abstract/20/1/017505/280725/The-computation-of-finite-time-Lyapunov-exponents))
+- Elliptic LCS and OECS via null geodesics ([Serra and Haller, 2016](https://royalsocietypublishing.org/doi/full/10.1098/rspa.2016.0807))
+- DBS and diffusive transport barriers ([Haller et al., 2018](https://www.pnas.org/doi/abs/10.1073/pnas.1720177115))
+- Extend diagnostic methods to 3D
+
+### Planned
+- Option to cache certain JIT-compiled functions
+- Shape coherent sets ([Ma and Bollt, 2013](https://arxiv.org/abs/1311.5457))
+- Lobe dynamics
+
 
 ## Contributing
 
