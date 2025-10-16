@@ -12,7 +12,7 @@ def coords_dg():
     x = np.linspace(0, 2, nx)
     y = np.linspace(0, 1, ny)
 
-    return x,y
+    return x, y
 
 @pytest.fixture
 def mask_dg():
