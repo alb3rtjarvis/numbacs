@@ -1,9 +1,19 @@
 import numpy as np
 from interpolation.splines import UCGrid
 from numbacs.flows import get_callable_scalar_linear
-from numbacs.diagnostics import (ftle_grid_2D, C_tensor_2D, C_eig_aux_2D, C_eig_2D,
-                                 lavd_grid_2D, ile_2D_func, S_eig_2D_func, S_2D_func,
-                                 ile_2D_data, S_eig_2D_data, ivd_grid_2D)
+from numbacs.diagnostics import (
+    ftle_grid_2D,
+    C_tensor_2D,
+    C_eig_aux_2D,
+    C_eig_2D,
+    lavd_grid_2D,
+    ile_2D_func,
+    S_eig_2D_func,
+    S_2D_func,
+    ile_2D_data,
+    S_eig_2D_data,
+    ivd_grid_2D
+)
 
 def reconstruct_matrix(eigvals, eigvecs):
     """
