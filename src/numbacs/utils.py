@@ -1369,3 +1369,39 @@ def local_basis_S2(Lon, Lat, deg2rad=False):
     e2 = np.stack((-sinLat * cosLon, -sinLat * sinLon, cosLat), axis=-1)
 
     return e1, e2
+
+
+def fill_nans_and_get_mask(arrs, fill_value=0.0):
+    """
+    For a collection of arrs with the same shape and same indices of
+    nan values, obtain a boolean mask corresponding to the nan values
+    and set the values of each arr to 'fill_value' wherever that mask
+    is true. It is expected the same mask is to be applied for every slice of
+    the leading dimension. Designed for data where the leading dimension is
+    time, all other dimensions are spatial dimensions, and a spatial mask
+    is being applied.
+
+    Parameters
+    ----------
+    arrs : tuple
+        tuple of np.ndarrays, each should have the same size.
+    fill_value : float, optional
+        value to fill . The default is 0.0.
+
+    Returns
+    -------
+    tuple
+        tuple containing filled arrays and mask. Arrays will be
+        shape=(nt, nx, ny), mask shape=(nx, ny).
+
+    """
+
+    arr0 = arrs[0]
+    mask = np.isnan(arr0[0])
+    arr0[:, mask] = 0.0
+    arr_list = [arr0]
+    for arr in arrs[1:]:
+        arr[:, mask] = 0.0
+        arr_list.append(arr)
+
+    return (*arr_list, mask)
