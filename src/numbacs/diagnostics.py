@@ -5,12 +5,16 @@ from .utils import (
     composite_simpsons,
     unravel_index,
     finite_diff_ND,
-    gradF_stencil,
-    gradF_aux_stencil,
-    gradF_main_stencil,
-    gradUV_stencil,
+    gradF_stencil_2D,
+    gradF_aux_stencil_2D,
+    gradF_main_stencil_2D,
+    gradUV_stencil_2D,
     eigvalsh_max_2D,
+    inv_2D,
     scipy_dilate_mask,
+    vec_dot_3D,
+    lonlat2xyz,
+    local_basis_S2,
 )
 
 
@@ -207,6 +211,105 @@ def ftle_from_eig(eigval_max, T):
     return ftle
 
 
+def ftle_grid_S2(
+    Lon,
+    Lat,
+    flowmap,
+    T,
+    r=6371.0,
+    full=True,
+    initial_points=None,
+    local_basis=None,
+    deg2rad=True,
+    mask=None,
+    dilate_mask=True,
+):
+    r"""
+    Computes a more accurate approximation of FTLE on the surface of the
+    sphere (S2). Uses the least-squares approximation of the FTLE based
+    on grid cell displacements in 3D space. For more info on the background
+    theory, see Lekien \& Ross, "The computation of finite-time Lyapunov
+    exponents on unstructured meshes and for non-Euclidean manifolds".
+    doi: 10.1063/1.3278516.
+
+    Parameters
+    ----------
+    Lon : np.ndarray, shape=(nx, ny)
+        meshgrid of longitude.
+    Lat : np.ndarray, shape=(nx, ny)
+        meshgrid of latitude.
+    flowmap : np.ndarray, shape=(nx, ny, 2)
+        final particle positions for whole grid in lon-lat coords.
+    T : float
+        integration time.
+    r : float, optional
+        radius of the sphere, will default to the radius of the earth (in km).
+        The default is 6371.0.
+    full : bool, optional
+        flag to determine if full 8 neighbors of grid point are used or just 4.
+        The default is True.
+    initial_points : None or np.ndarray, shape=(nx, ny, 2), optional
+        initial lon-lat points in x,y,z coords. This can be computed using
+        initial_points = numbacs.utils.lonlat2xy(Lon, Lat, r, deg2rad=True, return_array=True).
+        This is useful if you are computing ftle in a time series, by passing
+        is this array you avoid this redundent computation for every iterate.
+        The default is None.
+    local_basis : None or tuple of np.ndarrays ((nx, ny, 2), (nx, ny, 2)), optional
+        local basis on the sphere at initial lon-lat positions. This can be
+        computed using local_basis = numbacs.utils.local_basis_S2(Lon, Lat, deg2rad=True).
+        Much like initial_points, this is useful when computing ftle in a
+        time series, by passing this array you avoid the redundent computation
+        for every iterate. Must be passed in if initial_points is not None.
+        Will be ignored if initial_points is None. The default is None.
+    deg2rad : bool, optional
+        flag to convert from degree to radians. Lon, Lat must either
+        already be in radians, or this flag must be set to True. Not relevant
+        and will be ignored if initial_points is not None. The default is True.
+    mask : None or np.ndarray, shape = (nx, ny, 2), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). The default is None.
+    dilate_mask : bool, optional
+        expand mask so least squares is not erroneously computed near
+        mask boundaries. For performance critical applications, set to False
+        and compute the dilated mask using a function from numbacs.utils and
+        pass that mask into the mask argument of this function. This flag has
+        no affect if mask=None. The default is True.
+
+    Returns
+    -------
+    np.ndarray, shape=(nx, ny)
+        least-squares approximation of ftle on the sphere.
+
+    """
+
+    if initial_points is None:
+        if deg2rad:
+            Lon, Lat = (np.deg2rad(Lon), np.deg2rad(Lat))
+        initial_points = lonlat2xyz(Lon, Lat, r, return_array=True)
+        e1, e2 = local_basis_S2(Lon, Lat)
+    else:
+        if local_basis is None:
+            raise TypeError(
+                "If initial_points are passed in, local_basis must be passed in as well."
+            )
+        e1, e2 = local_basis
+
+    advected_points = lonlat2xyz(
+        ((flowmap[..., 0] - 180) % 360) - 180, flowmap[..., 1], r, deg2rad=True, return_array=True
+    )
+    if mask is None:
+        X = _displacement_array_proj(initial_points, e1, e2, full=full)
+        Ytilde = _displacement_array(advected_points, full=full)
+        return _ftle_lsq_opt_2D(X, Ytilde, T)
+    else:
+        if dilate_mask:
+            mask = scipy_dilate_mask(mask, corners=full)
+
+        X = _displacement_array_proj_masked(initial_points, e1, e2, mask, full=full)
+        Ytilde = _displacement_array_masked(advected_points, mask, full=full)
+        return _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask)
+
+
 def lavd_grid_2D(
     flowmap_n,
     tspan,
@@ -301,7 +404,7 @@ def ftle_grid_ND(flowmap, IC, T, dX):
     ndims = IC.shape[-1]
     npts = np.prod(grid_shape)
     ftle = np.zeros(npts)
-    absT = abs(T)
+    denom = 2 * abs(T)
     for k in prange(npts):
         inds = unravel_index(k, grid_shape)
         dXdir = np.zeros(ndims, int32)
@@ -318,11 +421,9 @@ def ftle_grid_ND(flowmap, IC, T, dX):
                 Df[i, j] = finite_diff_ND(flowmap[:, i], inds, dX[j], j, grid_shape, dXdir[j])
 
         C = np.dot(Df.T, Df)
-        max_eig = np.linalg.eigvalsh(C)[-1]
+        max_eig = eigvalsh_max_2D(C)
         if max_eig > 1:
-            ftle[k] = 1 / (2 * absT) * log(max_eig)
-        else:
-            ftle[k] = 0
+            ftle[k] = log(max_eig) / denom
 
     return ftle
 
@@ -595,19 +696,17 @@ def _ftle_grid_2D(flowmap, T, dx, dy):
     """
     nx, ny = flowmap.shape[:-1]
     ftle = np.zeros((nx, ny), float64)
-    absT = abs(T)
+    denom = 2 * abs(T)
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
-            dxdx, dxdy, dydx, dydy = gradF_stencil(flowmap, i, j, dx, dy)
+            dxdx, dxdy, dydx, dydy = gradF_stencil_2D(flowmap, i, j, dx, dy)
 
             off_diagonal = dxdx * dxdy + dydx * dydy
             C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
 
-            max_eig = np.linalg.eigvalsh(C)[-1]
+            max_eig = eigvalsh_max_2D(C)
             if max_eig > 1:
-                ftle[i, j] = 1 / (2 * absT) * log(max_eig)
-            else:
-                ftle[i, j] = 0
+                ftle[i, j] = log(max_eig) / denom
 
     return ftle
 
@@ -639,7 +738,7 @@ def _C_tensor_2D(flowmap_aux, dx, dy, h=1e-5):
     C = np.zeros((nx, ny, 3), float64)
     for i in prange(2, nx - 2):
         for j in range(2, ny - 2):
-            dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil(flowmap_aux, i, j, h)
+            dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil_2D(flowmap_aux, i, j, h)
 
             C[i, j, :] = np.array(
                 [
@@ -686,9 +785,9 @@ def _C_eig_aux_2D(flowmap_aux, dx, dy, h=1e-5, eig_main=True):
     if eig_main:
         for i in prange(2, nx - 2):
             for j in range(2, ny - 2):
-                dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil(flowmap_aux, i, j, h)
+                dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil_2D(flowmap_aux, i, j, h)
 
-                dxdx_main, dxdy_main, dydx_main, dydy_main = gradF_main_stencil(
+                dxdx_main, dxdy_main, dydx_main, dydy_main = gradF_main_stencil_2D(
                     flowmap_aux, i, j, dx, dy
                 )
 
@@ -716,7 +815,7 @@ def _C_eig_aux_2D(flowmap_aux, dx, dy, h=1e-5, eig_main=True):
     else:
         for i in prange(1, nx - 1):
             for j in range(1, ny - 1):
-                dxdx, dxdy, dydx, dydy = gradF_aux_stencil(flowmap_aux, i, j, h)
+                dxdx, dxdy, dydx, dydy = gradF_aux_stencil_2D(flowmap_aux, i, j, h)
 
                 off_diagonal = dxdx * dxdy + dydx * dydy
                 C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
@@ -757,7 +856,7 @@ def _C_eig_2D(flowmap, dx, dy):
     eigvecs = np.zeros((nx, ny, 2, 2), float64)
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
-            dxdx, dxdy, dydx, dydy = gradF_stencil(flowmap, i, j, dx, dy)
+            dxdx, dxdy, dydx, dydy = gradF_stencil_2D(flowmap, i, j, dx, dy)
 
             off_diagonal = dxdx * dxdy + dydx * dydy
             C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
@@ -767,6 +866,141 @@ def _C_eig_2D(flowmap, dx, dy):
             eigvecs[i, j, :, :] = evecs_tmp
 
     return eigvals, eigvecs
+
+
+@njit(parallel=True)
+def _displacement_array_proj(points, e1, e2, full=True):
+    """Compute displacement array and project onto local basis."""
+
+    nx, ny = points.shape[:-1]
+
+    if full:
+        n = 8
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]])
+    else:
+        n = 4
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+    X = np.zeros((nx, ny, 2, n), np.float64)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            p0 = points[i, j, :]
+            e1i = e1[i, j, :]
+            e2i = e2[i, j, :]
+            for k in range(n):
+                ii, jj = stencil[k]
+                uk = points[i + ii, j + jj, :] - p0
+                X[i, j, 0, k] = vec_dot_3D(uk, e1i)
+                X[i, j, 1, k] = vec_dot_3D(uk, e2i)
+    return X
+
+
+@njit(parallel=True)
+def _displacement_array(points, full=True):
+    """Compute displacement array."""
+
+    nx, ny = points.shape[:-1]
+
+    if full:
+        n = 8
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]])
+    else:
+        n = 4
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+    X = np.zeros((nx, ny, 3, n), np.float64)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            p0 = points[i, j, :]
+            for k in range(n):
+                ii, jj = stencil[k, :]
+                X[i, j, :, k] = points[i + ii, j + jj, :] - p0
+    return X
+
+
+@njit(parallel=True)
+def _ftle_lsq_opt_2D(X, Ytilde, T):
+    r"""
+    Compute FTLE on a 2D manifold using the least-squares estimate. The X
+    array contains the initial displacements calculated in the embedded space,
+    projected onto a local basis of the tangent space on the manifold. The
+    Y array contains the final displacements calculated in the embedded space.
+    This function performs all linear algebra manually to optimize memory
+    access and avoid cache misses. For more info on the background theory,
+    see Lekien \& Ross. "The computation of finite-time Lyapunov exponents on
+    unstructured meshes and for non-Euclidean manifolds". doi: 10.1063/1.3278516.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape = (nx, ny, 2, n)
+        initial displacements of n nearby points.
+    Ytilde : np.ndarray, shape = (nx, ny, 3, n)
+        final displacements of n nearby points.
+    T : float
+        integration time.
+
+    Returns
+    -------
+    ftle : np.ndarray, shape = (nx, ny)
+        ftle values.
+
+    """
+    nx, ny = X.shape[:2]
+    n = X.shape[-1]
+    ftle = np.zeros((nx, ny), np.float64)
+    denom = 2.0 * abs(T)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            # The operations here are really just the following:
+            # Mtilde = (Ytilde @ X.T) @ (np.linalg.inv(X @ X.T))
+            # C = Mtilde.T @ Mtilde
+            # max_eig = np.linalg.eigvalsh(C)[-1]
+            # ftle[i,j] = (1 / denom) * log(max_eig)
+            #
+            # We do the following to avoid memory access problems and
+            # significantly speed up the computations
+
+            XXT = np.zeros((2, 2), dtype=np.float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(n):
+                        val += X[i, j, r, k] * X[i, j, c, k]
+                    XXT[r, c] = val
+
+            XXT_inv = inv_2D(XXT)
+
+            YXT = np.zeros((3, 2), dtype=np.float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(n):
+                        val += Ytilde[i, j, r, k] * X[i, j, c, k]
+                    YXT[r, c] = val
+
+            Mtilde = np.zeros((3, 2), dtype=np.float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(2):
+                        val += YXT[r, k] * XXT_inv[k, c]
+                    Mtilde[r, c] = val
+
+            C = np.zeros((2, 2), dtype=np.float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(3):
+                        val += Mtilde[k, r] * Mtilde[k, c]
+                    C[r, c] = val
+
+            max_eig = eigvalsh_max_2D(C)
+
+            if max_eig > 0:
+                ftle[i, j] = log(max_eig) / denom
+
+    return ftle
 
 
 @njit(parallel=True)
@@ -895,7 +1129,7 @@ def _ile_2D_func(vel, x, y, t0=None, h=1e-3):
 
                 grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
                 S = 0.5 * (grad_vel + grad_vel.T)
-                ile[i, j] = np.linalg.eigvalsh(S)[-1]
+                ile[i, j] = eigvalsh_max_2D(S)
     else:
         dx_vec = np.array([0.0, h, 0.0], float64)
         dy_vec = np.array([0.0, 0.0, h], float64)
@@ -908,7 +1142,7 @@ def _ile_2D_func(vel, x, y, t0=None, h=1e-3):
 
                 grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
                 S = 0.5 * (grad_vel + grad_vel.T)
-                ile[i, j] = np.linalg.eigvalsh(S)[-1]
+                ile[i, j] = eigvalsh_max_2D(S)
 
     return ile
 
@@ -1059,7 +1293,7 @@ def _ile_2D_data(u, v, dx, dy):
     ile = np.zeros((nx, ny))
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
-            dudx, dudy, dvdx, dvdy = gradUV_stencil(u, v, i, j, dx, dy)
+            dudx, dudy, dvdx, dvdy = gradUV_stencil_2D(u, v, i, j, dx, dy)
             grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
             S = 0.5 * (grad_vel + grad_vel.T)
             ile[i, j] = eigvalsh_max_2D(S)
@@ -1098,7 +1332,7 @@ def _S_eig_2D_data(u, v, dx, dy):
     eigvecs = np.zeros((nx, ny, 2, 2), float64)
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
-            dudx, dudy, dvdx, dvdy = gradUV_stencil(u, v, i, j, dx, dy)
+            dudx, dudy, dvdx, dvdy = gradUV_stencil_2D(u, v, i, j, dx, dy)
             grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
             S = 0.5 * (grad_vel + grad_vel.T)
             evals_tmp, evecs_tmp = np.linalg.eigh(S)
@@ -1136,18 +1370,18 @@ def _ftle_masked_grid_2D(flowmap, T, dx, dy, mask):
     """
     nx, ny = flowmap.shape[:-1]
     ftle = np.zeros((nx, ny), float64)
-    absT = abs(T)
+    denom = 2 * abs(T)
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
             if not mask[i, j]:
-                dxdx, dxdy, dydx, dydy = gradF_stencil(flowmap, i, j, dx, dy)
+                dxdx, dxdy, dydx, dydy = gradF_stencil_2D(flowmap, i, j, dx, dy)
 
                 off_diagonal = dxdx * dxdy + dydx * dydy
                 C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
 
-                max_eig = np.linalg.eigvalsh(C)[-1]
+                max_eig = eigvalsh_max_2D(C)
                 if max_eig > 1:
-                    ftle[i, j] = 1 / (2 * absT) * log(max_eig)
+                    ftle[i, j] = log(max_eig) / denom
 
     return ftle
 
@@ -1183,7 +1417,7 @@ def _C_tensor_masked_2D(flowmap_aux, dx, dy, mask, h=1e-5):
     for i in prange(2, nx - 2):
         for j in range(2, ny - 2):
             if not mask[i, j]:
-                dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil(flowmap_aux, i, j, h)
+                dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil_2D(flowmap_aux, i, j, h)
 
                 C[i, j, :] = np.array(
                     [
@@ -1234,9 +1468,11 @@ def _C_eig_aux_masked_2D(flowmap_aux, dx, dy, mask, h=1e-5, eig_main=True):
         for i in prange(2, nx - 2):
             for j in range(2, ny - 2):
                 if not mask[i, j]:
-                    dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil(flowmap_aux, i, j, h)
+                    dxdx_aux, dxdy_aux, dydx_aux, dydy_aux = gradF_aux_stencil_2D(
+                        flowmap_aux, i, j, h
+                    )
 
-                    dxdx_main, dxdy_main, dydx_main, dydy_main = gradF_main_stencil(
+                    dxdx_main, dxdy_main, dydx_main, dydy_main = gradF_main_stencil_2D(
                         flowmap_aux, i, j, dx, dy
                     )
 
@@ -1265,7 +1501,7 @@ def _C_eig_aux_masked_2D(flowmap_aux, dx, dy, mask, h=1e-5, eig_main=True):
         for i in prange(1, nx - 1):
             for j in range(1, ny - 1):
                 if not mask[i, j]:
-                    dxdx, dxdy, dydx, dydy = gradF_aux_stencil(flowmap_aux, i, j, h)
+                    dxdx, dxdy, dydx, dydy = gradF_aux_stencil_2D(flowmap_aux, i, j, h)
 
                     off_diagonal = dxdx * dxdy + dydx * dydy
                     C = np.array(
@@ -1311,7 +1547,7 @@ def _C_eig_masked_2D(flowmap, dx, dy, mask):
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
             if not mask[i, j]:
-                dxdx, dxdy, dydx, dydy = gradF_stencil(flowmap, i, j, dx, dy)
+                dxdx, dxdy, dydx, dydy = gradF_stencil_2D(flowmap, i, j, dx, dy)
 
                 off_diagonal = dxdx * dxdy + dydx * dydy
                 C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
@@ -1321,6 +1557,143 @@ def _C_eig_masked_2D(flowmap, dx, dy, mask):
                 eigvecs[i, j, :, :] = evecs_tmp
 
     return eigvals, eigvecs
+
+
+@njit(parallel=True)
+def _displacement_array_proj_masked(points, e1, e2, mask, full=True):
+    """Compute displacement array and project onto local basis."""
+
+    nx, ny = points.shape[:-1]
+
+    if full:
+        n = 8
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]])
+    else:
+        n = 4
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+    X = np.zeros((nx, ny, 2, n), np.float64)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            if not mask[i, j]:
+                p0 = points[i, j, :]
+                e1i = e1[i, j, :]
+                e2i = e2[i, j, :]
+                for k in range(n):
+                    ii, jj = stencil[k]
+                    uk = points[i + ii, j + jj, :] - p0
+                    X[i, j, 0, k] = vec_dot_3D(uk, e1i)
+                    X[i, j, 1, k] = vec_dot_3D(uk, e2i)
+    return X
+
+
+@njit(parallel=True)
+def _displacement_array_masked(points, mask, full=True):
+    """Compute displacement array."""
+
+    nx, ny = points.shape[:-1]
+
+    if full:
+        n = 8
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]])
+    else:
+        n = 4
+        stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
+    X = np.zeros((nx, ny, 3, n), np.float64)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            if not mask[i, j]:
+                p0 = points[i, j, :]
+                for k in range(n):
+                    ii, jj = stencil[k, :]
+                    X[i, j, :, k] = points[i + ii, j + jj, :] - p0
+    return X
+
+
+@njit(parallel=True)
+def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
+    r"""
+    Compute FTLE on a 2D manifold using the least-squares estimate. The X
+    array contains the initial displacements calculated in the embedded space,
+    projected onto a local basis of the tangent space on the manifold. The
+    Y array contains the final displacements calculated in the embedded space.
+    This function performs all linear algebra manually to optimize memory
+    access and avoid cache misses. For more info on the background theory,
+    see Lekien \& Ross. "The computation of finite-time Lyapunov exponents on
+    unstructured meshes and for non-Euclidean manifolds". doi: 10.1063/1.3278516.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape = (nx, ny, 2, n)
+        initial displacements of n nearby points.
+    Ytilde : np.ndarray, shape = (nx, ny, 3, n)
+        final displacements of n nearby points.
+    T : float
+        integration time.
+
+    Returns
+    -------
+    ftle : np.ndarray, shape = (nx, ny)
+        ftle values.
+
+    """
+    nx, ny = X.shape[:2]
+    n = X.shape[-1]
+    ftle = np.zeros((nx, ny), np.float64)
+    denom = 2.0 * abs(T)
+
+    for i in prange(1, nx - 1):
+        for j in range(1, ny - 1):
+            # The operations here are really just the following:
+            # Mtilde = (Ytilde @ X.T) @ (np.linalg.inv(X @ X.T))
+            # C = Mtilde.T @ Mtilde
+            # max_eig = np.linalg.eigvalsh(C)[-1]
+            # ftle[i,j] = (1 / denom) * log(max_eig)
+            #
+            # We do the following to avoid memory access problems and
+            # significantly speed up the computations
+            if not mask[i, j]:
+                XXT = np.zeros((2, 2), dtype=np.float64)
+                for r in range(2):
+                    for c in range(2):
+                        val = 0.0
+                        for k in range(n):
+                            val += X[i, j, r, k] * X[i, j, c, k]
+                        XXT[r, c] = val
+
+                XXT_inv = inv_2D(XXT)
+
+                YXT = np.zeros((3, 2), dtype=np.float64)
+                for r in range(3):
+                    for c in range(2):
+                        val = 0.0
+                        for k in range(n):
+                            val += Ytilde[i, j, r, k] * X[i, j, c, k]
+                        YXT[r, c] = val
+
+                Mtilde = np.zeros((3, 2), dtype=np.float64)
+                for r in range(3):
+                    for c in range(2):
+                        val = 0.0
+                        for k in range(2):
+                            val += YXT[r, k] * XXT_inv[k, c]
+                        Mtilde[r, c] = val
+
+                C = np.zeros((2, 2), dtype=np.float64)
+                for r in range(2):
+                    for c in range(2):
+                        val = 0.0
+                        for k in range(3):
+                            val += Mtilde[k, r] * Mtilde[k, c]
+                        C[r, c] = val
+
+                max_eig = eigvalsh_max_2D(C)
+
+                if max_eig > 0:
+                    ftle[i, j] = log(max_eig) / denom
+
+    return ftle
 
 
 @njit(parallel=True)
@@ -1638,7 +2011,7 @@ def _ile_masked_2D_data(u, v, dx, dy, mask):
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
             if not mask[i, j]:
-                dudx, dudy, dvdx, dvdy = gradUV_stencil(u, v, i, j, dx, dy)
+                dudx, dudy, dvdx, dvdy = gradUV_stencil_2D(u, v, i, j, dx, dy)
                 grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
                 S = 0.5 * (grad_vel + grad_vel.T)
                 ile[i, j] = eigvalsh_max_2D(S)
@@ -1680,7 +2053,7 @@ def _S_eig_masked_2D_data(u, v, dx, dy, mask):
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
             if not mask[i, j]:
-                dudx, dudy, dvdx, dvdy = gradUV_stencil(u, v, i, j, dx, dy)
+                dudx, dudy, dvdx, dvdy = gradUV_stencil_2D(u, v, i, j, dx, dy)
                 grad_vel = np.array([[dudx, dudy], [dvdx, dvdy]])
                 S = 0.5 * (grad_vel + grad_vel.T)
                 evals_tmp, evecs_tmp = np.linalg.eigh(S)
