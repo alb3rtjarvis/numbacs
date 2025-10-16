@@ -7,9 +7,9 @@ from scipy.ndimage import generate_binary_structure, binary_dilation
 
 
 @njit(inline="always")
-def gradF_stencil(F, i, j, dx, dy):
+def gradF_stencil_2D(F, i, j, dx, dy):
     """
-    Stencil for computing the gradient of F, a grid of 2D vectors, at i, j,
+    Stencil for computing the gradient of F, a grid of 2D vectors, at (i, j),
     with spacing dx and dy. Not boundary safe.
 
     Parameters
@@ -47,9 +47,9 @@ def gradF_stencil(F, i, j, dx, dy):
 
 
 @njit(inline="always")
-def gradF_aux_stencil(F_aux, i, j, h):
+def gradF_aux_stencil_2D(F_aux, i, j, h):
     """
-    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at i, j,
+    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at (i, j),
     using the aux grid, with spacing h.
 
     Parameters
@@ -85,9 +85,9 @@ def gradF_aux_stencil(F_aux, i, j, h):
 
 
 @njit(inline="always")
-def gradF_main_stencil(F_aux, i, j, dx, dy):
+def gradF_main_stencil_2D(F_aux, i, j, dx, dy):
     """
-    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at i, j,
+    Stencil for computing the gradient of F_aux, a grid of 2D vectors, at (i, j),
     using the main grid, with spacing dx, dy. Not boundary safe.
 
     Parameters
@@ -125,9 +125,9 @@ def gradF_main_stencil(F_aux, i, j, dx, dy):
 
 
 @njit(inline="always")
-def gradUV_stencil(U, V, i, j, dx, dy):
+def gradUV_stencil_2D(U, V, i, j, dx, dy):
     """
-    Stencil for computing the gradient of velocity, defined by U, V, at i, j,
+    Stencil for computing the gradient of velocity, defined by U, V, at (i, j),
     with spacing dx and dy. Not boundary safe.
 
     Parameters
@@ -163,6 +163,100 @@ def gradUV_stencil(U, V, i, j, dx, dy):
     dVdy = (V[i, j + 1] - V[i, j - 1]) / (2 * dy)
 
     return dUdx, dUdy, dVdx, dVdy
+
+
+@njit(inline="always")
+def eigvalsh_max_2D(A):
+    """
+    Computes the maximum eigenvalue for a Hermetian 2x2 array A.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape = (2, 2)
+        Hermetian 2x2 array.
+
+    Returns
+    -------
+    float
+        maximum eigenvalue of A.
+
+    """
+
+    a, b, d = A[0, 0], A[0, 1], A[1, 1]
+    trace = a + d
+    discriminant = sqrt((a - d) ** 2 + 4 * (b**2))
+
+    return 0.5 * (trace + discriminant)
+
+
+@njit(inline="always")
+def inv_2D(A):
+    """
+    Computes the inverse of a 2x2 array A.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape = (2, 2)
+        2x2 array.
+
+    Returns
+    -------
+    np.ndarray, shape = (2, 2)
+        inverse of A.
+
+    """
+    a, b, c, d = A[0, 0], A[0, 1], A[1, 0], A[1, 1]
+
+    det = a * d - b * c
+
+    if det != 0:
+        return np.array([[d, -b], [-c, a]]) / det
+    else:
+        return np.zeros((2, 2), numba.float64)
+
+
+@njit(inline="always")
+def vec_dot_2D(v1, v2):
+    """
+    Vector dot product for 2D vectors.
+
+    Parameters
+    ----------
+    v1 : np.ndarray, shape=(2,)
+        first vector.
+    v2 : np.ndarray, shape=(2,)
+        second vector.
+
+    Returns
+    -------
+    float
+        dot product.
+
+    """
+
+    return v1[0] * v2[0] + v1[1] * v2[1]
+
+
+@njit(inline="always")
+def vec_dot_3D(v1, v2):
+    """
+    Vector dot product for 3D vectors.
+
+    Parameters
+    ----------
+    v1 : np.ndarray, shape=(3,)
+        first vector.
+    v2 : np.ndarray, shape=(3,)
+        second vector.
+
+    Returns
+    -------
+    float
+        dot product.
+
+    """
+
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
 
 @njit
@@ -1172,56 +1266,6 @@ def cart_prod(vecs):
     return prod
 
 
-@njit(inline="always")
-def eigvalsh_max_2D(A):
-    """
-    Computes the maximum eigenvalue for a Hermetian 2x2 array A.
-
-    Parameters
-    ----------
-    A : np.ndarray, shape = (2, 2)
-        Hermetian 2x2 array.
-
-    Returns
-    -------
-    float
-        maximum eigenvalue of A.
-
-    """
-
-    a, b, d = A[0, 0], A[0, 1], A[1, 1]
-    trace = a + d
-    discriminant = sqrt((a - d) ** 2 + 4 * (b**2))
-
-    return 0.5 * (trace + discriminant)
-
-
-@njit(inline="always")
-def inv_2D(A):
-    """
-    Computes the inverse of a 2x2 array A.
-
-    Parameters
-    ----------
-    A : np.ndarray, shape = (2, 2)
-        2x2 array.
-
-    Returns
-    -------
-    np.ndarray, shape = (2, 2)
-        inverse of A.
-
-    """
-    a, b, c, d = A[0, 0], A[0, 1], A[1, 0], A[1, 1]
-
-    det = a * d - b * c
-
-    if det != 0:
-        return np.array([[d, -b], [-c, a]]) / det
-    else:
-        return np.zeros((2, 2), numba.float64)
-
-
 def scipy_dilate_mask(mask, corners=False):
     """
     A wrapper for scipy.ndimage.binary_dilation() for expanding
@@ -1247,3 +1291,81 @@ def scipy_dilate_mask(mask, corners=False):
         structure = generate_binary_structure(2, 2)
 
     return binary_dilation(mask, structure=structure)
+
+
+def lonlat2xyz(Lon, Lat, r, deg2rad=False, return_array=False):
+    """
+    Convert lon, lat positions to x, y, z.
+
+    Parameters
+    ----------
+    Lon : np.ndarray, shape=(nx, ny)
+        meshgrid of longitude.
+    Lat : np.ndarray, shape=(nx, ny)
+        meshgrid of latitude.
+    r : float
+        radius.
+    deg2rad : bool, optional
+        flag to convert from degree to radians. Lon, Lat must either
+        already be in radians, or this flag must be set to True.
+        The default is False.
+    return_array : bool, optional
+        flag to return stacked array instead of tuple. The default is False.
+
+    Returns
+    -------
+    tuple or np.ndarray
+        either tuple or stacked array containing meshgrid of X, Y, Z position.
+
+    """
+
+    if deg2rad:
+        Lon = np.deg2rad(Lon)
+        Lat = np.deg2rad(Lat)
+
+    Xp = r * np.cos(Lat) * np.cos(Lon)
+    Yp = r * np.cos(Lat) * np.sin(Lon)
+    Zp = r * np.sin(Lat)
+
+    if return_array:
+        return np.stack((Xp, Yp, Zp), axis=-1)
+    else:
+        return Xp, Yp, Zp
+
+
+def local_basis_S2(Lon, Lat, deg2rad=False):
+    """
+    Create a local basis on the surface of the sphere (S2) in x, y, z coords.
+
+    Parameters
+    ----------
+    Lon : np.ndarray, shape=(nx, ny)
+        meshgrid of longitude.
+    Lat : np.ndarray, shape=(nx, ny)
+        meshgrid of latitude.
+    deg2rad : bool, optional
+        flag to convert from degree to radians. Lon, Lat must either
+        already be in radians, or this flag must be set to True.
+        The default is False.
+
+    Returns
+    -------
+    e1 : np.ndarray, shape=(nx, ny, 2)
+        local basis vector in the "east" direction.
+    e2 : np.ndarray, shape=(nx, ny, 2)
+        local basis vector in the "north" direction.
+
+    """
+    nx, ny = Lon.shape
+    if deg2rad:
+        Lon = np.deg2rad(Lon)
+        Lat = np.deg2rad(Lat)
+
+    sinLon = np.sin(Lon)
+    sinLat = np.sin(Lat)
+    cosLon = np.cos(Lon)
+    cosLat = np.cos(Lat)
+    e1 = np.stack((-sinLon, cosLon, np.zeros((nx, ny), np.float64)), axis=-1)
+    e2 = np.stack((-sinLat * cosLon, -sinLat * sinLon, cosLat), axis=-1)
+
+    return e1, e2
