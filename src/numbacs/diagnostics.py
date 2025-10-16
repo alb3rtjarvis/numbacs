@@ -56,7 +56,7 @@ def ftle_grid_2D(flowmap, T, dx, dy, mask=None, dilate_mask=True):
         if dilate_mask:
             mask = scipy_dilate_mask(mask)
 
-    return _ftle_masked_grid_2D(flowmap, T, dx, dy, mask)
+        return _ftle_masked_grid_2D(flowmap, T, dx, dy, mask)
 
 
 def C_tensor_2D(flowmap_aux, dx, dy, h=1e-5, mask=None, dilate_mask=True):
@@ -880,7 +880,7 @@ def _displacement_array_proj(points, e1, e2, full=True):
     else:
         n = 4
         stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
-    X = np.zeros((nx, ny, 2, n), np.float64)
+    X = np.zeros((nx, ny, 2, n), float64)
 
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
@@ -907,7 +907,7 @@ def _displacement_array(points, full=True):
     else:
         n = 4
         stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
-    X = np.zeros((nx, ny, 3, n), np.float64)
+    X = np.zeros((nx, ny, 3, n), float64)
 
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
@@ -947,7 +947,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
     """
     nx, ny = X.shape[:2]
     n = X.shape[-1]
-    ftle = np.zeros((nx, ny), np.float64)
+    ftle = np.zeros((nx, ny), float64)
     denom = 2.0 * abs(T)
 
     for i in prange(1, nx - 1):
@@ -961,7 +961,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
             # We do the following to avoid memory access problems and
             # significantly speed up the computations
 
-            XXT = np.zeros((2, 2), dtype=np.float64)
+            XXT = np.zeros((2, 2), float64)
             for r in range(2):
                 for c in range(2):
                     val = 0.0
@@ -971,7 +971,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
 
             XXT_inv = inv_2D(XXT)
 
-            YXT = np.zeros((3, 2), dtype=np.float64)
+            YXT = np.zeros((3, 2), float64)
             for r in range(3):
                 for c in range(2):
                     val = 0.0
@@ -979,7 +979,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
                         val += Ytilde[i, j, r, k] * X[i, j, c, k]
                     YXT[r, c] = val
 
-            Mtilde = np.zeros((3, 2), dtype=np.float64)
+            Mtilde = np.zeros((3, 2), float64)
             for r in range(3):
                 for c in range(2):
                     val = 0.0
@@ -987,7 +987,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
                         val += YXT[r, k] * XXT_inv[k, c]
                     Mtilde[r, c] = val
 
-            C = np.zeros((2, 2), dtype=np.float64)
+            C = np.zeros((2, 2), float64)
             for r in range(2):
                 for c in range(2):
                     val = 0.0
@@ -1571,7 +1571,7 @@ def _displacement_array_proj_masked(points, e1, e2, mask, full=True):
     else:
         n = 4
         stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
-    X = np.zeros((nx, ny, 2, n), np.float64)
+    X = np.zeros((nx, ny, 2, n), float64)
 
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
@@ -1599,7 +1599,7 @@ def _displacement_array_masked(points, mask, full=True):
     else:
         n = 4
         stencil = np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])
-    X = np.zeros((nx, ny, 3, n), np.float64)
+    X = np.zeros((nx, ny, 3, n), float64)
 
     for i in prange(1, nx - 1):
         for j in range(1, ny - 1):
@@ -1640,7 +1640,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
     """
     nx, ny = X.shape[:2]
     n = X.shape[-1]
-    ftle = np.zeros((nx, ny), np.float64)
+    ftle = np.zeros((nx, ny), float64)
     denom = 2.0 * abs(T)
 
     for i in prange(1, nx - 1):
@@ -1654,7 +1654,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
             # We do the following to avoid memory access problems and
             # significantly speed up the computations
             if not mask[i, j]:
-                XXT = np.zeros((2, 2), dtype=np.float64)
+                XXT = np.zeros((2, 2), float64)
                 for r in range(2):
                     for c in range(2):
                         val = 0.0
@@ -1664,7 +1664,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
 
                 XXT_inv = inv_2D(XXT)
 
-                YXT = np.zeros((3, 2), dtype=np.float64)
+                YXT = np.zeros((3, 2), float64)
                 for r in range(3):
                     for c in range(2):
                         val = 0.0
@@ -1672,7 +1672,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
                             val += Ytilde[i, j, r, k] * X[i, j, c, k]
                         YXT[r, c] = val
 
-                Mtilde = np.zeros((3, 2), dtype=np.float64)
+                Mtilde = np.zeros((3, 2), float64)
                 for r in range(3):
                     for c in range(2):
                         val = 0.0
@@ -1680,7 +1680,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
                             val += YXT[r, k] * XXT_inv[k, c]
                         Mtilde[r, c] = val
 
-                C = np.zeros((2, 2), dtype=np.float64)
+                C = np.zeros((2, 2), float64)
                 for r in range(2):
                     for c in range(2):
                         val = 0.0
