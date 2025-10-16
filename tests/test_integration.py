@@ -27,7 +27,13 @@ def pts_dg(coords_dg):
 
     return pts
 
+def apply_mask(arr, mask):
+    """Apply a mask to arr and return 0.0 where mask is True"""
 
+    arr_masked = arr.copy()
+    arr_masked[mask] = 0.0
+
+    return arr_masked
 
 def test_flowmap(pts_dg, fm_data):
 
@@ -46,30 +52,41 @@ def test_flowmap_n(pts_dg, fm_n_data):
     assert np.allclose(fm_n,fm_n_data)
 
 
-def test_flowmap_grid_2D(coords_dg, fm_data):
+def test_flowmap_grid_2D(coords_dg, fm_data, mask_dg):
 
     x,y = coords_dg
     fm = flowmap_grid_2D(funcptr, t0, T, x, y, params).astype(np.float32)
 
-    assert np.allclose(fm,fm_data)
+    assert np.allclose(fm, fm_data)
 
+    fm_masked = flowmap_grid_2D(funcptr, t0, T, x, y, params, mask=mask_dg).astype(np.float32)
 
-def test_flowmap_aux_grid_2D(coords_dg, fm_aux_data):
+    assert np.allclose(fm_masked, apply_mask(fm_data, mask_dg))
+
+def test_flowmap_aux_grid_2D(coords_dg, fm_aux_data, mask_dg):
 
     x,y = coords_dg
     fm_aux = flowmap_aux_grid_2D(funcptr, t0, T, x, y, params).astype(np.float32)
 
     assert np.allclose(fm_aux,fm_aux_data)
 
+    fm_aux_masked = flowmap_aux_grid_2D(funcptr, t0, T, x, y, params, mask=mask_dg).astype(np.float32)
 
-def test_flowmap_n_grid_2D(coords_dg, fm_n_data):
+    assert np.allclose(fm_aux_masked, apply_mask(fm_aux_data, mask_dg))
+
+
+def test_flowmap_n_grid_2D(coords_dg, fm_n_data, mask_dg):
 
     x,y = coords_dg
     t_eval_expected = params[0]*np.linspace(t0,t0+T,n)
-    fm_n, t_eval = flowmap_n_grid_2D(funcptr, t0, T, x, y, params, n = n)
+    fm_n, t_eval = flowmap_n_grid_2D(funcptr, t0, T, x, y, params, n=n)
 
     assert np.allclose(t_eval_expected,t_eval)
     assert np.allclose(fm_n.astype(np.float32),fm_n_data)
+
+    fm_n_masked, _ = flowmap_n_grid_2D(funcptr, t0, T, x, y, params, n=n, mask=mask_dg)
+
+    assert np.allclose(fm_n_masked.astype(np.float32), apply_mask(fm_n_data, mask_dg))
 
 
 def test_flowmap_composition_initial(coords_dg, fm_ci_data, fms_ci_data):
