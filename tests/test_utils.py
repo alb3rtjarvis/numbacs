@@ -1,12 +1,38 @@
 import pytest
 import numpy as np
 from math import pi, isclose
-from numbacs.utils import (unravel_index, ravel_index, curl_vel, curl_func_tspan,
-                           composite_simpsons, composite_simpsons_38_irregular, dist_2d,
-                           dist_tol, shoelace, max_in_radius, gen_circ, gen_filled_circ,
-                           gen_filled_circ_radius, arclength, arclength_along_arc,
-                           interp_curve, wn_pt_in_poly, pts_in_poly, pts_in_poly_mask,
-                           cart_prod)
+from numbacs.utils import (
+    gradF_stencil_2D,
+    gradF_aux_stencil_2D,
+    gradF_main_stencil_2D,
+    gradUV_stencil_2D,
+    eigvalsh_max_2D,
+    inv_2D,
+    vec_dot_2D,
+    vec_dot_3D,
+    unravel_index,
+    ravel_index,
+    curl_vel,
+    curl_func_tspan,
+    composite_simpsons,
+    composite_simpsons_38_irregular,
+    dist_2d,
+    dist_tol,
+    shoelace,
+    max_in_radius,
+    gen_circ,
+    gen_filled_circ,
+    gen_filled_circ_radius,
+    arclength,
+    arclength_along_arc,
+    interp_curve,
+    wn_pt_in_poly,
+    pts_in_poly,
+    pts_in_poly_mask,
+    cart_prod,
+    lonlat2xyz,
+    local_basis_S2
+)
 
 
 @pytest.fixture
@@ -36,6 +62,118 @@ def polygon_tpoints():
     pts = np.column_stack((pt_in,pt_out)).T
 
     return pts
+
+@pytest.fixture
+def lonlat_coords():
+
+    lon = np.linspace(-180.0, 180.0, 5)
+    lat = np.linspace(-90, 90, 3)
+
+    return np.meshgrid(lon, lat, indexing='ij')
+
+def test_gradF_stencil_2D(coords_dg, fm_data):
+
+    x, y = coords_dg
+    dx = x[1]
+    dy = y[1]
+
+    gradF_expected = (
+        -5.976700186729431,
+        -5.0307804346084595,
+        0.331292524933815,
+        1.0545916110277176
+    )
+    gradF = gradF_stencil_2D(fm_data, 5, 5, dx, dy)
+
+    assert np.allclose(gradF, gradF_expected)
+
+
+def test_gradF_aux_stencil_2D(coords_dg, fm_aux_data):
+
+    gradF_aux_expected = (
+        -7.270276546478271,
+         -9.016692638397217,
+         0.5433335900306702,
+         0.5362555384635925
+    )
+    gradF_aux = gradF_aux_stencil_2D(fm_aux_data, 5, 5, 1e-5)
+
+    assert np.allclose(gradF_aux, gradF_aux_expected)
+
+
+def test_gradF_main_stencil_2D(coords_dg, fm_aux_data):
+
+    x, y = coords_dg
+    dx = x[1]
+    dy = y[1]
+
+    gradF_main_expected = (
+        -5.976700186729431,
+        -5.0307804346084595,
+        0.331292524933815,
+        1.0545916110277176
+    )
+    gradF_main = gradF_main_stencil_2D(fm_aux_data, 5, 5, dx, dy)
+
+    assert np.allclose(gradF_main, gradF_main_expected)
+
+
+def test_gradUV_stencil_2D(coords_dg, vel_data):
+
+    x, y = coords_dg
+    dx = x[1]
+    dy = y[1]
+
+    gradUV_expected = (0.0, 0.9708055193627335, -0.9708055193627335, 0.0)
+    u, v = vel_data
+    gradUV = gradUV_stencil_2D(u, v, 5, 5, dx, dy)
+
+    assert np.allclose(gradUV, gradUV_expected)
+
+def test_eigvalsh_max_2D():
+
+    B = np.array([[1.3, -2.4], [0.7, 5.2]])
+    A = B.T @ B
+
+    eigval_expected = 32.8088282841737
+    eigval = eigvalsh_max_2D(A)
+
+    assert np.allclose(eigval, eigval_expected)
+
+def test_inv_2D():
+
+    B = np.array([[1.3, -2.4], [0.7, 5.2]])
+    B_singular = B.copy()
+    B_singular[:, 0] = 0.0
+
+    Binv_expected = np.array([[0.61611374,  0.28436019], [-0.08293839,  0.15402844]])
+    Bsinv_expected = np.array([[0.0, 0.0], [0.0, 0.0]])
+
+    Binv = inv_2D(B)
+    Bsinv = inv_2D(B_singular)
+
+    assert np.allclose(Binv, Binv_expected) and np.allclose(Bsinv, Bsinv_expected)
+
+def test_vec_dot_2D():
+
+    v1 = np.array([1.3, -2.4])
+    v2 = np.array([0.7, 5.2])
+
+    dot_expected = -11.57
+    dot = vec_dot_2D(v1, v2)
+
+    assert np.allclose(dot, dot_expected)
+
+
+def test_vec_dot_3D():
+
+    v1 = np.array([1.3, -2.4, 3.2])
+    v2 = np.array([0.7, 5.2, -2.1])
+
+    dot_expected = -18.29
+    dot = vec_dot_3D(v1, v2)
+
+    assert np.allclose(dot, dot_expected)
 
 
 def test_unravel_index():
@@ -334,3 +472,85 @@ def test_cart_prod():
     cprod = cart_prod((t,x,y))
 
     assert np.all(cprod == cprod_expected)
+
+
+def test_lonlat2xyz(lonlat_coords):
+
+    Lon, Lat = lonlat_coords
+
+    xyz_points_expected = np.array([
+           [[-1.22464680e-16, -1.49975978e-32, -2.00000000e+00],
+            [-2.00000000e+00, -2.44929360e-16,  0.00000000e+00],
+            [-1.22464680e-16, -1.49975978e-32,  2.00000000e+00]],
+
+           [[ 7.49879891e-33, -1.22464680e-16, -2.00000000e+00],
+            [ 1.22464680e-16, -2.00000000e+00,  0.00000000e+00],
+            [ 7.49879891e-33, -1.22464680e-16,  2.00000000e+00]],
+
+           [[ 1.22464680e-16,  0.00000000e+00, -2.00000000e+00],
+            [ 2.00000000e+00,  0.00000000e+00,  0.00000000e+00],
+            [ 1.22464680e-16,  0.00000000e+00,  2.00000000e+00]],
+
+           [[ 7.49879891e-33,  1.22464680e-16, -2.00000000e+00],
+            [ 1.22464680e-16,  2.00000000e+00,  0.00000000e+00],
+            [ 7.49879891e-33,  1.22464680e-16,  2.00000000e+00]],
+
+           [[-1.22464680e-16,  1.49975978e-32, -2.00000000e+00],
+            [-2.00000000e+00,  2.44929360e-16,  0.00000000e+00],
+            [-1.22464680e-16,  1.49975978e-32,  2.00000000e+00]]
+       ]
+    )
+
+    xyz_points = lonlat2xyz(Lon, Lat, 2.0, deg2rad=True, return_array=True)
+
+    assert np.allclose(xyz_points, xyz_points_expected)
+
+
+def test_local_basis_S2(lonlat_coords):
+
+    Lon, Lat = lonlat_coords
+
+    basis_expected = (
+      np.array([[[ 1.2246468e-16, -1.0000000e+00,  0.0000000e+00],
+             [ 1.2246468e-16, -1.0000000e+00,  0.0000000e+00],
+             [ 1.2246468e-16, -1.0000000e+00,  0.0000000e+00]],
+
+            [[ 1.0000000e+00,  6.1232340e-17,  0.0000000e+00],
+             [ 1.0000000e+00,  6.1232340e-17,  0.0000000e+00],
+             [ 1.0000000e+00,  6.1232340e-17,  0.0000000e+00]],
+
+            [[-0.0000000e+00,  1.0000000e+00,  0.0000000e+00],
+             [-0.0000000e+00,  1.0000000e+00,  0.0000000e+00],
+             [-0.0000000e+00,  1.0000000e+00,  0.0000000e+00]],
+
+            [[-1.0000000e+00,  6.1232340e-17,  0.0000000e+00],
+             [-1.0000000e+00,  6.1232340e-17,  0.0000000e+00],
+             [-1.0000000e+00,  6.1232340e-17,  0.0000000e+00]],
+
+            [[-1.2246468e-16, -1.0000000e+00,  0.0000000e+00],
+             [-1.2246468e-16, -1.0000000e+00,  0.0000000e+00],
+             [-1.2246468e-16, -1.0000000e+00,  0.0000000e+00]]]),
+    np.array([[[-1.0000000e+00, -1.2246468e-16,  6.1232340e-17],
+             [ 0.0000000e+00,  0.0000000e+00,  1.0000000e+00],
+             [ 1.0000000e+00,  1.2246468e-16,  6.1232340e-17]],
+
+            [[ 6.1232340e-17, -1.0000000e+00,  6.1232340e-17],
+             [-0.0000000e+00,  0.0000000e+00,  1.0000000e+00],
+             [-6.1232340e-17,  1.0000000e+00,  6.1232340e-17]],
+
+            [[ 1.0000000e+00,  0.0000000e+00,  6.1232340e-17],
+             [-0.0000000e+00, -0.0000000e+00,  1.0000000e+00],
+             [-1.0000000e+00, -0.0000000e+00,  6.1232340e-17]],
+
+            [[ 6.1232340e-17,  1.0000000e+00,  6.1232340e-17],
+             [-0.0000000e+00, -0.0000000e+00,  1.0000000e+00],
+             [-6.1232340e-17, -1.0000000e+00,  6.1232340e-17]],
+
+            [[-1.0000000e+00,  1.2246468e-16,  6.1232340e-17],
+             [ 0.0000000e+00, -0.0000000e+00,  1.0000000e+00],
+             [ 1.0000000e+00, -1.2246468e-16,  6.1232340e-17]]])
+    )
+
+    basis = local_basis_S2(Lon, Lat, deg2rad=True)
+
+    assert np.allclose(basis, basis_expected)
