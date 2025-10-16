@@ -114,7 +114,6 @@ def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol
     return flowmap, params[0] * t_eval
 
 
-@njit(parallel=True)
 def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is a
@@ -225,7 +224,6 @@ def flowmap_grid_ND(funcptr, t0, T, IC_flat, ndims, params, method="dop853", rto
     return flowmap
 
 
-@njit(parallel=True)
 def flowmap_aux_grid_2D(
     funcptr,
     t0,
@@ -321,7 +319,6 @@ def flowmap_aux_grid_2D(
         )
 
 
-@njit(parallel=True)
 def flowmap_n_grid_2D(
     funcptr, t0, T, x, y, params, n=50, method="dop853", rtol=1e-6, atol=1e-8, mask=None
 ):
