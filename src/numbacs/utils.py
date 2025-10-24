@@ -1266,31 +1266,70 @@ def cart_prod(vecs):
     return prod
 
 
-def scipy_dilate_mask(mask, corners=False):
+@njit(parallel=True)
+def binary_mask_dilation(mask, corners=False):
     """
-    A wrapper for scipy.ndimage.binary_dilation() for expanding
-    a mask to all grid points that have neighbors that are True.
+    Performs a binary dilation on a 2D boolean mask.
 
     Parameters
     ----------
-    mask : np.ndarray, shape=(nx, ny), dtype=bool
-        boolean array with True values corresponding to masked values.
+    mask : np.ndarray, dtype=bool
+        The input mask where `True` indicates a masked/invalid point.
     corners : bool, optional
-        if True, only cardinal directions are used, if False, corners
-        are also used. The default is False.
+        If False (default), uses a 5-point stencil (cardinal neighbors),
+        matching SciPy's connectivity=1.
+        If True, uses a 9-point stencil (cardinal + diagonal neighbors),
+        matching SciPy's connectivity=2.
 
     Returns
     -------
-    np.ndarray, shape=(nx, ny), dtype=bool
-        dilated mask.
-
+    np.ndarray, dtype=bool
+        The dilated mask.
     """
-    if not corners:
-        structure = generate_binary_structure(2, 1)
-    else:
-        structure = generate_binary_structure(2, 2)
+    nx, ny = mask.shape
+    dilated_mask = mask.copy()
 
-    return binary_dilation(mask, structure=structure)
+    for i in prange(nx):
+        for j in range(ny):
+            # check main neighbors
+
+            if mask[i, j]:
+                continue
+
+            if i > 0 and mask[i - 1, j]:
+                dilated_mask[i, j] = True
+                continue
+
+            if i < nx - 1 and mask[i + 1, j]:
+                dilated_mask[i, j] = True
+                continue
+
+            if j > 0 and mask[i, j - 1]:
+                dilated_mask[i, j] = True
+                continue
+
+            if j < ny - 1 and mask[i, j + 1]:
+                dilated_mask[i, j] = True
+                continue
+
+            # check corner neighbors if corners=True
+            if corners:
+                if i > 0 and j > 0 and mask[i - 1, j - 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i > 0 and j < ny - 1 and mask[i - 1, j + 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i < nx - 1 and j > 0 and mask[i + 1, j - 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i < nx - 1 and j < ny - 1 and mask[i + 1, j + 1]:
+                    dilated_mask[i, j] = True
+
+    return dilated_mask
 
 
 def lonlat2xyz(Lon, Lat, r, deg2rad=False, return_array=False):
