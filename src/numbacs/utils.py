@@ -1442,6 +1442,7 @@ def interpolate_mask(mask, xp, yp, xq, yq):
 
     for i in prange(nxq):
         xqi = xq[i]
+
         # find index of nearest x point from original grid
         ix = round((xqi - xmin) / dx)
 
@@ -1452,6 +1453,7 @@ def interpolate_mask(mask, xp, yp, xq, yq):
 
         for j in range(nyq):
             yqj = yq[j]
+
             # find index of nearest y point from original grid
             iy = round((yqj - ymin) / dy)
 
