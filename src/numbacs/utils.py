@@ -1405,3 +1405,61 @@ def fill_nans_and_get_mask(arrs, fill_value=0.0):
         arr_list.append(arr)
 
     return (*arr_list, mask)
+
+
+@njit(parallel=True)
+def interpolate_mask(mask, xp, yp, xq, yq):
+    """
+    Interpolate mask defined over (xp, yp), to a new mask, defined over (xq, yq).
+
+    Parameters
+    ----------
+    mask : np.ndarray, shape=(nxp, nyq)
+        array of bools defining mask.
+    xp : np.ndarray, shape=(nxp,)
+        array containing x values at which mask was defined.
+    yp : np.ndarray, shape=(nyp,)
+        array containing y values at which mask was defined.
+    xq : np.ndarray, shape=(nxq,)
+        array containing x values at which new mask will defined.
+    yq : np.ndarray, shape=(nyq,)
+        array containing y values at which new mask will defined.
+
+    Returns
+    -------
+    new_mask : np.ndarray, shape=(nxq, nyq)
+        array of bools defining new mask.
+
+    """
+    dx = xp[1] - xp[0]
+    dy = yp[1] - yp[0]
+
+    xmin, ymin = xp[0], yp[0]
+    nx, ny = len(xp), len(yp)
+
+    nxq, nyq = len(xq), len(yq)
+    new_mask = np.zeros((nxq, nyq), numba.boolean)
+
+    for i in prange(nxq):
+        xqi = xq[i]
+        # find index of nearest x point from original grid
+        ix = round((xqi - xmin) / dx)
+
+        if ix < 0:
+            ix = 0
+        elif ix > nx - 1:
+            ix = nx - 1
+
+        for j in range(nyq):
+            yqj = yq[j]
+            # find index of nearest y point from original grid
+            iy = round((yqj - ymin) / dy)
+
+            if iy < 0:
+                iy = 0
+            elif iy > ny - 1:
+                iy = ny - 1
+            # nearest interpolation
+            new_mask[i, j] = mask[ix, iy]
+
+    return new_mask
