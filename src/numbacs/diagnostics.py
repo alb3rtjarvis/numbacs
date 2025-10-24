@@ -211,6 +211,47 @@ def ftle_from_eig(eigval_max, T):
     return ftle
 
 
+def displacement_array_proj(points, e1, e2, full=True, mask=None, dilate_mask=True):
+    """
+    Compute displacement array and project onto local coordinates.
+
+    Parameters
+    ----------
+    points : np.ndarray, shape=(nx, ny, 3)
+        collection of (x, y, z) points.
+    e1 : np.ndarray, shape = (nx, ny, 2)
+        local "x" basis vector at each point.
+    e2 : np.ndarray, shape = (nx, ny, 2)
+        local "y" basis vector at each point.
+    full : bool, optional
+        flag to determine if full 8 (True) neighbors of grid point are used or
+        just 4 (False). The default is True.
+    mask : None or np.ndarray, shape = (nx, ny, 2), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). The default is None.
+    dilate_mask : bool, optional
+        expand mask so least squares is not erroneously computed near
+        mask boundaries. For performance critical applications, set to False
+        and compute the dilated mask using a function from numbacs.utils and
+        pass that mask into the mask argument of this function. This flag has
+        no affect if mask=None. The default is True.
+
+    Returns
+    -------
+    X : np.ndarray, shap=(nx, ny, 2, n)
+        array corresponding to displacements of n neighbors for each point.
+
+    """
+
+    if mask is None:
+        return _displacement_array_proj(points, e1, e2, full=full)
+
+    else:
+        if dilate_mask:
+            mask = scipy_dilate_mask(mask, corners=full)
+        return _displacement_array_proj_masked(points, e1, e2, mask, full=full)
+
+
 def ftle_grid_S2(
     Lon,
     Lat,
@@ -218,8 +259,7 @@ def ftle_grid_S2(
     T,
     r=6371.0,
     full=True,
-    initial_points=None,
-    local_basis=None,
+    X=None,
     deg2rad=True,
     mask=None,
     dilate_mask=True,
@@ -248,23 +288,22 @@ def ftle_grid_S2(
     full : bool, optional
         flag to determine if full 8 neighbors of grid point are used or just 4.
         The default is True.
-    initial_points : None or np.ndarray, shape=(nx, ny, 2), optional
-        initial lon-lat points in x,y,z coords. This can be computed using
+    X : None or np.ndarray, shape=(nx, ny, 2, n)
+        initial displacement array that contains the displacement of each
+        grid points from its n neighbors (determined by full). This can be computed
+        by first computing
         initial_points = numbacs.utils.lonlat2xy(Lon, Lat, r, deg2rad=True, return_array=True).
+        Then, e1, e2 = numbacs.utils.local_basis_S2(Lon, Lat, deg2rad=True).
+        Then passing the results to
+        X = displacement_array_proj(initial_points, e1, e2, full=full, mask=mask, dilate_mask=dilate_mask).
         This is useful if you are computing ftle in a time series, by passing
         is this array you avoid this redundent computation for every iterate.
-        The default is None.
-    local_basis : None or tuple of np.ndarrays ((nx, ny, 2), (nx, ny, 2)), optional
-        local basis on the sphere at initial lon-lat positions. This can be
-        computed using local_basis = numbacs.utils.local_basis_S2(Lon, Lat, deg2rad=True).
-        Much like initial_points, this is useful when computing ftle in a
-        time series, by passing this array you avoid the redundent computation
-        for every iterate. Must be passed in if initial_points is not None.
-        Will be ignored if initial_points is None. The default is None.
+        If None, this will be computed internally everytime this function is
+        called. The default is None.
     deg2rad : bool, optional
         flag to convert from degree to radians. Lon, Lat must either
         already be in radians, or this flag must be set to True. Not relevant
-        and will be ignored if initial_points is not None. The default is True.
+        and will be ignored if X is not None. The default is True.
     mask : None or np.ndarray, shape = (nx, ny, 2), optional
         for masked data, pass in a boolean mask corresponding to nan values
         (True indicates a nan value). The default is None.
@@ -282,32 +321,36 @@ def ftle_grid_S2(
 
     """
 
-    if initial_points is None:
-        if deg2rad:
-            Lon, Lat = (np.deg2rad(Lon), np.deg2rad(Lat))
-        initial_points = lonlat2xyz(Lon, Lat, r, return_array=True)
-        e1, e2 = local_basis_S2(Lon, Lat)
-    else:
-        if local_basis is None:
-            raise TypeError(
-                "If initial_points are passed in, local_basis must be passed in as well."
-            )
-        e1, e2 = local_basis
-
     advected_points = lonlat2xyz(
         ((flowmap[..., 0] - 180) % 360) - 180, flowmap[..., 1], r, deg2rad=True, return_array=True
     )
-    if mask is None:
-        X = _displacement_array_proj(initial_points, e1, e2, full=full)
-        Ytilde = _displacement_array(advected_points, full=full)
-        return _ftle_lsq_opt_2D(X, Ytilde, T)
-    else:
-        if dilate_mask:
-            mask = scipy_dilate_mask(mask, corners=full)
+    if X is None:
+        if deg2rad:
+            Lon, Lat = np.deg2rad(Lon), np.deg2rad(Lat)
+        initial_points = lonlat2xyz(Lon, Lat, r, return_array=True)
+        e1, e2 = local_basis_S2(Lon, Lat)
+        if mask is None:
+            X = _displacement_array_proj(initial_points, e1, e2, full=full)
+            Ytilde = _displacement_array(advected_points, full=full)
+            return _ftle_lsq_opt_2D(X, Ytilde, T)
+        else:
+            if dilate_mask:
+                mask = scipy_dilate_mask(mask, corners=full)
 
-        X = _displacement_array_proj_masked(initial_points, e1, e2, mask, full=full)
-        Ytilde = _displacement_array_masked(advected_points, mask, full=full)
-        return _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask)
+            X = _displacement_array_proj_masked(initial_points, e1, e2, mask, full=full)
+            Ytilde = _displacement_array_masked(advected_points, mask, full=full)
+            return _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask)
+
+    else:
+        if mask is None:
+            Ytilde = _displacement_array(advected_points, full=full)
+            return _ftle_lsq_opt_2D(X, Ytilde, T)
+        else:
+            if dilate_mask:
+                mask = scipy_dilate_mask(mask, corners=full)
+
+            Ytilde = _displacement_array_masked(advected_points, mask, full=full)
+            return _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask)
 
 
 def lavd_grid_2D(
@@ -997,7 +1040,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T):
 
             max_eig = eigvalsh_max_2D(C)
 
-            if max_eig > 0:
+            if max_eig > 1:
                 ftle[i, j] = log(max_eig) / denom
 
     return ftle
@@ -1690,7 +1733,7 @@ def _ftle_lsq_opt_masked_2D(X, Ytilde, T, mask):
 
                 max_eig = eigvalsh_max_2D(C)
 
-                if max_eig > 0:
+                if max_eig > 1:
                     ftle[i, j] = log(max_eig) / denom
 
     return ftle
