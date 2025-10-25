@@ -1410,6 +1410,44 @@ def local_basis_S2(Lon, Lat, deg2rad=False):
     return e1, e2
 
 
+def local_basis_icosphere(lons, lats, deg2rad=False):
+    """
+    Create a local basis on the surface of the icosphere x, y, z coords.
+
+    Parameters
+    ----------
+    lons : np.ndarray, shape=(npts,)
+        collection of longitude points defining the mesh.
+    lats : np.ndarray, shape=(npts,)
+        collection of latitude points defining the mesh.
+    deg2rad : bool, optional
+        flag to convert from degree to radians. lons, lats, must either
+        already be in radians, or this flag must be set to True.
+        The default is False.
+
+    Returns
+    -------
+    e1 : np.ndarray, shape=(npts, 2)
+        local basis vector in the "east" direction.
+    e2 : np.ndarray, shape=(npts, 2)
+        local basis vector in the "north" direction.
+
+    """
+    npts = len(lons)
+    if deg2rad:
+        lons = np.deg2rad(lons)
+        lats = np.deg2rad(lats)
+
+    sinLon = np.sin(lons)
+    sinLat = np.sin(lats)
+    cosLon = np.cos(lons)
+    cosLat = np.cos(lats)
+    e1 = np.stack((-sinLon, cosLon, np.zeros((npts,), np.float64)), axis=-1)
+    e2 = np.stack((-sinLat * cosLon, -sinLat * sinLon, cosLat), axis=-1)
+
+    return e1, e2
+
+
 def fill_nans_and_get_mask(arrs, fill_value=0.0):
     """
     For a collection of arrs with the same shape and same indices of
