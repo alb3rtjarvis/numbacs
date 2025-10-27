@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit, prange
 import numba
+from numba import uint32, uint64, float32, float64, int32, int64
 from math import floor, pi, cos, sin, sqrt
 from scipy.interpolate import splprep, splev
 from scipy.ndimage import generate_binary_structure, binary_dilation
@@ -1266,70 +1267,361 @@ def cart_prod(vecs):
     return prod
 
 
-@njit(parallel=True)
-def binary_mask_dilation(mask, corners=False):
+@njit
+def _normalize_batch(v_arr, r=1.0, dtype=float32):
+    """Normalize array of vectors."""
+
+    norms = np.sqrt(np.sum(v_arr * v_arr, axis=1)).reshape(-1, 1)
+    return (v_arr * (r / norms)).astype(dtype)
+
+
+@njit
+def _get_edge_key(i1, i2):
+    """Generates a unique 64-bit integer key for an edge."""
+    if i1 < i2:
+        return (uint64(i1) << 32) | uint64(i2)
+    else:
+        return (uint64(i2) << 32) | uint64(i1)
+
+
+@njit
+def _get_midpoint_index(i1, i2, verts, cache, vi):
     """
-    Performs a binary dilation on a 2D boolean mask.
+    Returns index of midpoint between verts and next index, updates
+    verts array and cache if new midpoint inserted.
+
+    """
+
+    key = _get_edge_key(i1, i2)
+
+    # check if midpoint already exists
+    # if True, return its index and next vertex index
+    if key in cache:
+        return cache[key], vi
+
+    # if not, calculate midpoint, store it, and return its index and next vertex index
+    v1, v2 = verts[i1], verts[i2]
+    mid = 0.5 * (v1 + v2)
+    verts[vi] = mid
+    cache[key] = vi
+
+    return vi, vi + 1
+
+
+@njit
+def _subdivide_normalize(verts, faces, vi, cache, r):
+    """
+    Subdivides icosphere defined by verts and corresponding faces,
+    normalizes at each step.
+
+    """
+    n_faces = len(faces)
+    new_faces = np.zeros((n_faces * 4, 3), uint32)
+
+    fi = 0
+    for i in range(n_faces):
+        # get and set new vertices
+        i0, i1, i2 = faces[i]
+        m0, vi = _get_midpoint_index(i0, i1, verts, cache, vi)
+        m1, vi = _get_midpoint_index(i1, i2, verts, cache, vi)
+        m2, vi = _get_midpoint_index(i2, i0, verts, cache, vi)
+
+        # set new face indices
+        m0, m1, m2 = uint32(m0), uint32(m1), uint32(m2)
+        new_faces[fi, :] = (i0, m0, m2)
+        new_faces[fi + 1] = (i1, m0, m1)
+        new_faces[fi + 2] = (i2, m1, m2)
+        new_faces[fi + 3] = (m0, m1, m2)
+        fi += 4
+
+    # normalize verts to be on sphere of radius r
+    verts[:vi] = _normalize_batch(verts[:vi], r, dtype=verts.dtype)
+
+    return new_faces, vi
+
+
+@njit
+def _subdivide(verts, faces, vi, cache):
+    """
+    Subdivides icosphere defined by verts and corresponding faces,
+    does not normalize to surface of sphere.
+    """
+    n_faces = len(faces)
+    new_faces = np.zeros((n_faces * 4, 3), uint32)
+
+    fi = 0
+    for i in range(n_faces):
+        # get and set new vertices
+        i0, i1, i2 = faces[i]
+        m0, vi = _get_midpoint_index(i0, i1, verts, cache, vi)
+        m1, vi = _get_midpoint_index(i1, i2, verts, cache, vi)
+        m2, vi = _get_midpoint_index(i2, i0, verts, cache, vi)
+
+        # set new face indices
+        m0, m1, m2 = uint32(m0), uint32(m1), uint32(m2)
+        new_faces[fi, :] = (i0, m0, m2)
+        new_faces[fi + 1] = (i1, m0, m1)
+        new_faces[fi + 2] = (i2, m1, m2)
+        new_faces[fi + 3] = (m0, m1, m2)
+        fi += 4
+
+    return new_faces, vi
+
+
+@njit
+def icosphere(subdivisions, r, dtype=float32, normalize_once=False):
+    """
+    Generate an icosphere using subdivisions=subdivisions, with raidius r.
+    If normalize_once is True, normalizing to the surface of the sphere will
+    only happen at the very end, if not, normalization happens at every
+    level of subdivision. The former is faster, the latter will produce
+    more evenly spaced points.
 
     Parameters
     ----------
-    mask : np.ndarray, dtype=bool
-        The input mask where `True` indicates a masked/invalid point.
-    corners : bool, optional
-        If False (default), uses a 5-point stencil (cardinal neighbors),
-        matching SciPy's connectivity=1.
-        If True, uses a 9-point stencil (cardinal + diagonal neighbors),
-        matching SciPy's connectivity=2.
+    subdivisions : int
+        number of subdivisions.
+    r : float
+        radius of sphere that the mesh will be defined on.
+    dtype : numba.types or np.type, optional
+        dtype used for the coordinates of the mesh, should be float32 or float64.
+        The default is float32.
+    normalize_once : bool, optional
+        flag determining how normalization is handled.
+        If normalize_once is True, normalizing to the surface of the sphere will
+        only happen at the very end, if not, normalization happens at every
+        level of subdivision. The former is faster, the latter will produce
+        more evenly spaced points. The default is False.
 
     Returns
     -------
-    np.ndarray, dtype=bool
-        The dilated mask.
+    verts : np.ndarray, shape=(10 * 4**subdivisions + 2, 3)
+        array containing vertices of mesh.
+    faces : np.ndarray, shape=(20 * 4**subdivisions, 3)
+        array containing faces of mesh.
+
     """
-    nx, ny = mask.shape
-    dilated_mask = mask.copy()
 
-    for i in prange(nx):
-        for j in range(ny):
-            # check main neighbors
+    # golden ratio
+    phi = (1.0 + sqrt(5.0)) / 2.0
 
-            if mask[i, j]:
-                continue
+    # the 12 vertices of the initial icosahedron
+    verts0 = np.array(
+        [
+            [-1.0, phi, 0.0],
+            [1.0, phi, 0.0],
+            [-1.0, -phi, 0.0],
+            [1.0, -phi, 0.0],
+            [0.0, -1.0, phi],
+            [0.0, 1.0, phi],
+            [0.0, -1.0, -phi],
+            [0.0, 1.0, -phi],
+            [phi, 0.0, -1.0],
+            [phi, 0.0, 1.0],
+            [-phi, 0.0, -1.0],
+            [-phi, 0.0, 1.0],
+        ],
+        float32,
+    )
 
-            if i > 0 and mask[i - 1, j]:
-                dilated_mask[i, j] = True
-                continue
+    # normalize the vertices to lie on the sphere of radius r
+    verts0 = _normalize_batch(verts0, r=r)
 
-            if i < nx - 1 and mask[i + 1, j]:
-                dilated_mask[i, j] = True
-                continue
+    # the 20 faces of the initial icosahedron
+    faces = np.array(
+        [
+            [0, 11, 5],
+            [0, 5, 1],
+            [0, 1, 7],
+            [0, 7, 10],
+            [0, 10, 11],
+            [1, 5, 9],
+            [5, 11, 4],
+            [11, 10, 2],
+            [10, 7, 6],
+            [7, 1, 8],
+            [3, 9, 4],
+            [3, 4, 2],
+            [3, 2, 6],
+            [3, 6, 8],
+            [3, 8, 9],
+            [4, 9, 5],
+            [2, 4, 11],
+            [6, 2, 10],
+            [8, 6, 7],
+            [9, 8, 1],
+        ],
+        uint32,
+    )
 
-            if j > 0 and mask[i, j - 1]:
-                dilated_mask[i, j] = True
-                continue
+    # preallocate verts array
+    verts = np.zeros((10 * 4**subdivisions + 2, 3), dtype=dtype)
+    vi = uint32(12)
+    verts[:vi] = verts0
 
-            if j < ny - 1 and mask[i, j + 1]:
-                dilated_mask[i, j] = True
-                continue
+    # initialize edge cache
+    cache = numba.typed.Dict.empty(key_type=uint64, value_type=uint32)
+    if normalize_once:
+        for _ in range(subdivisions):
+            faces, vi = _subdivide(verts, faces, vi, cache)
 
-            # check corner neighbors if corners=True
-            if corners:
-                if i > 0 and j > 0 and mask[i - 1, j - 1]:
-                    dilated_mask[i, j] = True
-                    continue
+        verts = _normalize_batch(verts, r=r, dtype=dtype)
+    else:
+        for _ in range(subdivisions):
+            faces, vi = _subdivide_normalize(verts, faces, vi, cache, r)
 
-                if i > 0 and j < ny - 1 and mask[i - 1, j + 1]:
-                    dilated_mask[i, j] = True
-                    continue
+    return verts, faces
 
-                if i < nx - 1 and j > 0 and mask[i + 1, j - 1]:
-                    dilated_mask[i, j] = True
-                    continue
 
-                if i < nx - 1 and j < ny - 1 and mask[i + 1, j + 1]:
-                    dilated_mask[i, j] = True
+@njit
+def _add_neighbor_pair(i1, i2, neighbors, counts):
+    """Helper to add a neighbor relationship, avoiding duplicates."""
 
-    return dilated_mask
+    # add i2 to i1's neighbor list
+    # check if i2 is already a neighbor of i1
+    if i2 not in neighbors[i1, : counts[i1]]:
+        neighbors[i1, counts[i1]] = i2
+        counts[i1] += 1
+
+    # add i1 to i2's neighbor list
+    # check if i1 is already a neighbor of i2
+    if i1 not in neighbors[i2, : counts[i2]]:
+        neighbors[i2, counts[i2]] = i1
+        counts[i2] += 1
+
+
+@njit
+def find_neighbors(faces, num_verts):
+    """Finds all neighbors for each vertex."""
+
+    # preallocate neighbors and counts, vertices with 5 neighbors will have -1
+    # in last entry
+    neighbors = np.full((num_verts, 6), -1, int32)
+    counts = np.zeros(num_verts, int32)
+
+    for i in range(len(faces)):
+        i0, i1, i2 = faces[i]
+        _add_neighbor_pair(i0, i1, neighbors, counts)
+        _add_neighbor_pair(i1, i2, neighbors, counts)
+        _add_neighbor_pair(i2, i0, neighbors, counts)
+
+    return neighbors
+
+
+def convert_vel_to_3D(u, v, lon, lat, deg2rad=False, pole="both"):
+    """
+    Convert velocity from lon-lat directions to xyz directions.
+
+    Parameters
+    ----------
+    u : np.ndarray, shape=(nt, nx, ny)
+        velocity in the local east direction.
+    v : np.ndarray, shape=(nt, nx, ny)
+        velocity in the local north direction.
+    lon : np.ndarray, shape=(nx,)
+        array containing longitude values.
+    lat : np.ndarray, shape=(ny,)
+        array containing latitude values.
+    deg2rad : bool, optional
+        flag to determine if lon-lat need to be converted to radians. The default is False.
+    pole : str, optional
+        str to determine if any poles are included in the velocity fields. Options are
+        "both", "north", or "south". If pole is anything else, treated as no poles. The default is "both".
+
+    Returns
+    -------
+    vx : np.ndarray, shape=(nt, nx, ny)
+        velocity in the x direction.
+    vy : np.ndarray, shape=(nt, nx, ny)
+        velocity in the y direction.
+    vz : np.ndarray, shape=(nt, nx, ny)
+        velocity in the z direction.
+
+    """
+    nt, nlon, nlat = u.shape
+    if deg2rad:
+        lon = np.deg2rad(lon)
+        lat = np.deg2rad(lat)
+
+    Lon_rad, Lat_rad = np.meshgrid(lon, lat, indexing="ij")
+
+    sinLon = np.sin(Lon_rad)
+    sinLat = np.sin(Lat_rad)
+    cosLon = np.cos(Lon_rad)
+    cosLat = np.cos(Lat_rad)
+
+    vx = -u * sinLon - v * cosLon * sinLat
+    vy = u * cosLon - v * sinLon * sinLat
+    vz = v * cosLat
+
+    # average all velocity vectors at the poles, if poles are included
+    pole = pole.lower()
+    if pole == "both" or pole == "south":
+        vx[:, :, 0] = np.mean(vx[:, :, 0], axis=1, keepdims=True)
+        vy[:, :, 0] = np.mean(vy[:, :, 0], axis=1, keepdims=True)
+        vz[:, :, 0] = np.mean(vz[:, :, 0], axis=1, keepdims=True)
+
+    if pole == "both" or pole == "north":
+        vx[:, :, -1] = np.mean(vx[:, :, -1], axis=1, keepdims=True)
+        vy[:, :, -1] = np.mean(vy[:, :, -1], axis=1, keepdims=True)
+        vz[:, :, -1] = np.mean(vz[:, :, -1], axis=1, keepdims=True)
+
+    return (vx, vy, vz)
+
+
+@njit(parallel=True)
+def displacements_proj_ico(points, e1, e2, neighbors, mask=None):
+    """
+    Compute displacement array and project onto local coordinates.
+
+    Parameters
+    ----------
+    points : np.ndarray, shape=(nx, ny, 3)
+        collection of (x, y, z) points.
+    e1 : np.ndarray, shape = (nx, ny, 2)
+        local "x" basis vector at each point.
+    e2 : np.ndarray, shape = (nx, ny, 2)
+        local "y" basis vector at each point.
+    mask : None or np.ndarray, shape = (nx, ny), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). To avoid erroneous computations at mask
+        boundaries, mask passed in should be dilated using the
+        binary_mask_dilation_mesh function from the utils module. The default is None.
+
+    Returns
+    -------
+    X : np.ndarray, shap=(nx, ny, 2, n)
+        array corresponding to displacements of n neighbors for each point.
+
+    """
+    FIRST_POINTS = 12
+    npts = len(points)
+    nhbrs = 6
+    X = np.zeros((npts, 2, nhbrs), float64)
+
+    for i in range(FIRST_POINTS):
+        if mask is None or not mask[i]:
+            p0 = points[i, :]
+            e1i = e1[i, :]
+            e2i = e2[i, :]
+            for k in range(nhbrs - 1):
+                ni = neighbors[i, k]
+                uk = points[ni, :] - p0
+                X[i, 0, k] = vec_dot_3D(uk, e1i)
+                X[i, 1, k] = vec_dot_3D(uk, e2i)
+
+    for i in prange(FIRST_POINTS, npts):
+        if mask is None or not mask[i]:
+            p0 = points[i, :]
+            e1i = e1[i, :]
+            e2i = e2[i, :]
+            for k in range(nhbrs):
+                ni = neighbors[i, k]
+                uk = points[ni, :] - p0
+                X[i, 0, k] = vec_dot_3D(uk, e1i)
+                X[i, 1, k] = vec_dot_3D(uk, e2i)
+
+    return X
 
 
 def lonlat2xyz(Lon, Lat, r, deg2rad=False, return_array=False):
@@ -1410,6 +1702,71 @@ def local_basis_S2(Lon, Lat, deg2rad=False):
     return e1, e2
 
 
+def xyz2lonlat(points, r, return_array=False):
+    """
+    Compute lon-lat coords from points, which are xyz coords.
+
+    Parameters
+    ----------
+    points : np.ndarray, shape = (npts, 3)
+        array containing points in xyz coords.
+    r : float
+        radius of sphere.
+    return_array : bool, optional
+        flag to determine if tuple is returned (False) or array is returned (True).
+        The default is False.
+
+    Returns
+    -------
+    tuple or np.ndarray
+        tuple or array containing lon-lat coords of points.
+
+    """
+    lon_rad = np.arctan2(points[:, 1], points[:, 0])
+
+    z_ratio = points[:, 2] / r
+
+    z_ratio[z_ratio > 1.0] = 1.0
+    z_ratio[z_ratio < -1.0] = -1.0
+
+    lat_rad = np.arcsin(z_ratio)
+
+    if return_array:
+        return np.stack((lon_rad, lat_rad), axis=-1)
+    else:
+        return lon_rad, lat_rad
+
+
+@njit
+def xyz2lonlat_jit(points, r):
+    """
+    Compute lon-lat coords from points, which are xyz coords. JIT-compiled version.
+
+    Parameters
+    ----------
+    points : np.ndarray, shape = (npts, 3)
+        array containing points in xyz coords.
+    r : float
+        radius of sphere.
+
+    Returns
+    -------
+    np.ndarray, shape=(npts, 2)
+        tuple or array containing lon-lat coords of points.
+
+    """
+    lon = np.arctan2(points[:, 1], points[:, 0])
+
+    z_ratio = points[:, 2] / r
+
+    z_ratio[z_ratio > 1.0] = 1.0
+    z_ratio[z_ratio < -1.0] = -1.0
+
+    lat = np.arcsin(z_ratio)
+
+    return np.stack((lon, lat), axis=-1)
+
+
 def local_basis_icosphere(lons, lats, deg2rad=False):
     """
     Create a local basis on the surface of the icosphere x, y, z coords.
@@ -1485,9 +1842,10 @@ def fill_nans_and_get_mask(arrs, fill_value=0.0):
 
 
 @njit(parallel=True)
-def interpolate_mask(mask, xp, yp, xq, yq):
+def interpolate_mask_grid(mask, xp, yp, xq, yq):
     """
     Interpolate mask defined over (xp, yp), to a new mask, defined over (xq, yq).
+    Points falling outside of initial grid will be masked.
 
     Parameters
     ----------
@@ -1512,6 +1870,7 @@ def interpolate_mask(mask, xp, yp, xq, yq):
     dy = yp[1] - yp[0]
 
     xmin, ymin = xp[0], yp[0]
+    xmax, ymax = xp[-1], yp[-1]
     nx, ny = len(xp), len(yp)
 
     nxq, nyq = len(xq), len(yq)
@@ -1520,25 +1879,292 @@ def interpolate_mask(mask, xp, yp, xq, yq):
     for i in prange(nxq):
         xqi = xq[i]
 
+        # if point is out of bounds, mask
+        if xqi > xmax or xqi < xmin:
+            mask[i, :] = True
+            continue
+
         # find index of nearest x point from original grid
         ix = round((xqi - xmin) / dx)
 
-        if ix < 0:
-            ix = 0
-        elif ix > nx - 1:
+        if ix > nx - 1:
             ix = nx - 1
 
         for j in range(nyq):
             yqj = yq[j]
 
+            # if point is out of bounds, mask
+            if yqj > ymax or yqj < ymin:
+                mask[i, j] = True
+                continue
+
             # find index of nearest y point from original grid
             iy = round((yqj - ymin) / dy)
 
-            if iy < 0:
-                iy = 0
-            elif iy > ny - 1:
+            if iy > ny - 1:
                 iy = ny - 1
             # nearest interpolation
             new_mask[i, j] = mask[ix, iy]
 
     return new_mask
+
+
+@njit(parallel=True)
+def binary_mask_dilation(mask, corners=False):
+    """
+    Performs a binary dilation on a 2D structured grid boolean mask.
+
+    Parameters
+    ----------
+    mask : np.ndarray, shape=(nx, ny)
+        boolean mask.
+    corners : bool, optional
+        if False (default), uses 4 cardinal neighbors.
+        If True, 4 cardinal neighbors plus 4 corner neighbors.
+
+    Returns
+    -------
+    dilated_masl : np.ndarray, shape=(nx, ny)
+        the dilated mask.
+    """
+
+    nx, ny = mask.shape
+    dilated_mask = mask.copy()
+
+    for i in prange(nx):
+        for j in range(ny):
+            # check main neighbors
+
+            if mask[i, j]:
+                continue
+
+            if i > 0 and mask[i - 1, j]:
+                dilated_mask[i, j] = True
+                continue
+
+            if i < nx - 1 and mask[i + 1, j]:
+                dilated_mask[i, j] = True
+                continue
+
+            if j > 0 and mask[i, j - 1]:
+                dilated_mask[i, j] = True
+                continue
+
+            if j < ny - 1 and mask[i, j + 1]:
+                dilated_mask[i, j] = True
+                continue
+
+            # check corner neighbors if corners=True
+            if corners:
+                if i > 0 and j > 0 and mask[i - 1, j - 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i > 0 and j < ny - 1 and mask[i - 1, j + 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i < nx - 1 and j > 0 and mask[i + 1, j - 1]:
+                    dilated_mask[i, j] = True
+                    continue
+
+                if i < nx - 1 and j < ny - 1 and mask[i + 1, j + 1]:
+                    dilated_mask[i, j] = True
+
+    return dilated_mask
+
+
+@njit(parallel=True)
+def interpolate_mask_mesh(mask, xp, yp, mesh, convert=True, r=6371.0, wrap_x=True):
+    """
+    Interpolate mask defined over (xp, yp), to a new mask, defined over mesh.
+    Points falling outside of initial grid will be masked.
+
+    Parameters
+    ----------
+    mask : np.ndarray, shape=(nxp, nyq)
+        array of bools defining mask.
+    xp : np.ndarray, shape=(nxp,)
+        array containing x values at which mask was defined.
+    yp : np.ndarray, shape=(nyp,)
+        array containing y values at which mask was defined.
+    mesh : np.ndarray, shape=(npts, 2) or (npts, 3)
+        array containing (x, y) points defining the mesh.
+    convert : bool, optional
+        boolean determining if the points need to be converted from xyz to
+        lon lat. The default is True.
+
+    Returns
+    -------
+    new_mask : np.ndarray, shape=(npts,)
+        array of bools defining new mask.
+
+    """
+    dx = xp[1] - xp[0]
+    dy = yp[1] - yp[0]
+
+    xmin, xmax = xp[0], xp[-1]
+    ymin, ymax = yp[0], yp[-1]
+
+    if wrap_x:
+        xmax += dx
+
+    nx, ny = len(xp), len(yp)
+
+    npts = len(mesh)
+    new_mask = np.zeros(npts, numba.boolean)
+
+    if convert:
+        mesh = xyz2lonlat_jit(mesh, r)
+
+    for i in prange(npts):
+        xqi, yqi = mesh[i, :]
+
+        # if point is out of bounds, mask
+        if xqi > xmax or xqi < xmin or yqi > ymax or yqi < ymin:
+            new_mask[i] = True
+            continue
+
+        # find index of nearest x point from original grid, deal with boundary
+        ix = round((xqi - xmin) / dx)
+        if ix > nx - 1:
+            ix = nx - 1
+
+        # find index of nearest y point from original grid, deal with boundary
+        iy = round((yqi - ymin) / dy)
+        if iy > ny - 1:
+            iy = ny - 1
+
+        # nearest interpolation
+        new_mask[i] = mask[ix, iy]
+
+    return new_mask
+
+
+@njit(parallel=True)
+def binary_mask_dilation_mesh(mask, neighbors, first_points=12, less_neighbors=1):
+    """
+    Performs a binary dilation on a boolean mask over a mesh. The neighbors
+    array contains the connected neighbors for each index of mask. If first_points > 0,
+    the first points correspdonding to that value will only check n - less_neighbors
+    since this function is designed for an icosphere mesh.
+
+    Parameters
+    ----------
+    mask : np.ndarray, shape=(npts,)
+        boolean mask.
+    neighbors, np.ndarray, shape=(npts, n)
+        array containing neighbors for each vertex.
+    first_points : int, optional
+        determines how many points will be checked using n - less_neighbors
+        neighbors. For the icosphere, the first 12 points will have 5 neighbors
+        while all the rest will have 6. If every point in your mesh has the same
+        number of neighbors, set this to 0. Must be nonnegative. The default is 12.
+    less_neighbors : int, optional
+        how many less neighbors will be checked for the first `first_points`
+        points. Will have no affect if first_points=0. The default is 1.
+
+    Returns
+    -------
+    np.ndarray, shape=(npts,)
+        the dilated mask.
+    """
+
+    npts, n = neighbors.shape
+    dilated_mask = mask.copy()
+
+    if first_points > 0:
+        for i in range(first_points):
+            if mask[i]:
+                continue
+
+            for k in range(n - less_neighbors):
+                if mask[neighbors[i, k]]:
+                    dilated_mask[i] = True
+                    break
+
+    for i in prange(first_points, npts):
+        if mask[i]:
+            continue
+
+        for k in range(n):
+            if mask[neighbors[i, k]]:
+                dilated_mask[i] = True
+                break
+
+    return dilated_mask
+
+
+def icosphere_and_displacements(subdivisions, r=6371.0, normalize_once=False, mask_data=None):
+    """
+    Generate mesh for icosphere, find neighbors of each vertex, and compute
+    displacements of each mesh point and its neighbors, projected onto local
+    basis on the sphere.
+
+    Parameters
+    ----------
+    subdivisions : int
+        number of subdivisions. For ftle calculations, 7 or 8 is sufficient.
+        Any lower will produce under resolved ftle fields, any higher will
+        result in long run times.
+    r : float, optional
+        radius of the sphere, will default to the radius of the earth (in km).
+        The default is 6371.0.
+    normalize_once : bool, optional
+        flag determining how normalization is handled.
+        If normalize_once is True, normalizing to the surface of the sphere will
+        only happen at the very end, if not, normalization happens at every
+        level of subdivision. The former is faster, the latter will produce
+        more evenly spaced points. The default is False.
+    grid_mask : None or np.ndarray, shape = (nx, ny), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). If grid_mask is not None, a mesh_mask
+        and dilated version will be returned. Pass these into flowmap_pts and
+        the ftle_icosphere() function respectively. The default is None.
+
+    Returns
+    -------
+    verts : np.ndarray, shape=(10 * 4**subdivisions + 2, 3)
+        array containing vertices of mesh.
+    neighbors : np.ndarray, shape=(10 * 4**subdivisions + 2, 6)
+        array containing indices of neighbors for each mesh point.
+    X : np.ndarray, shape=(10 * 4**subdivisions + 2, 2, 6)
+        array containing displacements for the neighbors of each mesh point.
+    masks : tuple, optional
+        if mask is not None, a dilated mask will be returned, which can be
+        passed into ftle_icosphere() to avoid erroneous computations at
+        mask boundaries.
+
+    """
+
+    # generate icosphere mesh
+    verts, faces = icosphere(subdivisions, r, normalize_once=normalize_once)
+
+    # find neighbors
+    neighbors = find_neighbors(faces, len(verts))
+
+    # make sure verts is float64 for particle integration
+    verts = verts.astype(np.float64)
+
+    # convert mesh to lon lat and compute local basis on the sphere
+    mesh_lons_rad, mesh_lats_rad = xyz2lonlat(verts, r, return_array=False)
+    e1, e2 = local_basis_icosphere(mesh_lons_rad, mesh_lats_rad, deg2rad=False)
+
+    if mask_data is not None:
+        # unpack grid data
+        grid_mask, lon, lat = mask_data
+
+        # interpolate the grid mask onto the mesh, will be returned
+        mask = interpolate_mask_mesh(grid_mask, lon, lat, verts, r=r)
+
+        # dilate mask to avoid erroneous computations, will be returned
+        dilated_mask = binary_mask_dilation_mesh(mask, neighbors)
+        # dilated_mask = mask
+
+        # compute displacements of each mesh point and its neighbors
+        X = displacements_proj_ico(verts, e1, e2, neighbors, mask=dilated_mask)
+        return verts, neighbors, X, mask, dilated_mask
+    else:
+        # compute displacements of each mesh point and its neighbors
+        X = displacements_proj_ico(verts, e1, e2, neighbors)
+        return verts, neighbors, X
