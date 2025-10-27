@@ -1,4 +1,4 @@
-from math import sin, cos, pi, cosh, tanh, sqrt
+from math import sin, cos, pi, cosh, tanh, sqrt, floor, atan2, asin
 import numpy as np
 from numba import njit, cfunc, float64, guvectorize
 from numbalsoda import lsoda_sig
@@ -633,6 +633,472 @@ def get_callable_scalar_linear(grid_f, f, extrap_mode="constant"):
         return fi
 
     return f_interp
+
+
+@njit(inline="always")
+def _bilinear_interp(f, i0, i1, j0, j1, wx, wy):
+    """Bilinear interpolation."""
+
+    # get grid values
+    f00 = f[i0, j0]
+    f01 = f[i0, j1]
+    f10 = f[i1, j0]
+    f11 = f[i1, j1]
+
+    # top and bottom interpolation, return vertical interp
+    fi_bottom = f00 * (1.0 - wx) + f10 * wx
+    fi_top = f01 * (1.0 - wx) + f11 * wx
+
+    return fi_bottom * (1.0 - wy) + fi_top * wy
+
+
+@njit(inline="always")
+def _north_polar_interp(f, i0, i1, j_ring, j_pole, wx, wy_polar):
+    """Bilinear interp in north polar region."""
+    # get ring and pole values
+    f_ring0 = f[i0, j_ring]
+    f_ring1 = f[i1, j_ring]
+    f_pole = f[0, j_pole]
+
+    # interp along ring, return vertical interp
+    f_ring = f_ring0 * (1.0 - wx) + f_ring1 * wx
+
+    return f_ring * (1.0 - wy_polar) + f_pole * wy_polar
+
+
+@njit(inline="always")
+def _south_polar_interp(f, i0, i1, j_ring, j_pole, wx, wy_polar):
+    """Bilinear interp in south polar region."""
+
+    # get ring and pole values
+    f_ring0 = f[i0, j_ring]
+    f_ring1 = f[i1, j_ring]
+    f_pole = f[0, j_pole]
+
+    # interp along ring, return vertical interp
+    f_ring = f_ring0 * (1.0 - wx) + f_ring1 * wx
+
+    return f_pole * (1.0 - wy_polar) + f_ring * wy_polar
+
+
+@njit
+def _globe_spatial_interp(lon_rad, lat_rad, lonlat_grid, vx, vy, vz):
+    """Spatial interp on sphere with both poles included."""
+    lon0, dlon, nlon = lonlat_grid[0]
+    lat0, dlat, nlat = lonlat_grid[1]
+
+    i_float = ((lon_rad - lon0) / dlon) % nlon
+    j_float = (lat_rad - lat0) / dlat
+
+    i0 = floor(i_float)
+    i1 = (i0 + 1) % nlon
+
+    wx = i_float - i0
+
+    if j_float >= nlat - 2:
+        # set lat indices
+        j_ring = nlat - 2
+        j_pole = nlat - 1
+
+        # calculate y weight
+        wy_polar = j_float - j_ring
+
+        # perform interp for each vel component
+        vx_interp = _north_polar_interp(vx, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vy_interp = _north_polar_interp(vy, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vz_interp = _north_polar_interp(vz, i0, i1, j_ring, j_pole, wx, wy_polar)
+
+    elif j_float <= 1.0:
+        # set lat indices
+        j_pole = 0
+        j_ring = 1
+
+        # calculate y weight
+        wy_polar = j_float - j_pole
+
+        # perform interp for each vel component
+        vx_interp = _south_polar_interp(vx, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vy_interp = _south_polar_interp(vy, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vz_interp = _south_polar_interp(vz, i0, i1, j_ring, j_pole, wx, wy_polar)
+
+    else:
+        # calculate y indices
+        j0 = floor(j_float)
+        j1 = int(j0 + 1)
+
+        # calculate y weight
+        wy = j_float - j0
+
+        # perform interp for each vel component
+        vx_interp = _bilinear_interp(vx, i0, i1, j0, j1, wx, wy)
+        vy_interp = _bilinear_interp(vy, i0, i1, j0, j1, wx, wy)
+        vz_interp = _bilinear_interp(vz, i0, i1, j0, j1, wx, wy)
+
+    return vx_interp, vy_interp, vz_interp
+
+
+@njit
+def _globe_spatial_interp_northpole(lon_rad, lat_rad, lonlat_grid, vx, vy, vz):
+    """Spatial interp on sphere with only north pole included."""
+    lon0, dlon, nlon = lonlat_grid[0]
+    lat0, dlat, nlat = lonlat_grid[1]
+
+    i_float = ((lon_rad - lon0) / dlon) % nlon
+    j_float = (lat_rad - lat0) / dlat
+
+    i0 = floor(i_float)
+    i1 = (i0 + 1) % nlon
+
+    wx = i_float - i0
+
+    if j_float >= nlat - 2:
+        # set lat indices
+        j_ring = nlat - 2
+        j_pole = nlat - 1
+
+        # calculate y weight
+        wy_polar = j_float - j_ring
+
+        # perform interp for each vel component
+        vx_interp = _north_polar_interp(vx, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vy_interp = _north_polar_interp(vy, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vz_interp = _north_polar_interp(vz, i0, i1, j_ring, j_pole, wx, wy_polar)
+
+    else:
+        # calculate y indices
+        j0 = floor(j_float)
+        j1 = int(j0 + 1)
+
+        # calculate y weight
+        wy = j_float - j0
+
+        # perform interp for each vel component
+        vx_interp = _bilinear_interp(vx, i0, i1, j0, j1, wx, wy)
+        vy_interp = _bilinear_interp(vy, i0, i1, j0, j1, wx, wy)
+        vz_interp = _bilinear_interp(vz, i0, i1, j0, j1, wx, wy)
+
+    return vx_interp, vy_interp, vz_interp
+
+
+@njit
+def _globe_spatial_interp_southpole(lon_rad, lat_rad, lonlat_grid, vx, vy, vz):
+    """Spatial interp on sphere with only north pole included."""
+    lon0, dlon, nlon = lonlat_grid[0]
+    lat0, dlat, nlat = lonlat_grid[1]
+
+    i_float = ((lon_rad - lon0) / dlon) % nlon
+    j_float = (lat_rad - lat0) / dlat
+
+    i0 = floor(i_float)
+    i1 = (i0 + 1) % nlon
+
+    wx = i_float - i0
+
+    if j_float <= 1.0:
+        # set lat indices
+        j_pole = 0
+        j_ring = 1
+
+        # calculate y weight
+        wy_polar = j_float - j_pole
+
+        # perform interp for each vel component
+        vx_interp = _south_polar_interp(vx, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vy_interp = _south_polar_interp(vy, i0, i1, j_ring, j_pole, wx, wy_polar)
+        vz_interp = _south_polar_interp(vz, i0, i1, j_ring, j_pole, wx, wy_polar)
+
+    else:
+        # calculate y indices
+        j0 = floor(j_float)
+        j1 = int(j0 + 1)
+
+        # calculate y weight
+        wy = j_float - j0
+
+        # perform interp for each vel component
+        vx_interp = _bilinear_interp(vx, i0, i1, j0, j1, wx, wy)
+        vy_interp = _bilinear_interp(vy, i0, i1, j0, j1, wx, wy)
+        vz_interp = _bilinear_interp(vz, i0, i1, j0, j1, wx, wy)
+
+    return vx_interp, vy_interp, vz_interp
+
+
+@njit
+def globe_interp(t, y, r, grid, vx, vy, vz):
+    """
+    Linear interpolation on the sphere with both poles included.
+
+    Parameters
+    ----------
+    t : float
+        time.
+    y : np.ndarray, shape=(3,)
+        DESCRIPTION.
+    r : float
+        raidus of sphere in same units as y.
+    grid : tuple
+        tuple containing min value, spacing, and num points, for t and
+        underlying lon-lat grid.
+    vx : np.ndarray, shape=(nt, nx, ny)
+        velocity in the x direction.
+    vy : np.ndarray, shape=(nt, nx, ny)
+        velocity in the y direction.
+    vz : np.ndarray, shape=(nt, nx, ny)
+        velocity in the z direction.
+
+    Returns
+    -------
+    np.ndarray, shape=(3,)
+        x, y, z velocity at (t, y).
+
+    """
+
+    t0, dt, nt = grid[0]
+    lonlat_grid = grid[1:]
+
+    k_float = (t - t0) / dt
+    k0 = floor(k_float)
+
+    xk, yk, zk = y[0], y[1], y[2]
+    lon_rad = atan2(yk, xk)
+
+    z_ratio = zk / r
+    if z_ratio >= 1.0:
+        lat_rad = pi / 2
+    elif z_ratio <= -1.0:
+        lat_rad = -pi / 2
+    else:
+        lat_rad = asin(z_ratio)
+
+    if k0 >= nt - 1:
+        return np.array(
+            _globe_spatial_interp(lon_rad, lat_rad, lonlat_grid, vx[-1], vy[-1], vz[-1])
+        )
+
+    else:
+        k1 = k0 + 1
+        wt = k_float - k0
+        vk0 = _globe_spatial_interp(lon_rad, lat_rad, lonlat_grid, vx[k0], vy[k0], vz[k0])
+        vk1 = _globe_spatial_interp(lon_rad, lat_rad, lonlat_grid, vx[k1], vy[k1], vz[k1])
+
+        vx_interp = (1.0 - wt) * vk0[0] + wt * vk1[0]
+        vy_interp = (1.0 - wt) * vk0[1] + wt * vk1[1]
+        vz_interp = (1.0 - wt) * vk0[2] + wt * vk1[2]
+
+        return np.array([vx_interp, vy_interp, vz_interp])
+
+
+@njit
+def globe_interp_northpole(t, y, r, grid, vx, vy, vz):
+    """
+    Linear interpolation on the sphere with only north pole included.
+
+    Parameters
+    ----------
+    t : float
+        time.
+    y : np.ndarray, shape=(3,)
+        DESCRIPTION.
+    r : float
+        raidus of sphere in same units as y.
+    grid : tuple
+        tuple containing min value, spacing, and num points, for t and
+        underlying lon-lat grid.
+    vx : np.ndarray, shape=(nt, nx, ny)
+        velocity in the x direction.
+    vy : np.ndarray, shape=(nt, nx, ny)
+        velocity in the y direction.
+    vz : np.ndarray, shape=(nt, nx, ny)
+        velocity in the z direction.
+
+    Returns
+    -------
+    np.ndarray, shape=(3,)
+        x, y, z velocity at (t, y).
+
+    """
+    t0, dt, nt = grid[0]
+    lonlat_grid = grid[1:]
+
+    k_float = (t - t0) / dt
+    k0 = floor(k_float)
+
+    xk, yk, zk = y[0], y[1], y[2]
+    lon_rad = atan2(yk, xk)
+
+    z_ratio = zk / r
+    if z_ratio >= 1.0:
+        lat_rad = pi / 2
+    elif z_ratio <= -1.0:
+        lat_rad = -pi / 2
+    else:
+        lat_rad = asin(z_ratio)
+
+    if k0 >= nt - 1:
+        return np.array(
+            _globe_spatial_interp_northpole(lon_rad, lat_rad, lonlat_grid, vx[-1], vy[-1], vz[-1])
+        )
+
+    else:
+        k1 = k0 + 1
+        wt = k_float - k0
+        vk0 = _globe_spatial_interp_northpole(lon_rad, lat_rad, lonlat_grid, vx[k0], vy[k0], vz[k0])
+        vk1 = _globe_spatial_interp_northpole(lon_rad, lat_rad, lonlat_grid, vx[k1], vy[k1], vz[k1])
+
+        vx_interp = (1.0 - wt) * vk0[0] + wt * vk1[0]
+        vy_interp = (1.0 - wt) * vk0[1] + wt * vk1[1]
+        vz_interp = (1.0 - wt) * vk0[2] + wt * vk1[2]
+
+        return np.array([vx_interp, vy_interp, vz_interp])
+
+
+@njit
+def globe_interp_southpole(t, y, r, grid, vx, vy, vz):
+    """
+    Linear interpolation on the sphere with only south pole included.
+
+    Parameters
+    ----------
+    t : float
+        time.
+    y : np.ndarray, shape=(3,)
+        DESCRIPTION.
+    r : float
+        raidus of sphere in same units as y.
+    grid : tuple
+        tuple containing min value, spacing, and num points, for t and
+        underlying lon-lat grid.
+    vx : np.ndarray, shape=(nt, nx, ny)
+        velocity in the x direction.
+    vy : np.ndarray, shape=(nt, nx, ny)
+        velocity in the y direction.
+    vz : np.ndarray, shape=(nt, nx, ny)
+        velocity in the z direction.
+
+    Returns
+    -------
+    np.ndarray, shape=(3,)
+        x, y, z velocity at (t, y).
+
+    """
+    t0, dt, nt = grid[0]
+    lonlat_grid = grid[1:]
+
+    k_float = (t - t0) / dt
+    k0 = floor(k_float)
+
+    xk, yk, zk = y[0], y[1], y[2]
+    lon_rad = atan2(yk, xk)
+
+    z_ratio = zk / r
+    if z_ratio >= 1.0:
+        lat_rad = pi / 2
+    elif z_ratio <= -1.0:
+        lat_rad = -pi / 2
+    else:
+        lat_rad = asin(z_ratio)
+
+    if k0 >= nt - 1:
+        return np.array(
+            _globe_spatial_interp_southpole(lon_rad, lat_rad, lonlat_grid, vx[-1], vy[-1], vz[-1])
+        )
+
+    else:
+        k1 = k0 + 1
+        wt = k_float - k0
+        vk0 = _globe_spatial_interp_southpole(lon_rad, lat_rad, lonlat_grid, vx[k0], vy[k0], vz[k0])
+        vk1 = _globe_spatial_interp_southpole(lon_rad, lat_rad, lonlat_grid, vx[k1], vy[k1], vz[k1])
+
+        vx_interp = (1.0 - wt) * vk0[0] + wt * vk1[0]
+        vy_interp = (1.0 - wt) * vk0[1] + wt * vk1[1]
+        vz_interp = (1.0 - wt) * vk0[2] + wt * vk1[2]
+
+        return np.array([vx_interp, vy_interp, vz_interp])
+
+
+def get_globe_flow(tvals, lonvals, latvals, vx, vy, vz, r=6371.0, pole="both"):
+    """
+    Retrieve address of cfunc represntation of linear interpolant on the sphere.
+
+    Parameters
+    ----------
+    tvals : np.ndarray, shape=(nx,)
+        time values.
+    lonvals : np.ndarray, shape=(nt,)
+        longitude values.
+    latvals : np.ndarray, shape=(nt,)
+        latitude values.
+    vx : np.ndarray, shape=(nt, nx, ny)
+        velocity in the x direction.
+    vy : np.ndarray, shape=(nt, nx, ny)
+        velocity in the y direction.
+    vz : np.ndarray, shape=(nt, nx, ny)
+        velocity in the z direction.
+    r : float, optional
+        raidus of sphere the flow is defined on, defaults to radius of the earth (in km).
+        The default is 6371.0.
+    pole : str, optional
+        str to determine if any poles are included in the velocity fields. Options are
+        "both", "north", or "south". The default is "both".
+
+    Raises
+    ------
+    ValueError
+        if no poles are included, use regular linear interpolant.
+
+    Returns
+    -------
+    int
+        address for C callback.
+
+    """
+    t0 = tvals[0]
+    dt = tvals[1] - t0
+    nt = len(tvals)
+
+    lon0 = lonvals[0]
+    dlon = lonvals[1] - lon0
+    nlon = len(lonvals)
+
+    lat0 = latvals[0]
+    dlat = latvals[1] - lat0
+    nlat = len(latvals)
+
+    grid = ((t0, dt, nt), (lon0, dlon, nlon), (lat0, dlat, nlat))
+
+    pole = pole.lower()
+    if pole == "both":
+        f = globe_interp
+    elif pole == "north":
+        f = globe_interp_northpole
+    elif pole == "south":
+        f = globe_interp_southpole
+    else:
+        raise ValueError("Argument 'pole' should be 'both', 'north', or 'south'.")
+
+    @cfunc(lsoda_sig)
+    def flow_rhs(t, y, dy, p):
+        int_direction = p[0]
+        tt = int_direction * t
+        vxi, vyi, vzi = f(tt, y, r, grid, vx, vy, vz)
+
+        # norm_x, norm_y, norm_z = y / r
+        inv_r = 1 / r
+        norm_x = y[0] * inv_r
+        norm_y = y[1] * inv_r
+        norm_z = y[2] * inv_r
+
+        radial = vxi * norm_x + vyi * norm_y + vzi * norm_z
+
+        vx_tan = vxi - radial * norm_x
+        vy_tan = vyi - radial * norm_y
+        vz_tan = vzi - radial * norm_z
+
+        dy[0] = int_direction * vx_tan
+        dy[1] = int_direction * vy_tan
+        dy[2] = int_direction * vz_tan
+
+    return flow_rhs.address
 
 
 def get_predefined_flow(
