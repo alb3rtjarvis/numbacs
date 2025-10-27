@@ -268,6 +268,7 @@ def ftle_from_eig(eigval_max, T):
     return ftle
 
 
+# %% least-squares ftle
 @njit(parallel=True)
 def displacement_array_proj(points, e1, e2, full=True, mask=None):
     """
@@ -382,11 +383,12 @@ def _ftle_lsq_opt_2D(X, Ytilde, T, mask=None):
             # Mtilde = (Ytilde @ X.T) @ (np.linalg.inv(X @ X.T))
             # C = Mtilde.T @ Mtilde
             # max_eig = np.linalg.eigvalsh(C)[-1]
-            # ftle[i,j] = (1 / denom) * log(max_eig)
+            # ftle[i,j] = 1 / (2 * |T|) * log(max_eig)
             #
-            # We do the following to avoid memory access problems and
-            # significantly speed up the computations
+            # We perform the matrix multiplication manually to avoid memory
+            # access problems and significantly speed up the computations
             if mask is None or not mask[i, j]:
+                # XXT = X @ X.T
                 XXT = np.zeros((2, 2), float64)
                 for r in range(2):
                     for c in range(2):
@@ -397,6 +399,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T, mask=None):
 
                 XXT_inv = inv_2D(XXT)
 
+                # YXT = Ytilde @ X.T
                 YXT = np.zeros((3, 2), float64)
                 for r in range(3):
                     for c in range(2):
@@ -405,6 +408,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T, mask=None):
                             val += Ytilde[i, j, r, k] * X[i, j, c, k]
                         YXT[r, c] = val
 
+                # Mtilde = YXT @ XXT_inv
                 Mtilde = np.zeros((3, 2), float64)
                 for r in range(3):
                     for c in range(2):
@@ -413,6 +417,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T, mask=None):
                             val += YXT[r, k] * XXT_inv[k, c]
                         Mtilde[r, c] = val
 
+                # C = Mtilde.T @ Mtilde
                 C = np.zeros((2, 2), float64)
                 for r in range(2):
                     for c in range(2):
@@ -429,7 +434,7 @@ def _ftle_lsq_opt_2D(X, Ytilde, T, mask=None):
     return ftle
 
 
-@njit(parallel=True)
+@njit
 def ftle_grid_S2(
     Lon,
     Lat,
@@ -506,6 +511,206 @@ def ftle_grid_S2(
 
     Ytilde = _displacement_array(advected_points, full=full, mask=mask)
     return _ftle_lsq_opt_2D(X, Ytilde, mask=mask)
+
+
+# icosphere versions
+@njit(parallel=True)
+def _displacements_ico(points, neighbors, mask=None):
+    """Compute displacement array."""
+
+    FIRST_POINTS = 12
+    npts = len(points)
+    N = 6
+    X = np.zeros((npts, 3, N), float64)
+
+    for i in range(FIRST_POINTS):
+        p0 = points[i, :]
+        for k in range(N - 1):
+            ni = neighbors[i, k]
+            X[i, :, k] = points[ni, :] - p0
+
+    for i in prange(FIRST_POINTS, npts):
+        p0 = points[i, :]
+        for k in range(N):
+            ni = neighbors[i, k]
+            X[i, :, k] = points[ni, :] - p0
+
+    return X
+
+
+@njit(parallel=True)
+def _ftle_lsq_opt_ico(X, Ytilde, T, mask=None):
+    """
+    Compute FTLE on a 2D manifold using the least-squares estimate. The X
+    array contains the initial displacements calculated in the embedded space,
+    projected onto a local basis of the tangent space on the manifold. The
+    Y array contains the final displacements calculated in the embedded space.
+    This function performs all linear algebra manually to optimize memory
+    access and avoid cache misses. For more info on the background theory,
+    see Lekien and Ross. "The computation of finite-time Lyapunov exponents on
+    unstructured meshes and for non-Euclidean manifolds". doi: 10.1063/1.3278516.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape = (npts, 2, 6)
+        initial displacements of neighbors.
+    Ytilde : np.ndarray, shape = (npts, 3, 6)
+        final displacements of neighbors.
+    T : float
+        integration time.
+
+    Returns
+    -------
+    ftle : np.ndarray, shape = (npts,)
+        ftle values.
+
+    """
+    FIRST_POINTS = 12
+    npts = len(X)
+    nhbrs = 6
+    scaling = 1 / (2 * abs(T))
+    ftle = np.zeros(npts, float64)
+
+    for i in range(FIRST_POINTS):
+        if mask is None or not mask[i]:
+            # The operations here are really just the following:
+            # Mtilde = (Ytilde @ X.T) @ (np.linalg.inv(X @ X.T))
+            # C = Mtilde.T @ Mtilde
+            # max_eig = np.linalg.eigvalsh(C)[-1]
+            # ftle[i,j] = 1 / (2 * |T|) * log(max_eig)
+            #
+            # We perform the matrix multiplication manually to avoid memory
+            # access problems and significantly speed up the computations
+
+            # XXT = X @ X.T
+            XXT = np.zeros((2, 2), float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(nhbrs - 1):
+                        val += X[i, r, k] * X[i, c, k]
+                    XXT[r, c] = val
+
+            XXT_inv = inv_2D(XXT)
+
+            # YXT = Ytilde @ X.T
+            YXT = np.zeros((3, 2), float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(nhbrs - 1):
+                        val += Ytilde[i, r, k] * X[i, c, k]
+                    YXT[r, c] = val
+
+            # Mtilde = YXT @ XXT_inv
+            Mtilde = np.zeros((3, 2), float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(2):
+                        val += YXT[r, k] * XXT_inv[k, c]
+                    Mtilde[r, c] = val
+
+            # C = Mtilde.T @ Mtilde
+            C = np.zeros((2, 2), float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(3):
+                        val += Mtilde[k, r] * Mtilde[k, c]
+                    C[r, c] = val
+
+            max_eig = eigvalsh_max_2D(C)
+
+            if max_eig > 1:
+                ftle[i] = scaling * log(max_eig)
+
+    for i in prange(FIRST_POINTS, npts):
+        if mask is None or not mask[i]:
+            # Same operations as above
+
+            # XXT = X @ X.T
+            XXT = np.zeros((2, 2), float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(nhbrs):
+                        val += X[i, r, k] * X[i, c, k]
+                    XXT[r, c] = val
+
+            XXT_inv = inv_2D(XXT)
+
+            # YXT = Ytilde @ X.T
+            YXT = np.zeros((3, 2), float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(nhbrs):
+                        val += Ytilde[i, r, k] * X[i, c, k]
+                    YXT[r, c] = val
+
+            # Mtilde = YXT @ XXT_inv
+            Mtilde = np.zeros((3, 2), float64)
+            for r in range(3):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(2):
+                        val += YXT[r, k] * XXT_inv[k, c]
+                    Mtilde[r, c] = val
+
+            # C = Mtilde.T @ Mtilde
+            C = np.zeros((2, 2), float64)
+            for r in range(2):
+                for c in range(2):
+                    val = 0.0
+                    for k in range(3):
+                        val += Mtilde[k, r] * Mtilde[k, c]
+                    C[r, c] = val
+
+            max_eig = eigvalsh_max_2D(C)
+
+            if max_eig > 1:
+                ftle[i] = scaling * log(max_eig)
+
+    return ftle
+
+
+@njit
+def ftle_icosphere(flowmap, neighbors, X, T, mask=None):
+    """
+    Computes FTLE on the surface of the sphere (S2), where the sphere is defined
+    by mesh_points which are vertices of an icosphere. Uses the least-squares
+    approximation of the FTLE based on mesh cell displacements in 3D space.
+    For more info on the background theory, see Lekien and Ross,
+    "The computation of finite-time Lyapunov exponents on unstructured meshes
+    and for non-Euclidean manifolds". doi: 10.1063/1.3278516.
+
+    Parameters
+    ----------
+    flowmap : np.ndarray, shape=(npts, 3)
+        final particle positions for whole mesh in xyz-coords.
+    neighbors : np.ndarray, shape=(npts, 6)
+        array containing neighbors of initial mesh points. Can be obtained from the following function -
+        mesh_points, neighbors, X = numbacs.utils.icosphere_and_displacements(subdivisions, r=r, mask=mask).
+    X : np.ndarray, shape=(npts, 2, 6)
+        array containing intial projected displacements.Can be obtained from same function as neighbors -
+        mesh_points, neighbors, X = numbacs.utils.icosphere_and_displacements(subdivisions, r=r, mask=mask).
+    T : float
+        integration time.
+    mask : None or np.ndarray, shape = (npts,), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). To avoid erroneous computations at mask
+        boundaries, mask passed in should be dilated using the
+        binary_mask_dilation_mesh function from the utils module. The default is None.
+
+    Returns
+    -------
+    np.ndarray, shape=(npts,)
+        least-squares approximation of ftle on the sphere.
+
+    """
+    Ytilde = _displacements_ico(flowmap, neighbors, mask=mask)
+    return _ftle_lsq_opt_ico(X, Ytilde, T, mask=mask)
 
 
 @njit(parallel=True)
