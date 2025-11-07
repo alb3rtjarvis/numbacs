@@ -5,11 +5,11 @@ from interpolation.splines import eval_linear, extrap_options as xto
 
 
 @njit(parallel=True)
-def flowmap_pts(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
+def flowmap_ND(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
     """
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
     created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
-    conditions given by pts where pts has dim (npts, d). t0 denotes initial time and T denotes
+    conditions given by pts where pts has dim (npts, N). t0 denotes initial time and T denotes
     integration time.
 
     Parameters
@@ -20,7 +20,7 @@ def flowmap_pts(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e
         intial time.
     T : float
         integration time.
-    pts : np.ndarray, shape = (npts, d)
+    pts : np.ndarray, shape = (npts, N)
         array of points to be integrated.
     params : np.ndarray, shape = (nprms,)
         array of parameters to be passed to the ode function defined by funcptr.
@@ -36,12 +36,12 @@ def flowmap_pts(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (npts, d)
+    flowmap : np.ndarray, shape = (npts, N)
         array containing final position of particles pts after integration from [t0,t0+T].
 
     """
-    npts, d = pts.shape
-    flowmap = np.zeros((npts, d), float64)
+    npts, N = pts.shape
+    flowmap = np.zeros((npts, N), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, 2)
     if method.lower() == "dop853":
         for i in prange(npts):
@@ -62,11 +62,13 @@ def flowmap_pts(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e
 
 
 @njit(parallel=True)
-def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol=1e-8):
+def flowmap_n_ND(
+    funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol=1e-8, mask=None
+):
     """
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
     created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
-    conditions given by pts where pts has dim (npts,2). t0 denotes initial time and T denotes
+    conditions given by pts where pts has dim (npts, N). t0 denotes initial time and T denotes
     integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).
 
     Parameters
@@ -77,7 +79,7 @@ def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol
         intial time.
     T : float
         integration time.
-    pts : np.ndarray, shape = (npts,2)
+    pts : np.ndarray, shape = (npts, N)
         array of points to be integrated.
     params : np.ndarray, shape = (nprms,)
         array of parameters to be passed to the ode function defined by funcptr.
@@ -92,28 +94,30 @@ def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (npts,n,2)
+    flowmap : np.ndarray, shape = (npts, n, N)
         array containing n positions of particles pts after integration from [t0,t0+T].
     t_eval : np.ndarray, shape = (n,)
         array containing times the flowmap is returned at.
 
     """
 
-    npts = len(pts)
-    flowmap = np.zeros((npts, n, 2), float64)
+    npts, N = pts.shape
+    flowmap = np.zeros((npts, n, N), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, n)
     if method.lower() == "dop853":
         for i in prange(pts.shape[0]):
-            flowmap_tmp, success = dop853(
-                funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
-            )
-            flowmap[i, :, :] = flowmap_tmp
+            if mask is None or not mask[i]:
+                flowmap_tmp, success = dop853(
+                    funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
+                )
+                flowmap[i, :, :] = flowmap_tmp
     elif method.lower() == "lsoda":
         for i in prange(pts.shape[0]):
-            flowmap_tmp, success = lsoda(
-                funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
-            )
-            flowmap[i, :, :] = flowmap_tmp
+            if mask is None or not mask[i]:
+                flowmap_tmp, success = lsoda(
+                    funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
+                )
+                flowmap[i, :, :] = flowmap_tmp
 
     return flowmap, params[0] * t_eval
 
