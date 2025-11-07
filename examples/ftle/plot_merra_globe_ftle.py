@@ -22,20 +22,19 @@ from numbacs.utils import convert_vel_to_3D, icosphere_and_displacements, lonlat
 # FTLE computation and integration span. Create interpolant and retrieve flow.
 
 # load in atmospheric data
-dates = np.load("./data/merra_june2020/dates.npy")
+dates = np.load("../data/merra_june2020/dates.npy")
 dt = (dates[1] - dates[0]).astype("timedelta64[h]").astype(int)
 t = np.arange(0, len(dates) * dt, dt, np.float64)
-lon_rad = np.deg2rad(np.load("./data/merra_june2020/lon.npy"))
-lat_rad = np.deg2rad(np.load("./data/merra_june2020/lat.npy"))
+lon_rad = np.deg2rad(np.load("../data/merra_june2020/lon.npy"))
+lat_rad = np.deg2rad(np.load("../data/merra_june2020/lat.npy"))
 r = 6371.0
 # NumbaCS uses 'ij' indexing, most geophysical data uses 'xy'
 # indexing for the spatial coordintes. We need to switch axes and
 # scale by 3.6 since velocity data is in m/s and we want km/hr.
-u = np.moveaxis(np.load("./data/merra_june2020/u_500_800hPa.npy"), 1, 2) * 3.6
-v = np.moveaxis(np.load("./data/merra_june2020/v_500_800hPa.npy"), 1, 2) * 3.6
+u = np.moveaxis(np.load("../data/merra_june2020/u_500_800hPa.npy"), 1, 2) * 3.6
+v = np.moveaxis(np.load("../data/merra_june2020/v_500_800hPa.npy"), 1, 2) * 3.6
 nt, nx, ny = u.shape
 
-# %%
 # set t0, integration span, and integration direction
 day = 16
 t0_date = np.datetime64(f"2020-06-{day:02d} 00")
@@ -53,14 +52,18 @@ funcptr = get_globe_flow(t, lon_rad, lat_rad, vx, vy, vz)
 # %%
 # Create mesh on icosphere
 # --------------
-# generate mesh on icosphere, find neighbors of each vertex, and compute
-# displacements for each neighbor
+# Generate mesh on icosphere, find neighbors of each vertex, and compute
+# displacements for each neighbor, Generally subdivides between 7 - 9 will
+# be sufficient. 7 will be fastest but least accurate (166,382 intial conditions),
+# 8 will be reasonably fast and accurate (655,362 initial conditions),
+# and 9 will be slowest but most accurate (2,621,422 initial contiions).
 subdivides = 8
 mesh_points, neighbors, X = icosphere_and_displacements(subdivides, r=r)
 
 # %%
 # Integrate
 # --------------
+
 # lessen tolerances for scale and speed
 rtol = 1e-3
 atol = 1e-5
@@ -71,6 +74,7 @@ flowmap_ico = flowmap_ND(funcptr, t0, T, mesh_points, params, rtol=rtol, atol=at
 # %%
 # FTLE
 # --------------
+
 # compute ftle using least squares approximation
 ftle_ico = ftle_icosphere(flowmap_ico, neighbors, X, T)
 
@@ -87,7 +91,7 @@ ftle_ico = ftle_icosphere(flowmap_ico, neighbors, X, T)
 import pyvista as pv
 
 s = 3
-coastlines = np.load("./data/merra_june2020/coastlines.npy")
+coastlines = np.load("../data/merra_june2020/coastlines.npy")
 coastlines_xyz = lonlat2xyz(
     coastlines[::s, 0], coastlines[::s, 1], r, deg2rad=True, return_array=True
 )
@@ -109,7 +113,7 @@ plotter.add_mesh(
 plotter.add_mesh(
     coast_points,
     color="black",
-    point_size=4,
+    point_size=3,
     render_points_as_spheres=True,
 )
 
