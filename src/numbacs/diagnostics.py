@@ -17,6 +17,7 @@ from .utils import (
 )
 
 
+# %% Finite-time
 @njit(parallel=True)
 def ftle_grid_2D(flowmap, T, dx, dy, mask=None):
     """
@@ -264,6 +265,168 @@ def ftle_from_eig(eigval_max, T):
 
     ftle = np.zeros(eigval_max.shape)
     ftle[np.nonzero(eigval_max > 1)] = np.log(eigval_max[np.nonzero(eigval_max > 1)]) / (2 * abs(T))
+
+    return ftle
+
+
+@njit(parallel=True)
+def lavd_grid_2D(
+    flowmap_n,
+    tspan,
+    T,
+    vort_interp,
+    xrav,
+    yrav,
+    period_x=0.0,
+    period_y=0.0,
+    mask=None,
+):
+    """
+    Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
+    defined by xrav,yrav for an integration time T and trajectories are returned at times given by
+    tspan. vort_interp is an interpolant function of vorticity over (at least) that time window.
+
+    Parameters
+    ----------
+    flowmap_n : np.ndarray, shape = (nx, ny, n, 2)
+        array containing trajectories of initial grid from t0 to t0+T.
+    tspan : np.ndarray, shape = (n,)
+        array containing n times corresponding to axis=2 of flowmap_n.
+    T : float
+        integration time.
+    vort_interp : jit-callable
+        interpolant function of vorticity which must be (at least) defined over all values of
+        flowmap_n and times from tspan.
+    xrav : np.ndarray, shape = (nx*ny,))
+        array containing raveled or flattened meshgrid X, can be obtained using X.ravel()
+        or X.flatten().
+    yrav : np.ndarray, shape = (nx*ny,))
+        array containing raveled or flattened meshgrid Y, can be obtained using Y.ravel()
+        or Y.flatten().
+    period_x : float
+        value for period in x-direction, if not periodic, set equal to 0.0. The default is 0.0.
+    period_y : float
+        value for period in y-direction, if not periodic, set equal to 0.0. The default is 0.0.
+    mask : None or np.ndarray, shape = (nx, ny), optional
+        for masked data, pass in a boolean mask corresponding to nan values
+        (True indicates a nan value). The default is None.
+
+    Returns
+    -------
+    lavd : np.ndarray, shape = (nx,ny)
+        array containing lavd values.
+
+    """
+
+    nx, ny, n = flowmap_n.shape[:-1]
+    npts = len(xrav)
+    vort_avg = np.zeros(n, float64)
+    for k in prange(n):
+        gpts = np.zeros((npts, 3), float64)
+        gpts[:, 0] = tspan[k]
+        gpts[:, 1] = xrav
+        gpts[:, 2] = yrav
+
+        vort_k = vort_interp(gpts)
+        vort_avg[k] = np.mean(vort_k)
+
+    lavd = np.zeros((nx, ny), float64)
+    dt = abs(tspan[1] - tspan[0])
+    if period_x + period_y == 0.0:
+        for i in prange(nx):
+            for j in range(ny):
+                if mask is None or not mask[i, j]:
+                    pts = np.zeros((n, 3), float64)
+                    pts[:, 0] = tspan
+                    pts[:, 1:] = flowmap_n[i, j, :, :]
+                    vort_traj = vort_interp(pts)
+                    integrand = np.abs(vort_traj - vort_avg)
+                    lavd[i, j] = composite_simpsons(integrand, dt)
+    elif period_x and period_y:
+        for i in prange(nx):
+            for j in range(ny):
+                if mask is None or not mask[i, j]:
+                    pts = np.zeros((n, 3), float64)
+                    pts[:, 0] = tspan
+                    pts[:, 1] = flowmap_n[i, j, :, 0] % period_x
+                    pts[:, 2] = flowmap_n[i, j, :, 1] % period_y
+                    vort_traj = vort_interp(pts)
+                    integrand = np.abs(vort_traj - vort_avg)
+                    lavd[i, j] = composite_simpsons(integrand, dt)
+    elif period_x:
+        for i in prange(nx):
+            for j in range(ny):
+                if mask is None or not mask[i, j]:
+                    pts = np.zeros((n, 3), float64)
+                    pts[:, 0] = tspan
+                    pts[:, 1] = flowmap_n[i, j, :, 0] % period_x
+                    pts[:, 2] = flowmap_n[i, j, :, 1]
+                    vort_traj = vort_interp(pts)
+                    integrand = np.abs(vort_traj - vort_avg)
+                    lavd[i, j] = composite_simpsons(integrand, dt)
+    elif period_y:
+        for i in prange(nx):
+            for j in range(ny):
+                if mask is None or not mask[i, j]:
+                    pts = np.zeros((n, 3), float64)
+                    pts[:, 0] = tspan
+                    pts[:, 1] = flowmap_n[i, j, :, 0]
+                    pts[:, 2] = flowmap_n[i, j, :, 1] % period_y
+                    vort_traj = vort_interp(pts)
+                    integrand = np.abs(vort_traj - vort_avg)
+                    lavd[i, j] = composite_simpsons(integrand, dt)
+
+    return lavd
+
+
+@njit(parallel=True)
+def ftle_grid_ND(flowmap, IC, T, dX):
+    """
+    Compute ND FTLE field from flowmap which is solution of ode over an initial grid defined by IC
+    for integration time T.
+
+    Parameters
+    ----------
+    flowmap : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,ndims)
+        array containing final positions of initial grid from t0 to t0+T.
+    IC : np.ndarray, shape = (nx_1,nx_2,...,nx_ndims,ndims)
+        initial condition array.
+    T : float
+        integration time.
+    dX : np.ndarray, shape = (ndims,)
+        array containing spacing in each x_i direction for i = 1,...,ndims.
+
+    Returns
+    -------
+    ftle : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,)
+        array containing ftle values.
+
+    """
+
+    grid_shape = np.array(IC.shape[:-1])
+    ndims = IC.shape[-1]
+    npts = np.prod(grid_shape)
+    ftle = np.zeros(npts)
+    denom = 2 * abs(T)
+    for k in prange(npts):
+        inds = unravel_index(k, grid_shape)
+        dXdir = np.zeros(ndims, int32)
+        for ii, ind in enumerate(inds):
+            if ind == 0:
+                dXdir[ii] = 1
+            elif ind == grid_shape[ii] - 1:
+                dXdir[ii] = -1
+            else:
+                dXdir[ii] = 0
+        Df = np.zeros((ndims, ndims), float64)
+        for i in range(ndims):
+            for j in range(ndims):
+                Df[i, j] = finite_diff_ND(flowmap[:, i], inds, dX[j], j, grid_shape, dXdir[j])
+
+        C = np.dot(Df.T, Df)
+        max_eig = np.linalg.eigvalsh(C)[-1]
+        if max_eig > 1:
+            ftle[k] = log(max_eig) / denom
 
     return ftle
 
@@ -713,168 +876,7 @@ def ftle_icosphere(flowmap, neighbors, X, T, mask=None):
     return _ftle_lsq_opt_ico(X, Ytilde, T, mask=mask)
 
 
-@njit(parallel=True)
-def lavd_grid_2D(
-    flowmap_n,
-    tspan,
-    T,
-    vort_interp,
-    xrav,
-    yrav,
-    period_x=0.0,
-    period_y=0.0,
-    mask=None,
-):
-    """
-    Compute LAVD from flowmap_n where flowmap_n contains trajectories computed over gridpoints
-    defined by xrav,yrav for an integration time T and trajectories are returned at times given by
-    tspan. vort_interp is an interpolant function of vorticity over (at least) that time window.
-
-    Parameters
-    ----------
-    flowmap_n : np.ndarray, shape = (nx, ny, n, 2)
-        array containing trajectories of initial grid from t0 to t0+T.
-    tspan : np.ndarray, shape = (n,)
-        array containing n times corresponding to axis=2 of flowmap_n.
-    T : float
-        integration time.
-    vort_interp : jit-callable
-        interpolant function of vorticity which must be (at least) defined over all values of
-        flowmap_n and times from tspan.
-    xrav : np.ndarray, shape = (nx*ny,))
-        array containing raveled or flattened meshgrid X, can be obtained using X.ravel()
-        or X.flatten().
-    yrav : np.ndarray, shape = (nx*ny,))
-        array containing raveled or flattened meshgrid Y, can be obtained using Y.ravel()
-        or Y.flatten().
-    period_x : float
-        value for period in x-direction, if not periodic, set equal to 0.0. The default is 0.0.
-    period_y : float
-        value for period in y-direction, if not periodic, set equal to 0.0. The default is 0.0.
-    mask : None or np.ndarray, shape = (nx, ny), optional
-        for masked data, pass in a boolean mask corresponding to nan values
-        (True indicates a nan value). The default is None.
-
-    Returns
-    -------
-    lavd : np.ndarray, shape = (nx,ny)
-        array containing lavd values.
-
-    """
-
-    nx, ny, n = flowmap_n.shape[:-1]
-    npts = len(xrav)
-    vort_avg = np.zeros(n, float64)
-    for k in prange(n):
-        gpts = np.zeros((npts, 3), float64)
-        gpts[:, 0] = tspan[k]
-        gpts[:, 1] = xrav
-        gpts[:, 2] = yrav
-
-        vort_k = vort_interp(gpts)
-        vort_avg[k] = np.mean(vort_k)
-
-    lavd = np.zeros((nx, ny), float64)
-    dt = abs(tspan[1] - tspan[0])
-    if period_x + period_y == 0.0:
-        for i in prange(nx):
-            for j in range(ny):
-                if mask is None or not mask[i, j]:
-                    pts = np.zeros((n, 3), float64)
-                    pts[:, 0] = tspan
-                    pts[:, 1:] = flowmap_n[i, j, :, :]
-                    vort_traj = vort_interp(pts)
-                    integrand = np.abs(vort_traj - vort_avg)
-                    lavd[i, j] = composite_simpsons(integrand, dt)
-    elif period_x and period_y:
-        for i in prange(nx):
-            for j in range(ny):
-                if mask is None or not mask[i, j]:
-                    pts = np.zeros((n, 3), float64)
-                    pts[:, 0] = tspan
-                    pts[:, 1] = flowmap_n[i, j, :, 0] % period_x
-                    pts[:, 2] = flowmap_n[i, j, :, 1] % period_y
-                    vort_traj = vort_interp(pts)
-                    integrand = np.abs(vort_traj - vort_avg)
-                    lavd[i, j] = composite_simpsons(integrand, dt)
-    elif period_x:
-        for i in prange(nx):
-            for j in range(ny):
-                if mask is None or not mask[i, j]:
-                    pts = np.zeros((n, 3), float64)
-                    pts[:, 0] = tspan
-                    pts[:, 1] = flowmap_n[i, j, :, 0] % period_x
-                    pts[:, 2] = flowmap_n[i, j, :, 1]
-                    vort_traj = vort_interp(pts)
-                    integrand = np.abs(vort_traj - vort_avg)
-                    lavd[i, j] = composite_simpsons(integrand, dt)
-    elif period_y:
-        for i in prange(nx):
-            for j in range(ny):
-                if mask is None or not mask[i, j]:
-                    pts = np.zeros((n, 3), float64)
-                    pts[:, 0] = tspan
-                    pts[:, 1] = flowmap_n[i, j, :, 0]
-                    pts[:, 2] = flowmap_n[i, j, :, 1] % period_y
-                    vort_traj = vort_interp(pts)
-                    integrand = np.abs(vort_traj - vort_avg)
-                    lavd[i, j] = composite_simpsons(integrand, dt)
-
-    return lavd
-
-
-@njit(parallel=True)
-def ftle_grid_ND(flowmap, IC, T, dX):
-    """
-    Compute ND FTLE field from flowmap which is solution of ode over an initial grid defined by IC
-    for integration time T.
-
-    Parameters
-    ----------
-    flowmap : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,ndims)
-        array containing final positions of initial grid from t0 to t0+T.
-    IC : np.ndarray, shape = (nx_1,nx_2,...,nx_ndims,ndims)
-        initial condition array.
-    T : float
-        integration time.
-    dX : np.ndarray, shape = (ndims,)
-        array containing spacing in each x_i direction for i = 1,...,ndims.
-
-    Returns
-    -------
-    ftle : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,)
-        array containing ftle values.
-
-    """
-
-    grid_shape = np.array(IC.shape[:-1])
-    ndims = IC.shape[-1]
-    npts = np.prod(grid_shape)
-    ftle = np.zeros(npts)
-    denom = 2 * abs(T)
-    for k in prange(npts):
-        inds = unravel_index(k, grid_shape)
-        dXdir = np.zeros(ndims, int32)
-        for ii, ind in enumerate(inds):
-            if ind == 0:
-                dXdir[ii] = 1
-            elif ind == grid_shape[ii] - 1:
-                dXdir[ii] = -1
-            else:
-                dXdir[ii] = 0
-        Df = np.zeros((ndims, ndims), float64)
-        for i in range(ndims):
-            for j in range(ndims):
-                Df[i, j] = finite_diff_ND(flowmap[:, i], inds, dX[j], j, grid_shape, dXdir[j])
-
-        C = np.dot(Df.T, Df)
-        max_eig = np.linalg.eigvalsh(C)[-1]
-        if max_eig > 1:
-            ftle[k] = log(max_eig) / denom
-
-    return ftle
-
-
+# %% Instantaneous
 @njit(parallel=True)
 def ile_2D_func(vel, x, y, t0=None, h=1e-3, mask=None):
     """
