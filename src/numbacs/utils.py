@@ -1,10 +1,9 @@
 import numpy as np
 from numba import njit, prange
 import numba
-from numba import uint32, uint64, float32, float64, int32, int64
+from numba import uint32, uint64, float32, float64, int32, types
 from math import floor, pi, cos, sin, sqrt
 from scipy.interpolate import splprep, splev
-from scipy.ndimage import generate_binary_structure, binary_dilation
 
 
 @njit(inline="always")
@@ -1284,7 +1283,17 @@ def _get_edge_key(i1, i2):
         return (uint64(i2) << 32) | uint64(i1)
 
 
-@njit
+# define signature so no numba warning about unsafe cast
+_midpoint_sig = types.Tuple((types.uint32, types.uint32))(
+    types.uint32,  # i1
+    types.uint32,  # i2
+    types.float32[:, :],  # verts
+    types.DictType(types.uint64, types.uint32),  # cache
+    types.uint32,  # vi
+)
+
+
+@njit(_midpoint_sig)
 def _get_midpoint_index(i1, i2, verts, cache, vi):
     """
     Returns index of midpoint between verts and next index, updates
@@ -1305,7 +1314,7 @@ def _get_midpoint_index(i1, i2, verts, cache, vi):
     verts[vi] = mid
     cache[key] = vi
 
-    return vi, vi + 1
+    return vi, vi + uint32(1)
 
 
 @njit
@@ -1327,7 +1336,6 @@ def _subdivide_normalize(verts, faces, vi, cache, r):
         m2, vi = _get_midpoint_index(i2, i0, verts, cache, vi)
 
         # set new face indices
-        m0, m1, m2 = uint32(m0), uint32(m1), uint32(m2)
         new_faces[fi, :] = (i0, m0, m2)
         new_faces[fi + 1] = (i1, m0, m1)
         new_faces[fi + 2] = (i2, m1, m2)
@@ -1358,7 +1366,6 @@ def _subdivide(verts, faces, vi, cache):
         m2, vi = _get_midpoint_index(i2, i0, verts, cache, vi)
 
         # set new face indices
-        m0, m1, m2 = uint32(m0), uint32(m1), uint32(m2)
         new_faces[fi, :] = (i0, m0, m2)
         new_faces[fi + 1] = (i1, m0, m1)
         new_faces[fi + 2] = (i2, m1, m2)
@@ -1369,9 +1376,9 @@ def _subdivide(verts, faces, vi, cache):
 
 
 @njit
-def icosphere(subdivisions, r, dtype=float32, normalize_once=False):
+def icosphere(subdivisions, r=1.0, dtype=float32, normalize_once=False):
     """
-    Generate an icosphere using subdivisions=subdivisions, with raidius r.
+    Generate an icosphere using subdivisions=subdivisions, with radius r.
     If normalize_once is True, normalizing to the surface of the sphere will
     only happen at the very end, if not, normalization happens at every
     level of subdivision. The former is faster, the latter will produce
@@ -1424,6 +1431,7 @@ def icosphere(subdivisions, r, dtype=float32, normalize_once=False):
         float32,
     )
 
+    r = float32(r)
     # normalize the vertices to lie on the sphere of radius r
     verts0 = _normalize_batch(verts0, r=r)
 
@@ -1466,11 +1474,14 @@ def icosphere(subdivisions, r, dtype=float32, normalize_once=False):
             faces, vi = _subdivide(verts, faces, vi, cache)
 
         verts = _normalize_batch(verts, r=r, dtype=dtype)
+
+        return verts, faces
+
     else:
         for _ in range(subdivisions):
             faces, vi = _subdivide_normalize(verts, faces, vi, cache, r)
 
-    return verts, faces
+        return verts.astype(dtype), faces
 
 
 @njit
@@ -1993,6 +2004,11 @@ def interpolate_mask_mesh(mask, xp, yp, mesh, convert=True, r=6371.0, wrap_x=Tru
     convert : bool, optional
         boolean determining if the points need to be converted from xyz to
         lon lat. The default is True.
+    r : float, optional
+        radius of sphere if mesh is defined on sphere. The default is 6371.0.
+    wrap_x : bool, optional
+        flag that determines if data is periodic in x, for data defined on
+        the sphere, this should be set to True. The default is True.
 
     Returns
     -------
@@ -2053,7 +2069,7 @@ def binary_mask_dilation_mesh(mask, neighbors, first_points=12, less_neighbors=1
     ----------
     mask : np.ndarray, shape=(npts,)
         boolean mask.
-    neighbors, np.ndarray, shape=(npts, n)
+    neighbors : np.ndarray, shape=(npts, n)
         array containing neighbors for each vertex.
     first_points : int, optional
         determines how many points will be checked using n - less_neighbors
@@ -2116,11 +2132,13 @@ def icosphere_and_displacements(subdivisions, r=6371.0, normalize_once=False, ma
         only happen at the very end, if not, normalization happens at every
         level of subdivision. The former is faster, the latter will produce
         more evenly spaced points. The default is False.
-    grid_mask : None or np.ndarray, shape = (nx, ny), optional
-        for masked data, pass in a boolean mask corresponding to nan values
-        (True indicates a nan value). If grid_mask is not None, a mesh_mask
-        and dilated version will be returned. Pass these into flowmap_pts and
-        the ftle_icosphere() function respectively. The default is None.
+    mask_data : None or tuple, optional
+        for masked data, pass in a tuple containing, pass in a boolean mask
+        corresponding to nan values (True indicates a nan value) and the lon, lat,
+        grid values which that mask was defined onn If mask_data is not None,
+        a mesh_mask and dilated version will be returned. Pass these into
+        flowmap_ND() and the ftle_icosphere() function respectively.
+        The default is None.
 
     Returns
     -------
@@ -2130,9 +2148,12 @@ def icosphere_and_displacements(subdivisions, r=6371.0, normalize_once=False, ma
         array containing indices of neighbors for each mesh point.
     X : np.ndarray, shape=(10 * 4**subdivisions + 2, 2, 6)
         array containing displacements for the neighbors of each mesh point.
-    masks : tuple, optional
-        if mask is not None, a dilated mask will be returned, which can be
-        passed into ftle_icosphere() to avoid erroneous computations at
+    mesh_mask : np.ndarray, shape=(len(verts),), optional
+        if mask is not None, a mask interpolated onto the mesh will be returned
+        that can be passed into the flowmap_ND() function.
+    dilated_mask : np.ndarray, shape=(len(verts),), optional
+        if mask is not None, a dilated version of mesh_mask will be returned, which
+        can be passed into ftle_icosphere() to avoid erroneous computations at
         mask boundaries.
 
     """
@@ -2159,7 +2180,6 @@ def icosphere_and_displacements(subdivisions, r=6371.0, normalize_once=False, ma
 
         # dilate mask to avoid erroneous computations, will be returned
         dilated_mask = binary_mask_dilation_mesh(mask, neighbors)
-        # dilated_mask = mask
 
         # compute displacements of each mesh point and its neighbors
         X = displacements_proj_ico(verts, e1, e2, neighbors, mask=dilated_mask)
