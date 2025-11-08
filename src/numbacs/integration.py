@@ -5,7 +5,7 @@ from interpolation.splines import eval_linear, extrap_options as xto
 
 
 @njit(parallel=True)
-def flowmap_ND(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
+def flowmap(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
     """
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
     created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
@@ -36,12 +36,12 @@ def flowmap_ND(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (npts, N)
+    flowmap_ :np.ndarray, shape = (npts, N)
         array containing final position of particles pts after integration from [t0,t0+T].
 
     """
     npts, N = pts.shape
-    flowmap = np.zeros((npts, N), float64)
+    flowmap_ = np.zeros((npts, N), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, 2)
     if method.lower() == "dop853":
         for i in prange(npts):
@@ -49,27 +49,25 @@ def flowmap_ND(funcptr, t0, T, pts, params, method="dop853", rtol=1e-6, atol=1e-
                 flowmap_tmp, success = dop853(
                     funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
                 )
-                flowmap[i, :] = flowmap_tmp[-1, :]
+                flowmap_[i, :] = flowmap_tmp[-1, :]
     elif method.lower() == "lsoda":
         for i in prange(npts):
             if mask is None or not mask[i]:
                 flowmap_tmp, success = lsoda(
                     funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
                 )
-                flowmap[i, :] = flowmap_tmp[-1, :]
+                flowmap_[i, :] = flowmap_tmp[-1, :]
 
-    return flowmap
+    return flowmap_
 
 
 @njit(parallel=True)
-def flowmap_n_ND(
-    funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol=1e-8, mask=None
-):
+def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol=1e-8, mask=None):
     """
     Computes the flow map of the ode defined by funcptr where funcptr is a pointer to a C callback
     created within numbalsoda using the ``@cfunc`` decorator. Flow map is computed from initial
     conditions given by pts where pts has dim (npts, N). t0 denotes initial time and T denotes
-    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).
+    integration time, flowmap_is returned at n times in [t0,t0+T] (inclusive).
 
     Parameters
     ----------
@@ -86,7 +84,7 @@ def flowmap_n_ND(
     method : str, optional
         method to be used by numbalsoda to solve ode. The default is 'dop853'.
     n : int, optional
-        number of points to return the flowmap at (including initial condition). The default is 2.
+        number of points to return the flowmap_at (including initial condition). The default is 2.
     rtol : float, optional
         relative tolerance for ode solver. The default is 1e-6.
     atol : float, optional
@@ -94,15 +92,15 @@ def flowmap_n_ND(
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (npts, n, N)
+    flowmap_ :np.ndarray, shape = (npts, n, N)
         array containing n positions of particles pts after integration from [t0,t0+T].
     t_eval : np.ndarray, shape = (n,)
-        array containing times the flowmap is returned at.
+        array containing times the flowmap_is returned at.
 
     """
 
     npts, N = pts.shape
-    flowmap = np.zeros((npts, n, N), float64)
+    flowmap_ = np.zeros((npts, n, N), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, n)
     if method.lower() == "dop853":
         for i in prange(pts.shape[0]):
@@ -110,20 +108,22 @@ def flowmap_n_ND(
                 flowmap_tmp, success = dop853(
                     funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
                 )
-                flowmap[i, :, :] = flowmap_tmp
+                flowmap_[i, :, :] = flowmap_tmp
     elif method.lower() == "lsoda":
         for i in prange(pts.shape[0]):
             if mask is None or not mask[i]:
                 flowmap_tmp, success = lsoda(
                     funcptr, pts[i, :], t_eval, rtol=rtol, atol=atol, data=params
                 )
-                flowmap[i, :, :] = flowmap_tmp
+                flowmap_[i, :, :] = flowmap_tmp
 
-    return flowmap, params[0] * t_eval
+    return flowmap_, params[0] * t_eval
 
 
 @njit(parallel=True)
-def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
+def flowmap_grid_2D(
+    funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None
+):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is a
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
@@ -156,13 +156,13 @@ def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, at
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (nx,ny,2)
+    flowmap_ :np.ndarray, shape = (nx,ny,2)
         array containing final positions of particles pts after integration from [t0,t0+T].
 
     """
 
     nx, ny = len(x), len(y)
-    flowmap = np.zeros((nx, ny, 2), float64)
+    flowmap_ = np.zeros((nx, ny, 2), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, 2)
     if method.lower() == "dop853":
         for i in prange(nx):
@@ -171,7 +171,7 @@ def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, at
                     flowmap_tmp, success = dop853(
                         funcptr, np.array([x[i], y[j]]), t_eval, rtol=rtol, atol=atol, data=params
                     )
-                    flowmap[i, j, :] = flowmap_tmp[-1, :]
+                    flowmap_[i, j, :] = flowmap_tmp[-1, :]
     elif method.lower() == "lsoda":
         for i in prange(nx):
             for j in range(ny):
@@ -179,9 +179,9 @@ def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, at
                     flowmap_tmp, success = lsoda(
                         funcptr, np.array([x[i], y[j]]), t_eval, rtol=rtol, atol=atol, data=params
                     )
-                    flowmap[i, j, :] = flowmap_tmp[-1, :]
+                    flowmap_[i, j, :] = flowmap_tmp[-1, :]
 
-    return flowmap
+    return flowmap_
 
 
 @njit(parallel=True)
@@ -215,12 +215,12 @@ def flowmap_grid_ND(funcptr, t0, T, IC_flat, ndims, params, method="dop853", rto
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,ndims)
+    flowmap_ :np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,ndims)
         array containing final positions of particles IC_flat after integration from [t0,t0+T].
 
     """
     npts = int(len(IC_flat) / ndims)
-    flowmap = np.zeros((npts, ndims), float64)
+    flowmap_ = np.zeros((npts, ndims), float64)
     t_eval = params[0] * np.linspace(t0, t0 + T, 2)
     if method.lower() == "dop853":
         for k in prange(npts):
@@ -232,7 +232,7 @@ def flowmap_grid_ND(funcptr, t0, T, IC_flat, ndims, params, method="dop853", rto
                 atol=atol,
                 data=params,
             )
-            flowmap[k, :] = flowmap_tmp[-1, :]
+            flowmap_[k, :] = flowmap_tmp[-1, :]
     elif method.lower() == "lsoda":
         for k in prange(npts):
             flowmap_tmp, success = lsoda(
@@ -243,9 +243,9 @@ def flowmap_grid_ND(funcptr, t0, T, IC_flat, ndims, params, method="dop853", rto
                 atol=atol,
                 data=params,
             )
-            flowmap[k, :] = flowmap_tmp[-1, :]
+            flowmap_[k, :] = flowmap_tmp[-1, :]
 
-    return flowmap
+    return flowmap_
 
 
 @njit(parallel=True)
@@ -474,7 +474,7 @@ def flowmap_n_grid_2D(
     Computes the flow map of the ode defined by funcptr where funcptr is a
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by x,y. t0 denotes initial time and T denotes
-    integration time, flowmap is returned at n times in [t0,t0+T] (inclusive).
+    integration time, flowmap_is returned at n times in [t0,t0+T] (inclusive).
 
     Parameters
     ----------
@@ -492,7 +492,7 @@ def flowmap_n_grid_2D(
         array of parameters to be passed to the ode function defined by funcptr.
         DESCRIPTION.
     n : int, optional
-        number of points to return the flowmap at. The default is 50.
+        number of points to return the flowmap_at. The default is 50.
     method : str, optional
         method to be used by numbalsoda to solve ode. The default is 'dop853'.
     rtol : float, optional
@@ -505,16 +505,16 @@ def flowmap_n_grid_2D(
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (nx,ny,n,2)
+    flowmap_ :np.ndarray, shape = (nx,ny,n,2)
         array containing n positions of particles after integration from [t0,t0+T].
     np.ndarray, shape = (n,)
-        array containing t-values at which flowmap is being returned.
+        array containing t-values at which flowmap_is being returned.
 
     """
 
     nx, ny = len(x), len(y)
     t_eval = params[0] * np.linspace(t0, t0 + T, n)
-    flowmap = np.zeros((nx, ny, n, 2), float64)
+    flowmap_ = np.zeros((nx, ny, n, 2), float64)
     if method.lower() == "dop853":
         for i in prange(nx):
             for j in range(ny):
@@ -522,7 +522,7 @@ def flowmap_n_grid_2D(
                     flowmap_tmp, success = dop853(
                         funcptr, np.array([x[i], y[j]]), t_eval, rtol=rtol, atol=atol, data=params
                     )
-                    flowmap[i, j, :, :] = flowmap_tmp
+                    flowmap_[i, j, :, :] = flowmap_tmp
     elif method.lower() == "lsoda":
         for i in prange(nx):
             for j in range(ny):
@@ -530,9 +530,9 @@ def flowmap_n_grid_2D(
                     flowmap_tmp, success = lsoda(
                         funcptr, np.array([x[i], y[j]]), t_eval, rtol=rtol, atol=atol, data=params
                     )
-                    flowmap[i, j, :, :] = flowmap_tmp
+                    flowmap_[i, j, :, :] = flowmap_tmp
 
-    return flowmap, params[0] * t_eval
+    return flowmap_, params[0] * t_eval
 
 
 @njit(parallel=True)
@@ -544,7 +544,7 @@ def flowmap_n_grid_ND(
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
     computed over the grid defined by IC_flat where IC_flat has shape
     (nx_1*nx_2*...*nx_ndims*ndims). t0 denotes initial time and T denotes integration time,
-    flowmap is returned at n times in [t0,t0+T] (inclusive).
+    flowmap_is returned at n times in [t0,t0+T] (inclusive).
 
 
     Parameters
@@ -562,7 +562,7 @@ def flowmap_n_grid_ND(
     params : np.ndarray, shape = (nprms,)
         array of parameters to be passed to the ode function defined by funcptr.
     n : int, optional
-        number of points to return the flowmap at. The default is 50.
+        number of points to return the flowmap_at. The default is 50.
     method : str, optional
         method to be used by numbalsoda to solve ode. The default is 'dop853'.
     rtol : float, optional
@@ -572,16 +572,16 @@ def flowmap_n_grid_ND(
 
     Returns
     -------
-    flowmap : np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,n,ndims)
+    flowmap_ :np.ndarray, shape = (nx_1*nx_2*...*nx_ndims,n,ndims)
         array containing n positions of particles after integration from [t0,t0+T].
     np.ndarray, shape = (n,)
-        array containing t-values at which flowmap is being returned.
+        array containing t-values at which flowmap_is being returned.
 
     """
 
     t_eval = params[0] * np.linspace(t0, t0 + T, n)
     npts = int(len(IC_flat) / ndims)
-    flowmap = np.zeros((npts, n, ndims), float64)
+    flowmap_ = np.zeros((npts, n, ndims), float64)
     if method.lower() == "dop853":
         for k in prange(npts):
             flowmap_tmp, success = dop853(
@@ -592,7 +592,7 @@ def flowmap_n_grid_ND(
                 atol=atol,
                 data=params,
             )
-            flowmap[k, :, :] = flowmap_tmp
+            flowmap_[k, :, :] = flowmap_tmp
     elif method.lower() == "lsoda":
         for k in prange(npts):
             flowmap_tmp, success = lsoda(
@@ -603,14 +603,14 @@ def flowmap_n_grid_ND(
                 atol=atol,
                 data=params,
             )
-            flowmap[k, :, :] = flowmap_tmp
+            flowmap_[k, :, :] = flowmap_tmp
 
-    return flowmap, params[0] * t_eval
+    return flowmap_, params[0] * t_eval
 
 
 def flowmap_composition(flowmaps, grid, nT):
     """
-    Interpolation for flowmap composition method. Returns composed flowmap from
+    Interpolation for flowmap_composition method. Returns composed flowmap_from
     intermediate flowmaps.
 
     Parameters
@@ -624,8 +624,8 @@ def flowmap_composition(flowmaps, grid, nT):
 
     Returns
     -------
-    composed_flowmap : np.ndarray, shape = (nx,ny,2)
-        composed flowmap from t0 to t0 + T.
+    composed_flowmap_ :np.ndarray, shape = (nx,ny,2)
+        composed flowmap_from t0 to t0 + T.
 
     """
     nx, ny = grid[0][2], grid[1][2]
@@ -636,19 +636,19 @@ def flowmap_composition(flowmaps, grid, nT):
         fy = eval_linear(grid, flowmaps[k, :, :, 1], pts, xto.CONSTANT)
         pts = np.column_stack((fx, fy))
 
-    composed_flowmap[:, :, 0] = eval_linear(grid, flowmaps[-1, :, :, 0], pts, xto.CONSTANT).reshape(
-        nx, ny
-    )
-    composed_flowmap[:, :, 1] = eval_linear(grid, flowmaps[-1, :, :, 1], pts, xto.CONSTANT).reshape(
-        nx, ny
-    )
+    composed_flowmap[:, :, 0] = eval_linear(
+        grid, flowmaps[-1, :, :, 0], pts, xto.CONSTANT
+    ).reshape(nx, ny)
+    composed_flowmap[:, :, 1] = eval_linear(
+        grid, flowmaps[-1, :, :, 1], pts, xto.CONSTANT
+    ).reshape(nx, ny)
 
     return composed_flowmap
 
 
 def flowmap_composition_initial(funcptr, t0, T, h, x, y, grid, params, **kwargs):
     """
-    Initial step for flowmap composition method. Returns first full flowmap
+    Initial step for flowmap_composition method. Returns first full flowmap
     and collection of intermediate flowmaps to be used in successive steps.
 
     Parameters
@@ -660,7 +660,7 @@ def flowmap_composition_initial(funcptr, t0, T, h, x, y, grid, params, **kwargs)
     T : float
         overall integration time.
     h : float
-        integration time for each flowmap composition. T/h should be an integer or
+        integration time for each flowmap_composition. T/h should be an integer or
         the results will be incorrect.
     x : np.ndarray, shape = (nx,)
         array containing x-values.
@@ -676,7 +676,7 @@ def flowmap_composition_initial(funcptr, t0, T, h, x, y, grid, params, **kwargs)
     Returns
     -------
     flowmap0 : np.ndarray, shape = (nx,ny,2)
-        flowmap from t0 to t0 + T.
+        flowmap_from t0 to t0 + T.
     flowmaps : np.ndarray, shape = (nT,nx,ny,2)
         flowmaps for each (k+1)*t0 to (k+1)*t0+h for k in {0,...,nT-1}.
     nT : int
@@ -696,7 +696,7 @@ def flowmap_composition_initial(funcptr, t0, T, h, x, y, grid, params, **kwargs)
 
 def flowmap_composition_step(flowmaps, funcptr, t0, h, nT, x, y, grid, params, **kwargs):
     """
-    Step for flowmap composition method. Returns full flowmap at current step
+    Step for flowmap_composition method. Returns full flowmap_at current step
     and collection of intermediate flowmaps to be used in successive steps.
 
     Parameters
@@ -708,7 +708,7 @@ def flowmap_composition_step(flowmaps, funcptr, t0, h, nT, x, y, grid, params, *
     t0 : float
         intial time.
     h : float
-        integration time for each flowmap composition. T/h should be an integer or
+        integration time for each flowmap_composition. T/h should be an integer or
         the results will be incorrect.
     nT : int
         number of intermediate flowmaps.
@@ -726,7 +726,7 @@ def flowmap_composition_step(flowmaps, funcptr, t0, h, nT, x, y, grid, params, *
     Returns
     -------
     flowmap_k : np.ndarray, shape = (nx,ny,2)
-        composed flowmap from t0 to t0 + T.
+        composed flowmap_from t0 to t0 + T.
     flowmaps : np.ndarray, shape = (nT,nx,ny,2)
         flowmaps for each (k+1)*t0 to (k+1)*t0+h for k in {1,...,nT}.
 

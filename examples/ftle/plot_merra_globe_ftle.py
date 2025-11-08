@@ -12,7 +12,7 @@ surfaces ranging from 500hPa to 800hPa.
 from math import copysign
 import numpy as np
 from numbacs.flows import get_globe_flow
-from numbacs.integration import flowmap_ND
+from numbacs.integration import flowmap
 from numbacs.diagnostics import ftle_icosphere
 from numbacs.utils import convert_vel_to_3D, icosphere_and_displacements, lonlat2xyz
 # %%
@@ -69,7 +69,7 @@ rtol = 1e-3
 atol = 1e-5
 
 # compute flowmap for icosphere mesh
-flowmap_ico = flowmap_ND(funcptr, t0, T, mesh_points, params, rtol=rtol, atol=atol)
+flowmap_ico = flowmap(funcptr, t0, T, mesh_points, params, rtol=rtol, atol=atol)
 
 # %%
 # FTLE

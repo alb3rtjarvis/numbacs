@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from interpolation.splines import UCGrid
 from numbacs.flows import get_predefined_flow
-from numbacs.integration import (flowmap_ND, flowmap_n_ND,
+from numbacs.integration import (flowmap, flowmap_n,
                                  flowmap_grid_2D,
                                  flowmap_n_grid_2D,
                                  flowmap_aux_grid_2D,
@@ -35,17 +35,17 @@ def apply_mask(arr, mask):
 
     return arr_masked
 
-def test_flowmap_ND(pts_dg, fm_data):
+def test_flowmap(pts_dg, fm_data):
 
-    fm = flowmap_ND(funcptr, t0, T, pts_dg, params).reshape(nx,ny,2).astype(np.float32)
+    fm = flowmap(funcptr, t0, T, pts_dg, params).reshape(nx,ny,2).astype(np.float32)
 
     assert np.allclose(fm,fm_data)
 
 
-def test_flowmap_n_ND(pts_dg, fm_n_data):
+def test_flowmap_n(pts_dg, fm_n_data):
 
     t_eval_expected = params[0]*np.linspace(t0,t0+T,n)
-    fm_n, t_eval = flowmap_n_ND(funcptr, t0, T, pts_dg, params, n = 4)
+    fm_n, t_eval = flowmap_n(funcptr, t0, T, pts_dg, params, n = 4)
     fm_n = fm_n.reshape(nx,ny,n,2).astype(np.float32)
 
     assert np.allclose(t_eval_expected,t_eval)
