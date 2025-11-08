@@ -18,3 +18,4 @@ dependencies:
   - pip:
     - sphinx_gallery
     - sphinx-autoapi
+    - matplotlib
