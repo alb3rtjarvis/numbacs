@@ -16,6 +16,10 @@ import inspect
 import importlib
 sys.path.insert(0, os.path.abspath('../../src'))
 
+import pyvista
+pyvista.OFF_SCREEN = True
+pyvista.BUILDING_GALLERY = True
+
 
 # -- Project information -----------------------------------------------------
 
@@ -61,6 +65,7 @@ sphinx_gallery_conf = {
      'nested_sections': False,
      'within_subsection_order': "FileNameSortKey",
      'matplotlib_animations': True,
+     'image_scrapers': ('matplotlib', 'pyvista'),
 }
 
 # Add any paths that contain templates here, relative to this directory.
