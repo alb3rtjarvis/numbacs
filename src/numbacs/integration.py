@@ -121,9 +121,7 @@ def flowmap_n(funcptr, t0, T, pts, params, method="dop853", n=2, rtol=1e-6, atol
 
 
 @njit(parallel=True)
-def flowmap_grid_2D(
-    funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None
-):
+def flowmap_grid_2D(funcptr, t0, T, x, y, params, method="dop853", rtol=1e-6, atol=1e-8, mask=None):
     """
     Computes the flow map at the final time of the ode defined by funcptr where funcptr is a
     pointer to a C callback created within numba using the ``@cfunc`` decorator. Flow map is
@@ -636,12 +634,12 @@ def flowmap_composition(flowmaps, grid, nT):
         fy = eval_linear(grid, flowmaps[k, :, :, 1], pts, xto.CONSTANT)
         pts = np.column_stack((fx, fy))
 
-    composed_flowmap[:, :, 0] = eval_linear(
-        grid, flowmaps[-1, :, :, 0], pts, xto.CONSTANT
-    ).reshape(nx, ny)
-    composed_flowmap[:, :, 1] = eval_linear(
-        grid, flowmaps[-1, :, :, 1], pts, xto.CONSTANT
-    ).reshape(nx, ny)
+    composed_flowmap[:, :, 0] = eval_linear(grid, flowmaps[-1, :, :, 0], pts, xto.CONSTANT).reshape(
+        nx, ny
+    )
+    composed_flowmap[:, :, 1] = eval_linear(grid, flowmaps[-1, :, :, 1], pts, xto.CONSTANT).reshape(
+        nx, ny
+    )
 
     return composed_flowmap
 
