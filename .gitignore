@@ -74,6 +74,7 @@ instance/
 # requirements.txt
 # examples/data/
 docs/build/
+examples/data/copernicus
 
 # PyBuilder
 .pybuilder/
