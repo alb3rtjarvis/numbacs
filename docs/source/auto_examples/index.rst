@@ -209,6 +209,23 @@ This gallery contains examples for FTLE fields and FTLE ridges.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Compute the FTLE field over the entire globe for ocean flow at time of using Copernicus reanalysis data.">
+
+.. only:: html
+
+  .. image:: /auto_examples/ftle/images/thumb/sphx_glr_plot_copernicus_globe_ftle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_ftle_plot_copernicus_globe_ftle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Copernicus Globe FTLE</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Compute the FTLE field for the double gyre.">
 
 .. only:: html
@@ -277,6 +294,23 @@ This gallery contains examples for FTLE fields and FTLE ridges.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Compute the FTLE field over the entire globe for atmospheric flow at time of Godzilla dust storm using MERRA-2 data which is vertically averaged over pressure surfaces ranging from 500hPa to 800hPa.">
+
+.. only:: html
+
+  .. image:: /auto_examples/ftle/images/thumb/sphx_glr_plot_merra_globe_ftle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_ftle_plot_merra_globe_ftle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">MERRA-2 Globe FTLE</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Compute the FTLE field for the QGE.">
 
 .. only:: html
@@ -321,10 +355,12 @@ This gallery contains examples for FTLE fields and FTLE ridges.
 
    /auto_examples/ftle/plot_bickley_ftle
    /auto_examples/ftle/plot_bickley_ftle_ridges
+   /auto_examples/ftle/plot_copernicus_globe_ftle
    /auto_examples/ftle/plot_dg_ftle
    /auto_examples/ftle/plot_dg_ftle_ridges
    /auto_examples/ftle/plot_merra_ftle
    /auto_examples/ftle/plot_merra_ftle_ridges
+   /auto_examples/ftle/plot_merra_globe_ftle
    /auto_examples/ftle/plot_qge_ftle
    /auto_examples/ftle/plot_qge_ftle_ridges
 

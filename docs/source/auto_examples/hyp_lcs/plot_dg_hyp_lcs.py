@@ -74,7 +74,7 @@ dtol = 1e-1
 nlines = 10
 percentile = 40
 ep_dist_tol = 1e-2
-lambda_avg_min = 600
+lambda_avg_min = 580
 arclen_flag = True
 
 # extract hyperbolic lcs

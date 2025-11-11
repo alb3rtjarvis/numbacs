@@ -66,7 +66,6 @@ sphinx_gallery_conf = {
      'within_subsection_order': "FileNameSortKey",
      'matplotlib_animations': True,
      'image_scrapers': ('matplotlib', 'pyvista'),
-     'filename_pattern': r'/dg_ftle\.py',
 }
 
 # Add any paths that contain templates here, relative to this directory.

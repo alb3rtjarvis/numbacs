@@ -148,7 +148,7 @@ Compute hyperbolic LCS using the variational theory.
     nlines = 10
     percentile = 40
     ep_dist_tol = 1e-2
-    lambda_avg_min = 600
+    lambda_avg_min = 580
     arclen_flag = True
 
     # extract hyperbolic lcs
@@ -209,7 +209,7 @@ Plot the results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 29.687 seconds)
+   **Total running time of the script:** (0 minutes 23.163 seconds)
 
 
 .. _sphx_glr_download_auto_examples_hyp_lcs_plot_dg_hyp_lcs.py:
