@@ -19,3 +19,5 @@ dependencies:
     - sphinx_gallery
     - sphinx-autoapi
     - matplotlib
+    - pyvista
+    - vedo
