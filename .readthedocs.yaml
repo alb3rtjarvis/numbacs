@@ -14,6 +14,7 @@ build:
   tools:
     python: "miniconda3-3.12-24.1"
   jobs:
+    # Get auto-examples for build
     pre_build:
       - git clone --depth=1 https://github.com/alb3rtjarvis/numbacs-docs-artifacts.git tmp-artifacts
       - mv tmp-artifacts/auto_examples docs/source/auto_examples
