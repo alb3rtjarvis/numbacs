@@ -58,9 +58,11 @@ cd numbacs
 ```
 
 ---
+
 :warning: **Repository history notice**
 
 On **November 18, 2025**, this repository's history was rewritten to reduce its clone size. If you cloned or forked this repository before this date, the simplest way to update is to **delete your old fork/clone and create a fresh one**. For more details, please see [Issue #XX]().
+
 ---
 
 Create a conda environment with the necessary dependencies (requires conda):
