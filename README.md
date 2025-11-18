@@ -27,20 +27,68 @@ NumbaCS currently implements the following features:
 
 ## Installation
 
-Conda:
-```
+### Conda:
+```bash
 conda install -c conda-forge numbacs
 ```
-Pip:
-```
+### Pip:
+```bash
 pip install numbacs
 ```
 
-**_NOTE:_** It is strongly recommended to use conda for installation
+**_NOTE:_** It is generally recommended to use conda for installation
 due to some reported issues when using pip for one of the dependencies
 (see issues [#20](https://github.com/Nicholaswogan/numbalsoda/issues/20)
 and [#29](https://github.com/Nicholaswogan/numbalsoda/issues/29)  of the
 numbalsoda package -- these seem to primarily affect Windows installations).
+
+### Installing from source
+If you want to install the latest development version or contribute to the project, you can install from source.
+
+First, clone the repository:
+```bash
+# for SSH
+git clone git@github.com:alb3rtjarvis/numbacs.git
+
+# or for HTTPS
+git clone https://github.com/alb3rtjarvis/numbacs.git
+
+# cd into the directory
+cd numbacs
+```
+
+---
+:warning: **Repository history notice**
+
+On **November 18, 2025**, this repository's history was rewritten to reduce its clone size. If you cloned or forked this repository before this date, the simplest way to update is to **delete your old fork/clone and create a fresh one**. For more details, please see [Issue #XX]().
+---
+
+Create a conda environment with the necessary dependencies (requires conda):
+```bash
+# create conda env
+conda env create -f environment-dev.yml
+
+# activate the env
+conda activate numbacs-dev
+```
+
+Then, install the package:
+```bash
+# for normal installation
+pip install .
+
+# or, for editable installation (for development/contributions)
+pip install -e .
+```
+
+Optionally, if you want to run certain examples that use numerical velocity data, you will need to retrieve the data. The data can be obtained from the [numbacs-data](https://github.com/alb3rtjarvis/numbacs-data) repository:
+```bash
+# get the data dirs and put them in the correct place for examples
+git clone --depth=1 https://github.com/alb3rtjarvis/numbacs-data.git examples/data
+
+# delete the corresponding .git to be safe
+rm -rf examples/data/.git
+```
 
 ## Basic usage
 
