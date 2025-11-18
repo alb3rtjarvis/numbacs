@@ -51,7 +51,7 @@ funcptr = get_globe_flow(t, lon_rad, lat_rad, vx, vy, vz)
 
 # %%
 # Create mesh on icosphere
-# --------------
+# -------------------------
 # Generate mesh on icosphere, find neighbors of each vertex, and compute
 # displacements for each neighbor, Generally subdivides between 7 - 9 will
 # be sufficient. 7 will be fastest but least accurate (166,382 intial conditions),

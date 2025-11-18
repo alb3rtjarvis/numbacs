@@ -58,7 +58,7 @@ funcptr = get_globe_flow(t, lon_rad, lat_rad, vx, vy, vz, pole="north")
 
 # %%
 # Create mesh on icosphere
-# --------------
+# -------------------------
 # Generate mesh on icosphere, find neighbors of each vertex, compute
 # displacements for each neighbor, and get masks for mesh.
 # Generally subdivides between 7 - 9 will
