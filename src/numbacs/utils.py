@@ -1733,9 +1733,9 @@ def xyz2lonlat(points, r, return_array=False):
         tuple or array containing lon-lat coords of points.
 
     """
-    lon_rad = np.arctan2(points[:, 1], points[:, 0])
+    lon_rad = np.arctan2(points[..., 1], points[..., 0])
 
-    z_ratio = points[:, 2] / r
+    z_ratio = points[..., 2] / r
 
     z_ratio[z_ratio > 1.0] = 1.0
     z_ratio[z_ratio < -1.0] = -1.0
