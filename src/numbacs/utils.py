@@ -190,6 +190,29 @@ def eigvalsh_max_2D(A):
 
 
 @njit(inline="always")
+def eigvalsh_max_2D_direct(a, b, d):
+    """
+    Computes the maximum eigenvalue for a Hermetian 2x2 array A.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape = (2, 2)
+        Hermetian 2x2 array.
+
+    Returns
+    -------
+    float
+        maximum eigenvalue of A.
+
+    """
+
+    trace = a + d
+    discriminant = sqrt((a - d) ** 2 + 4 * (b**2))
+
+    return 0.5 * (trace + discriminant)
+
+
+@njit(inline="always")
 def inv_2D(A):
     """
     Computes the inverse of a 2x2 array A.
@@ -1549,7 +1572,6 @@ def convert_vel_to_3D(u, v, lon, lat, deg2rad=False, pole="both"):
         velocity in the z direction.
 
     """
-    nt, nlon, nlat = u.shape
     if deg2rad:
         lon = np.deg2rad(lon)
         lat = np.deg2rad(lat)
@@ -1568,14 +1590,14 @@ def convert_vel_to_3D(u, v, lon, lat, deg2rad=False, pole="both"):
     # average all velocity vectors at the poles, if poles are included
     pole = pole.lower()
     if pole == "both" or pole == "south":
-        vx[:, :, 0] = np.mean(vx[:, :, 0], axis=1, keepdims=True)
-        vy[:, :, 0] = np.mean(vy[:, :, 0], axis=1, keepdims=True)
-        vz[:, :, 0] = np.mean(vz[:, :, 0], axis=1, keepdims=True)
+        vx[..., 0] = np.mean(vx[..., 0], axis=-1, keepdims=True)
+        vy[..., 0] = np.mean(vy[..., 0], axis=-1, keepdims=True)
+        vz[..., 0] = np.mean(vz[..., 0], axis=-1, keepdims=True)
 
     if pole == "both" or pole == "north":
-        vx[:, :, -1] = np.mean(vx[:, :, -1], axis=1, keepdims=True)
-        vy[:, :, -1] = np.mean(vy[:, :, -1], axis=1, keepdims=True)
-        vz[:, :, -1] = np.mean(vz[:, :, -1], axis=1, keepdims=True)
+        vx[..., -1] = np.mean(vx[..., -1], axis=-1, keepdims=True)
+        vy[..., -1] = np.mean(vy[..., -1], axis=-1, keepdims=True)
+        vz[..., -1] = np.mean(vz[..., -1], axis=-1, keepdims=True)
 
     return (vx, vy, vz)
 
