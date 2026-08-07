@@ -1,5 +1,13 @@
 # Releases
 
+## 0.2.0
+*August 7 2026*
+
+* Added global, singularity-free FTLE calculations on icosphere meshes using a least-squares approximation based on Lekien and Ross (2010)
+* Added masked support for most integration and diagnostic methods
+* Implemented a number of performance optimizations
+* Minor bug fixes
+
 ## 0.1.2
 *August 16 2025*
 
