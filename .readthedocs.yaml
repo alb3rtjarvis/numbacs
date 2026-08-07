@@ -10,7 +10,7 @@ conda:
 
 # Set the OS, Python version and other tools you might need
 build:
-  os: ubuntu-20.04
+  os: ubuntu-lts-latest
   tools:
     python: "miniconda3-3.12-24.1"
   jobs:
