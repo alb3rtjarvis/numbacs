@@ -10,9 +10,9 @@ conda:
 
 # Set the OS, Python version and other tools you might need
 build:
-  os: ubuntu-lts-latest
+  os: ubuntu-24.04
   tools:
-    python: "miniconda3-3.12-24.1"
+    python: "miniconda3-3.12-24.9"
   jobs:
     # Get auto-examples for build
     pre_build:
