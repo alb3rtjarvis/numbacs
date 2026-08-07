@@ -7,13 +7,18 @@ from numbacs.diagnostics import (
     C_eig_aux_2D,
     C_eig_2D,
     lavd_grid_2D,
+    displacement_array_proj,
+    ftle_grid_S2,
+    ftle_icosphere,
     ile_2D_func,
     S_eig_2D_func,
     S_2D_func,
     ile_2D_data,
     S_eig_2D_data,
-    ivd_grid_2D
+    ivd_grid_2D,
 )
+from numbacs.utils import icosphere_and_displacements
+
 
 def reconstruct_matrix(eigvals, eigvecs):
     """
@@ -35,16 +40,17 @@ def reconstruct_matrix(eigvals, eigvecs):
 
     """
     eigvals_diag = np.zeros_like(eigvecs)
-    eigvals_diag[: ,: ,0, 0] = eigvals[:, :, 0]
+    eigvals_diag[:, :, 0, 0] = eigvals[:, :, 0]
     eigvals_diag[:, :, 1, 1] = eigvals[:, :, 1]
     Ar = np.einsum(
         "...ij,...jk,...kl->...il",
         eigvecs,
         eigvals_diag,
         np.transpose(eigvecs, (0, 1, 3, 2)),
-        out=np.zeros_like(eigvecs)
+        out=np.zeros_like(eigvecs),
     )
     return Ar
+
 
 def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     """
@@ -71,6 +77,7 @@ def evecs_allclose(evecs, evecs_expected, rtol=1e-5, atol=1e-8):
     else:
         return True, np.all(parallel | zero_mask)
 
+
 def apply_mask(arr, mask):
     """Apply a mask to arr and return 0.0 where mask is True"""
 
@@ -79,19 +86,18 @@ def apply_mask(arr, mask):
 
     return arr_masked
 
+
 def test_ftle_grid_2D(coords_dg, fm_data, ftle_data, mask_dg):
 
     x, y = coords_dg
     dx = x[1]
     dy = y[1]
-    T = 8.
+    T = 8.0
     ftle = ftle_grid_2D(fm_data, T, dx, dy).astype(np.float32)
 
     assert np.allclose(ftle, ftle_data)
 
-    ftle_masked = ftle_grid_2D(
-        fm_data, T, dx, dy, mask=mask_dg
-    ).astype(np.float32)
+    ftle_masked = ftle_grid_2D(fm_data, T, dx, dy, mask=mask_dg).astype(np.float32)
 
     assert np.allclose(ftle_masked, apply_mask(ftle_data, mask_dg))
 
@@ -109,6 +115,7 @@ def test_C_tensor_2D(coords_dg, fm_aux_data, C_data, mask_dg):
 
     assert np.allclose(C_masked, apply_mask(C_data, mask_dg))
 
+
 def test_C_eig_aux_2D(coords_dg, fm_aux_data, C_eig_aux_data, mask_dg):
 
     x, y = coords_dg
@@ -121,14 +128,11 @@ def test_C_eig_aux_2D(coords_dg, fm_aux_data, C_eig_aux_data, mask_dg):
 
     assert np.allclose(C, C_expected)
 
-    Cvals_masked, Cvecs_masked = C_eig_aux_2D(
-        fm_aux_data, dx, dy, mask=mask_dg
-    )
-    C_masked = reconstruct_matrix(
-        Cvals_masked.astype(np.float32), Cvecs_masked.astype(np.float32)
-    )
+    Cvals_masked, Cvecs_masked = C_eig_aux_2D(fm_aux_data, dx, dy, mask=mask_dg)
+    C_masked = reconstruct_matrix(Cvals_masked.astype(np.float32), Cvecs_masked.astype(np.float32))
 
     assert np.allclose(C_masked, apply_mask(C_expected, mask_dg))
+
 
 def test_C_eig_2D(coords_dg, fm_data, C_eig_data, mask_dg):
 
@@ -143,9 +147,7 @@ def test_C_eig_2D(coords_dg, fm_data, C_eig_data, mask_dg):
     assert np.allclose(C, C_expected)
 
     Cvals_masked, Cvecs_masked = C_eig_2D(fm_data, dx, dy, mask_dg)
-    C_masked = reconstruct_matrix(
-        Cvals_masked.astype(np.float32), Cvecs_masked.astype(np.float32)
-    )
+    C_masked = reconstruct_matrix(Cvals_masked.astype(np.float32), Cvecs_masked.astype(np.float32))
 
     assert np.allclose(C_masked, apply_mask(C_expected, mask_dg))
 
@@ -153,24 +155,50 @@ def test_C_eig_2D(coords_dg, fm_data, C_eig_data, mask_dg):
 def test_lavd_grid_2D(coords_dg, fm_n_data, vort_data, lavd_data, mask_dg):
 
     x, y = coords_dg
-    [X, Y] = np.meshgrid(x, y, indexing='ij')
+    [X, Y] = np.meshgrid(x, y, indexing="ij")
     xrav = X.ravel()
     yrav = Y.ravel()
-    T = 8.
-    tspan = np.linspace(0., 8., 4)
-    grid_vort = UCGrid((0., 8., 4),(0., 2., 21),(0., 1., 11))
+    T = 8.0
+    tspan = np.linspace(0.0, 8.0, 4)
+    grid_vort = UCGrid((0.0, 8.0, 4), (0.0, 2.0, 21), (0.0, 1.0, 11))
     vort_interp = get_callable_scalar_linear(grid_vort, vort_data)
-    lavd = lavd_grid_2D(
-        fm_n_data, tspan, T, vort_interp, xrav, yrav
-    ).astype(np.float32)
+    lavd = lavd_grid_2D(fm_n_data, tspan, T, vort_interp, xrav, yrav).astype(np.float32)
 
-    assert np.allclose(lavd,lavd_data)
+    assert np.allclose(lavd, lavd_data)
 
-    lavd_masked = lavd_grid_2D(
-        fm_n_data, tspan, T, vort_interp, xrav, yrav, mask=mask_dg
-    ).astype(np.float32)
+    lavd_masked = lavd_grid_2D(fm_n_data, tspan, T, vort_interp, xrav, yrav, mask=mask_dg).astype(
+        np.float32
+    )
 
     assert np.allclose(lavd_masked, apply_mask(lavd_data, mask_dg))
+
+
+def test_displacement_array_proj():
+
+    nx, ny = 4, 4
+    points = np.zeros((nx, ny, 3))
+    for i in range(nx):
+        for j in range(ny):
+            points[i, j] = [i, j, 0.0]
+
+    e1 = np.zeros((nx, ny, 2))
+    e1[..., 0] = 1.0
+    e2 = np.zeros((nx, ny, 2))
+    e2[..., 1] = 1.0
+
+    X_proj = displacement_array_proj(points, e1, e2, full=False)
+
+    assert np.allclose(X_proj[1, 1, :, 0], [1.0, 0.0])
+    assert np.allclose(X_proj[1, 1, :, 2], [0.0, 1.0])
+
+
+def test_ftle_icosphere(fm_ico_data, ftle_ico_data):
+
+    verts, neighbors, X = icosphere_and_displacements(subdivisions=1, r=6371.0)
+    T = -72.0
+
+    ftle_ico = ftle_icosphere(fm_ico_data, neighbors, X, T=T)
+    assert np.allclose(ftle_ico, ftle_ico_data)
 
 
 def test_ile_2D_func(coords_dg, flow_callable, ile_data, mask_dg):
@@ -178,23 +206,22 @@ def test_ile_2D_func(coords_dg, flow_callable, ile_data, mask_dg):
     vel_func = flow_callable
     x, y = coords_dg
     dx = x[1]
-    t0 = 0.
+    t0 = 0.0
 
     ile = ile_2D_func(vel_func, x, y, t0=t0, h=dx).astype(np.float32)
 
-    assert np.allclose(ile,ile_data)
+    assert np.allclose(ile, ile_data)
 
-    ile_masked = ile_2D_func(
-        vel_func, x, y, t0=t0, h=dx, mask=mask_dg
-    ).astype(np.float32)
+    ile_masked = ile_2D_func(vel_func, x, y, t0=t0, h=dx, mask=mask_dg).astype(np.float32)
 
     assert np.allclose(ile_masked, apply_mask(ile_data, mask_dg))
 
+
 def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data, mask_dg):
 
-    x,y = coords_dg
+    x, y = coords_dg
     dx = x[1]
-    t0 = 0.
+    t0 = 0.0
     vel_func = flow_callable
     Svals_expected, Svecs_expected = S_eig_func_data
     Svals, Svecs = S_eig_2D_func(vel_func, x, y, t0=t0, h=dx)
@@ -203,9 +230,7 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data, mask_dg):
 
     assert np.allclose(S, S_expected)
 
-    Svals, Svecs = S_eig_2D_func(
-        vel_func, x, y, t0=t0, h=dx, mask=mask_dg
-    )
+    Svals, Svecs = S_eig_2D_func(vel_func, x, y, t0=t0, h=dx, mask=mask_dg)
     S_masked = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
     assert np.allclose(S_masked, apply_mask(S_expected, mask_dg))
@@ -213,27 +238,26 @@ def test_S_eig_2D_func(coords_dg, flow_callable, S_eig_func_data, mask_dg):
 
 def test_S_2D_func(coords_dg, flow_callable, S_data, mask_dg):
 
-    x,y = coords_dg
+    x, y = coords_dg
     dx = x[1]
-    t0 = 0.
+    t0 = 0.0
     vel_func = flow_callable
-    S_expected  = S_data
+    S_expected = S_data
     S = S_2D_func(vel_func, x, y, t0=t0, h=dx).astype(np.float32)
 
     assert np.allclose(S, S_expected)
 
-    S_masked = S_2D_func(
-        vel_func, x, y, t0=t0, h=dx, mask=mask_dg
-    ).astype(np.float32)
+    S_masked = S_2D_func(vel_func, x, y, t0=t0, h=dx, mask=mask_dg).astype(np.float32)
 
     assert np.allclose(S_masked, apply_mask(S_expected, mask_dg))
 
+
 def test_ile_2D_data(coords_dg, vel_data, ile_data, mask_dg):
 
-    x,y = coords_dg
+    x, y = coords_dg
     dx = x[1]
     dy = y[1]
-    u,v = vel_data
+    u, v = vel_data
     ile = ile_2D_data(u, v, dx, dy).astype(np.float32)
 
     assert np.allclose(ile, ile_data)
@@ -242,24 +266,25 @@ def test_ile_2D_data(coords_dg, vel_data, ile_data, mask_dg):
 
     assert np.allclose(ile_masked, apply_mask(ile_data, mask_dg))
 
+
 def test_S_eig_2D_data(coords_dg, vel_data, S_eig_data, mask_dg):
 
-    x,y = coords_dg
+    x, y = coords_dg
     dx = x[1]
     dy = y[1]
-    u,v = vel_data
+    u, v = vel_data
     Svals_expected, Svecs_expected = S_eig_data
-    Svals, Svecs = S_eig_2D_data(u,v,dx,dy)
+    Svals, Svecs = S_eig_2D_data(u, v, dx, dy)
     S_expected = reconstruct_matrix(Svals_expected, Svecs_expected)
     S = reconstruct_matrix(Svals.astype(np.float32), Svecs.astype(np.float32))
 
     assert np.allclose(S, S_expected)
 
     Svals_masked, Svecs_masked = S_eig_2D_data(u, v, dx, dy, mask=mask_dg)
-    S_masked = reconstruct_matrix(
-        Svals_masked.astype(np.float32), Svecs_masked.astype(np.float32))
+    S_masked = reconstruct_matrix(Svals_masked.astype(np.float32), Svecs_masked.astype(np.float32))
 
     assert np.allclose(S_masked, apply_mask(S_expected, mask_dg))
+
 
 def test_ivd_grid_2D(vort_data, ivd_data):
 

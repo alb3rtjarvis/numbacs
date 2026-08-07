@@ -42,6 +42,11 @@ def fm_ci_data():
     return np.load(join(dir_path,"testing_data/fm_ci.npy"))
 
 @pytest.fixture
+def fm_ico_data():
+
+    return np.load(join(dir_path,"testing_data/fm_ico.npy"))
+
+@pytest.fixture
 def fms_ci_data():
 
     return np.load(join(dir_path,"testing_data/fms_ci.npy"))
@@ -60,6 +65,11 @@ def fms_cs_data():
 def ftle_data():
 
     return np.load(join(dir_path,"testing_data/ftle.npy"))
+
+@pytest.fixture
+def ftle_ico_data():
+
+    return np.load(join(dir_path,"testing_data/ftle_ico.npy"))
 
 @pytest.fixture
 def C_data():
