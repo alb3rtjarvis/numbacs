@@ -10,6 +10,7 @@ from .utils import (
     gradF_main_stencil_2D,
     gradUV_stencil_2D,
     eigvalsh_max_2D,
+    eigvalsh_max_2D_direct,
     inv_2D,
     vec_dot_3D,
     lonlat2xyz,
@@ -55,10 +56,11 @@ def ftle_grid_2D(flowmap, T, dx, dy, mask=None):
             if mask is None or not mask[i, j]:
                 dxdx, dxdy, dydx, dydy = gradF_stencil_2D(flowmap, i, j, dx, dy)
 
-                off_diagonal = dxdx * dxdy + dydx * dydy
-                C = np.array([[dxdx**2 + dydx**2, off_diagonal], [off_diagonal, dxdy**2 + dydy**2]])
+                C11 = dxdx**2 + dydx**2
+                C12 = dxdx * dxdy + dydx * dydy
+                C22 = dxdy**2 + dydy**2
 
-                max_eig = eigvalsh_max_2D(C)
+                max_eig = eigvalsh_max_2D_direct(C11, C12, C22)
                 if max_eig > 1:
                     ftle[i, j] = scaling * log(max_eig)
 
