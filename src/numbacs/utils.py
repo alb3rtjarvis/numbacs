@@ -1914,7 +1914,7 @@ def interpolate_mask_grid(mask, xp, yp, xq, yq):
 
         # if point is out of bounds, mask
         if xqi > xmax or xqi < xmin:
-            mask[i, :] = True
+            new_mask[i, :] = True
             continue
 
         # find index of nearest x point from original grid
@@ -1928,7 +1928,7 @@ def interpolate_mask_grid(mask, xp, yp, xq, yq):
 
             # if point is out of bounds, mask
             if yqj > ymax or yqj < ymin:
-                mask[i, j] = True
+                new_mask[i, j] = True
                 continue
 
             # find index of nearest y point from original grid
